@@ -1,0 +1,3 @@
+[submodule "QCADesigner"]
+	path = QCADesigner
+	url = https://github.com/kwalus/QCADesigner
