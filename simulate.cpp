@@ -4,6 +4,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <tuple>
 #include <vector>
 #include <utility>
 
@@ -174,6 +175,14 @@ Cell Cell::_Cell(char c) {
     return LatchedCell(false, Value::ONE);
   case '|':
     return LatchedCell(false, Value::ZERO);
+  case ']':
+    return OffsetCell(Direction::LEFT);
+  case '[':
+    return OffsetCell(Direction::RIGHT);
+  case 'W':
+    return OffsetCell(Direction::UP);
+  case 'M':
+    return OffsetCell(Direction::DOWN);
   default:
     return Cell();
   }
@@ -195,24 +204,45 @@ Cell Cell::LatchedCell(bool x, Value v) {
   return c;
 }
 
-void Cell::OffsetCell(bool horizontal, Cell *c1, Cell *c2) {
-  *c1 = UnlatchedCell(true);
-  *c2 = UnlatchedCell(true);
-  c1->offset = true;
-  c2->offset = true;
-  c1->partner = c2;
-  c2->partner = c1;
-  c1->direction = horizontal ? Direction::LEFT : Direction::UP;
-  c2->direction = horizontal ? Direction::RIGHT : Direction::DOWN;
+Cell Cell::OffsetCell(Direction direction) {
+  Cell c = UnlatchedCell(true);
+  c.offset = true;
+  c.direction = direction;
+  switch (direction) {
+  case Direction::LEFT: c.partner_delta = {0, -1}; break;
+  case Direction::DOWN: c.partner_delta = {1, 0}; break;
+  case Direction::RIGHT: c.partner_delta = {0, 1}; break;
+  case Direction::UP: c.partner_delta = {-1, 0}; break;
+  default: break;
+  }
+  return c;
 }
 
-void Cell::Diode(Direction direction, Cell *src, Cell *dest) {
-  *src = UnlatchedCell(true);
-  *dest = LatchedCell(true, Value::UNKNOWN);
-  src->direction = direction;
-  dest->direction = direction;
-  src->partner = dest;
-  dest->partner = src;
+std::pair<Cell, Cell> Cell::Diode(Direction direction) {
+  Cell src = UnlatchedCell(true);
+  Cell dest = LatchedCell(true, Value::UNKNOWN);
+  src.direction = direction;
+  dest.direction = direction;
+  switch (direction) {
+  case Direction::LEFT:
+    src.partner_delta = {0, -1};
+    dest.partner_delta = {0, 1};
+    break;
+  case Direction::DOWN:
+    src.partner_delta = {1, 0};
+    dest.partner_delta = {-1, 0};
+    break;
+  case Direction::RIGHT:
+    src.partner_delta = {0, 1};
+    dest.partner_delta = {0, -1};
+    break;
+  case Direction::UP:
+    src.partner_delta = {-1, 0};
+    dest.partner_delta = {1, 0};
+    break;
+  default: break;
+  }
+  return {src, dest};
 }
 
 Cell::operator char() const {
@@ -382,16 +412,17 @@ Operation::operator char() const {
 Board::Board(size_t m, size_t n, size_t nbots) :
     m(m), n(n), nbots(nbots),
     initial_cells(m, n),
-    cells(m, n),
     directions(nbots, {m, n}),
-    operations(nbots, {m, n}) {}
+    operations(nbots, {m, n}),
+    bots(nbots),
+    cells(m, n) {}
 
 bool Board::add_input(size_t y, size_t x) {
   if (y >= m || x >= n) {
     error = QCAError::OutOfRange;
     return true;
   }
-  inputs.push_back({{y, x}, {}});
+  inputs.push_back({Location(y, x), {}});
   return false;
 }
 
@@ -400,7 +431,7 @@ bool Board::add_output(size_t y, size_t x) {
     error = QCAError::OutOfRange;
     return true;
   }
-  output_locations.push_back({y, x});
+  output_locations.push_back(Location(y, x));
   return false;
 }
 
@@ -431,7 +462,6 @@ bool Board::set_cells(const std::string &grid_cells) {
   initial_cells.reset();
   std::stringstream ss(grid_cells);
   std::string line;
-  bool invalid = false;
   for (size_t y=0; y<m; ++y) {
     std::getline(ss, line);
     if (line.size() != n) {
@@ -443,40 +473,36 @@ bool Board::set_cells(const std::string &grid_cells) {
       // specially set multi-square cells
       switch (c) {
       case '<':
-        if (x > 0) Cell::Diode(Direction::LEFT, &initial_cells[y][x], &initial_cells[y][x-1]);
+        if (x > 0) std::tie(initial_cells[y][x], initial_cells[y][x-1]) = Cell::Diode(Direction::LEFT);
         break;
       case 'v':
-        if (y > 0) Cell::Diode(Direction::DOWN, &initial_cells[y][x], &initial_cells[y-1][x]);
+        if (y > 0) std::tie(initial_cells[y][x], initial_cells[y+1][x]) = Cell::Diode(Direction::DOWN);
         break;
       case '>':
-        if (x + 1 < n) Cell::Diode(Direction::RIGHT, &initial_cells[y][x], &initial_cells[y][x+1]);
+        if (x + 1 < n) std::tie(initial_cells[y][x], initial_cells[y][x+1]) = Cell::Diode(Direction::RIGHT);
         break;
       case '^':
-        if (y + 1 < m) Cell::Diode(Direction::UP, &initial_cells[y][x], &initial_cells[y+1][x]);
-        break;
-      case ']':
-        if (x + 1 < n) Cell::OffsetCell(true, &initial_cells[y][x], &initial_cells[y][x+1]);
-        break;
-      case 'W':
-        if (y + 1 < m) Cell::OffsetCell(false, &initial_cells[y][x], &initial_cells[y+1][x]);
+        if (y + 1 < m) std::tie(initial_cells[y][x], initial_cells[y-1][x]) = Cell::Diode(Direction::UP);
         break;
       }
       // set 1x1 cells
       if (!initial_cells[y][x].exists) initial_cells[y][x] = Cell(c);
-      if (!initial_cells[y][x].exists && c != ' ') invalid = true;
+      if (!initial_cells[y][x].exists && c != ' ') return error = QCAError::InvalidInput;
     }
   }
   // check for multi-square consistency
-  for (const auto &line : initial_cells) {
-    for (const auto &cell : line) {
-      if (cell.partner) {
-        if (cell.partner->partner != &cell) invalid = true;
+  for (size_t y=0; y<m; ++y) {
+    for (size_t x=0; x<n; ++x) {
+      if (initial_cells[y][x].partner_delta) {
+        const Cell* partner = initial_cells.partner(Location(y, x));
+        if (!partner || initial_cells[y][x].partner_delta != -partner->partner_delta) {
+          return error = QCAError::InvalidInput;
+        }
       }
     }
   }
-  if (ss) invalid = true;
-  if (invalid) error = QCAError::InvalidInput;
-  return invalid;
+  if (ss) return error = QCAError::InvalidInput;
+  return false;
 }
 
 bool Board::set_instructions(size_t k, const std::string &grid_directions, const std::string &grid_operations) {
@@ -491,10 +517,11 @@ bool Board::set_instructions(size_t k, const std::string &grid_directions, const
   return invalid;
 }
 
-bool Board::validate(const std::string &grid_fixed) {
+bool Board::reset_and_validate(const std::string &grid_fixed) {
   std::stringstream ss(grid_fixed);
   std::string line;
   bool invalid = false;
+  for (auto &bot : bots) bot = Bot();
   // check grids
   for (size_t y=0; y<m; ++y) {
     std::getline(ss, line);
@@ -524,6 +551,37 @@ bool Board::validate(const std::string &grid_fixed) {
         break;
       default:
         if (initial_cells[y][x] != line[x]) invalid = true;
+        Location location(y, x);
+        const Cell &cell = initial_cells[y][x];
+        const Cell *partner = initial_cells.partner(location);
+        switch (cell) {
+        case '<':
+        case 'v':
+        case '>':
+        case '^':
+          if (!partner || *partner != 'x') invalid = true;
+          if (!partner || cell.partner_delta != -partner->partner_delta) invalid = true;
+          if (!partner || cell.direction != partner->direction) invalid = true;
+          break;
+        case '[':
+          if (!partner || cell.partner_delta != -partner->partner_delta) invalid = true;
+          if (!partner || *partner != ']') invalid = true;
+          break;
+        case ']':
+          if (!partner || cell.partner_delta != -partner->partner_delta) invalid = true;
+          if (!partner || *partner != '[') invalid = true;
+          break;
+        case 'W':
+          if (!partner || cell.partner_delta != -partner->partner_delta) invalid = true;
+          if (!partner || *partner != 'M') invalid = true;
+          break;
+        case 'M':
+          if (!partner || cell.partner_delta != -partner->partner_delta) invalid = true;
+          if (!partner || *partner != 'W') invalid = true;
+          break;
+        default:
+          break;
+        }
         break;
       }
       // validate instructions
@@ -531,14 +589,69 @@ bool Board::validate(const std::string &grid_fixed) {
         for (const auto &_directions : directions) if (_directions[y][x]) invalid = true;
         for (const auto &_operations : operations) if (_operations[y][x]) invalid = true;
       }
+      // check bot start locations
+      for (size_t k=0; k<nbots; ++k) {
+        if (operations[k][y][x].type == Operation::Type::START) {
+          if (bots[k]) {
+            error = QCAError("Bot has multiple START instructions");
+            return true;
+          }
+          bots[k] = Bot(Location(y, x));
+        }
+      }
+    }
+  }
+  // ensure each bot has a start location
+  for (size_t k=0; k<nbots; ++k) {
+    if (!bots[k].location.valid) {
+      error = QCAError("Bot does not have a START instruction");
+      return true;
     }
   }
   // check I/O sequence sizes
   for (const auto &input : inputs) {
     if (input.bits.size() != output.size()) invalid = true;
   }
+  // reset state
+  cells = initial_cells;
+  step = 0;
+  status = Status::RUNNING;
   if (invalid) error = QCAError::InvalidInput;
   return invalid;
+}
+
+std::pair<std::string, bool> Board::get_error() {
+  return {error, false};
+}
+
+std::pair<Status, bool> Board::get_status() {
+  return {status, false};
+}
+
+std::pair<std::string, bool> Board::get_unresolved_board() {
+  std::stringstream ss;
+  for (const auto &line : cells) {
+    for (const auto &square : line) {
+      ss << square;
+    }
+    ss << std::endl;
+  }
+  return {ss.str(), false};
+}
+
+std::pair<std::string, bool> Board::get_resolved_board() {
+  std::stringstream ss;
+  for (const auto &line : cells) {
+    for (const auto &square : line) {
+      ss << square.resolved();
+    }
+    ss << std::endl;
+  }
+  return {ss.str(), false};
+}
+
+std::pair<std::vector<Bot>, bool> Board::get_bots() {
+  return {bots, false};
 }
 
 } // namespace qca

@@ -35,6 +35,9 @@ public:
   QCAError() {}
   QCAError(const std::string &error) : error(error) {}
   operator std::string() const { return error; }
+  operator bool() const { return !error.empty(); }
+  bool operator==(const QCAError &oth) const { return error == oth.error; }
+  bool operator!=(const QCAError &oth) const { return !(error == oth.error); }
 
   static const QCAError OutOfRange;
   static const QCAError InvalidInput;
@@ -43,7 +46,7 @@ public:
 
 enum Status {
   INVALID,
-  VALID,
+  RUNNING,
   DONE,
 };
 
@@ -98,8 +101,96 @@ private:
 
 
 struct Location {
-  size_t y;
-  size_t x;
+  bool valid;
+  int y;
+  int x;
+  Location() {}
+  Location(int y, int x) : valid(true), y(y), x(x) {}
+  explicit operator bool() const { return valid; }
+  Location operator-() const { return *this ? Location(-y, -x) : Location(); }
+  Location operator+(const Location &oth) const { return *this && oth ? Location(y + oth.y, x + oth.x) : Location(); }
+  Location operator-(const Location &oth) const { return *this + -oth; }
+  bool operator==(const Location &oth) const {
+    return (!valid && !oth.valid) || (valid == oth.valid && y == oth.y && x == oth.x);
+  }
+  bool operator!=(const Location &oth) const { return !(*this == oth); }
+};
+
+
+struct Input {
+  Location location;
+  std::vector<bool> bits;
+};
+
+
+class Cell {
+private:
+  static Cell _Cell(char c); // dispatcher
+public:
+  enum class Value {
+    UNKNOWN,
+    ZERO,
+    ONE,
+    UNDETERMINED,
+  };
+  bool exists;
+  bool x; // x or +
+  bool latched;
+  bool offset;
+  // for diodes, direction is the direction of the diode
+  // for offset cells, direction is the side from the cell center
+  Direction direction;
+  Location partner_delta; // dy, dx to partner
+  Value value;
+  Value previous_value;
+
+  Cell() {}
+  Cell(char c) : Cell(_Cell(c)) {}; // does not account for multisquare cells
+  // Producers
+  static Cell UnlatchedCell(bool x);
+  static Cell LatchedCell(bool x, Value v);
+  static Cell OffsetCell(Direction direction);
+  static std::pair<Cell, Cell> Diode(Direction direction);
+
+  // Representation
+  explicit operator bool() const { return exists; }
+  operator char() const;
+  char resolved() const;
+};
+
+
+struct Operation {
+  enum class Type {
+    NONE,
+    SWAP,
+    SYNC,
+    BRANCH,
+    START,
+    ROTATE,
+    LATCH,
+    REFRESH,
+    POWER,
+    NEXT,
+  };
+  Type type;
+  Direction direction;
+  uint8_t value;
+
+  Operation() {}
+  Operation(char c);
+  explicit operator bool() const { return type != Type::NONE; }
+  operator char() const; // not unique if we let branching for all combinations
+};
+
+
+struct Bot {
+  Location location;
+  Direction direction = Direction::LEFT; // default start going left
+  bool holding;
+  bool rotated; // ROTATE takes a cycle so needs state
+  Bot() {}
+  Bot(const Location &location) : location(location) {}
+  explicit operator bool() const { return (bool) location; }
 };
 
 
@@ -112,11 +203,29 @@ public:
     for (auto &v : *this) v.resize(n);
   }
 
+  bool valid(const Location &location) const {
+    return location && 0 <= location.y && location.y < m && 0 <= location.x && location.x < n;
+  }
+
   const T& at(const Location &location) const {
     return this->at(location.y).at(location.x);
   }
   T& at(const Location &location) {
     return const_cast<T&>(std::as_const(*this).at(location));
+  }
+
+  template<typename Q=T>
+  typename std::enable_if<std::is_same<Q, Cell>::value, const T*>::type partner(const Location &location) const {
+    const T& cell = this->at(location);
+    if (cell.partner_delta) {
+      Location partner_location = location + cell.partner_delta;
+      if (this->valid(partner_location)) return &this->at(partner_location);
+    }
+    return nullptr;
+  }
+  template<typename Q=T>
+  typename std::enable_if<std::is_same<Q, Cell>::value, T*>::type partner(const Location &location) {
+    return const_cast<T*>(std::as_const(*this).partner(location));
   }
 
   void reset() {
@@ -150,82 +259,22 @@ public:
 };
 
 
-struct Input {
-  Location location;
-  std::vector<bool> bits;
-};
-
-
-class Cell {
-private:
-  static Cell _Cell(char c); // dispatcher
-public:
-  enum class Value {
-    UNKNOWN,
-    ZERO,
-    ONE,
-    UNDETERMINED,
-  };
-  bool exists;
-  bool x; // x or +
-  bool latched;
-  bool offset;
-  // for diodes, direction is the direction of the diode
-  // for offset cells, direction is the side from the cell center
-  Direction direction;
-  Cell *partner;
-  Value value;
-  Value previous_value;
-
-  Cell() {}
-  Cell(char c) : Cell(_Cell(c)) {}; // does not account for multisquare cells
-  // Producers
-  static Cell UnlatchedCell(bool x);
-  static Cell LatchedCell(bool x, Value v);
-  static void OffsetCell(bool horizontal, Cell *c1, Cell *c2);
-  static void Diode(Direction direction, Cell *src, Cell *dest);
-
-  // Representation
-  explicit operator bool() const { return exists; }
-  operator char() const;
-  char resolved() const;
-};
-
-
-struct Operation {
-  enum class Type {
-    NONE,
-    SWAP,
-    SYNC,
-    BRANCH,
-    START,
-    ROTATE,
-    LATCH,
-    REFRESH,
-    POWER,
-    NEXT,
-  };
-  Type type;
-  Direction direction;
-  uint8_t value;
-
-  Operation() {}
-  Operation(char c);
-  explicit operator bool() const { return type != Type::NONE; }
-  operator char() const; // not unique if we let branching for all combinations
-};
-
-
 class Board {
+  // setup
   const size_t m, n, nbots;
   Grid<Cell> initial_cells;
-  Grid<Cell> cells;
   std::vector<Grid<Direction>> directions; // bot -> grid
   std::vector<Grid<Operation>> operations; // bot -> grid
+  std::vector<Bot> bots;
   std::vector<Input> inputs;
   std::vector<Location> output_locations;
   std::vector<Color> output;
+  // error
   QCAError error;
+  // runtime
+  Grid<Cell> cells;
+  Status status;
+  size_t step; // step index for I/O
 public:
   // Setup
   Board(size_t m, size_t n, size_t nbots);
@@ -242,23 +291,27 @@ public:
   // set instructions for bot k
   bool set_instructions(
       size_t k, const std::string &grid_directions, const std::string &grid_operations);
-  // check if setup is valid
-  // ' ' for any, '.' for nothing, < v > ^ for equal to another, x+/\-| for cell
-  bool validate(const std::string &grid_fixed);
 
   // Runtime
-  // read value of last error
-  std::pair<std::string, bool> get_error();
-  // return the resolved board
-  std::pair<std::string, bool> resolve();
+  // check if setup is valid
+  // ' ' for any, '.' for nothing, < v > ^ for equal to another, x+/\-| for cell
+  bool reset_and_validate(const std::string &grid_fixed);
+  // resolve the board
+  bool resolve();
   // step forward one cycle
-  bool step();
-  // reset to t=0
-  bool reset();
-  // check status
-  std::pair<Status, bool> status();
+  bool move();
   // run through verification and return true if finishes
   std::pair<bool, bool> run(size_t max_cycles);
+
+  // Output
+  // read value of last error
+  std::pair<std::string, bool> get_error();
+  // check status
+  std::pair<Status, bool> get_status();
+  // return the most recent board
+  std::pair<std::string, bool> get_unresolved_board();
+  std::pair<std::string, bool> get_resolved_board();
+  std::pair<std::vector<Bot>, bool> get_bots();
 };
 
 
