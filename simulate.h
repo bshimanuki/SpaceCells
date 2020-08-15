@@ -29,6 +29,18 @@ public:
 };
 
 
+class QCAError {
+  std::string error;
+public:
+  QCAError() {}
+  QCAError(const std::string &error) : error(error) {}
+  operator std::string() const { return error; }
+
+  static const QCAError OutOfRange;
+  static const QCAError InvalidInput;
+};
+
+
 enum Status {
   INVALID,
   VALID,
@@ -36,32 +48,51 @@ enum Status {
 };
 
 
-enum class Color {
-  BLACK,
-  BROWN,
-  RED,
-  ORANGE,
-  YELLOW,
-  GREEN,
-  BLUE,
-  PURPLE,
-  // GRAY, // not constructible
-  WHITE,
-  // non-resistor code colors
-  CYAN,
-  REDORANGE,
+class Color {
+public:
+  enum ColorEnum {
+    INVALID,
+    BLACK,
+    BROWN,
+    RED,
+    ORANGE,
+    YELLOW,
+    GREEN,
+    BLUE,
+    PURPLE,
+    // GRAY, // not constructible
+    WHITE,
+    // non-resistor code colors
+    CYAN,
+    REDORANGE,
+  };
+  Color() {}
+  Color(ColorEnum v) : v(v) {}
+  Color(char c);
+  operator ColorEnum() const { return v; }
+  operator std::string() const;
+  Color operator+(const Color &oth) const;
+private:
+  ColorEnum v;
 };
 
 
-struct Direction {
-  enum {
+class Direction {
+public:
+  enum DirectionEnum {
     NONE,
     LEFT,
     DOWN,
     RIGHT,
     UP,
-  } v;
-  operator char() const;
+  };
+  Direction() {}
+  Direction(DirectionEnum v) : v(v) {}
+  Direction(char c);
+  operator DirectionEnum() const { return v; }
+  operator std::string() const;
+private:
+  DirectionEnum v;
 };
 
 
@@ -72,20 +103,29 @@ struct Location {
 
 
 template<typename T>
-class Grid : std::vector<std::vector<T>> {
+class Grid : public std::vector<std::vector<T>> {
   size_t m, n;
 public:
   Grid(size_t m, size_t n) : m(m), n(n) {
     this->resize(m);
     for (auto &v : *this) v.resize(n);
   }
+
   const T& at(const Location &location) const {
     return this->at(location.y).at(location.x);
   }
   T& at(const Location &location) {
     return const_cast<T&>(std::as_const(*this).at(location));
   }
-  friend std::ostream& operator<<(std::ostream &os, const Grid &grid);
+
+  friend std::ostream& operator<<(std::ostream &os, const Grid &grid) {
+    for (const auto &line : grid) {
+      for (const auto &square : line) {
+        os << square;
+      }
+      os << std::endl;
+    }
+  }
 };
 
 
@@ -95,7 +135,10 @@ struct Input {
 };
 
 
-struct Cell {
+class Cell {
+private:
+  static Cell _Cell(char c); // dispatcher
+public:
   enum class Value {
     UNKNOWN,
     ZERO,
@@ -112,6 +155,14 @@ struct Cell {
   Cell *partner;
   Value value;
   Value previous_value;
+
+  Cell() {}
+  Cell(char c) : Cell(_Cell(c)) {}; // does not account for multisquare cells
+  // Producers
+  static Cell UnlatchedCell(bool x);
+  static Cell LatchedCell(bool x, Value v);
+  static void OffsetCell(bool horizontal, Cell *c1, Cell *c2);
+  static void Diode(Direction direction, Cell *src, Cell *dest);
 
   // Representation
   operator char() const;
@@ -133,30 +184,35 @@ struct Operation {
     NEXT,
   };
   Type type;
+  Direction direction;
   uint8_t value;
-  operator char() const; // not unique
+
+  Operation() {}
+  Operation(char c);
+  operator char() const; // not unique if we let branching for all combinations
 };
 
 
 class Board {
-  size_t m, n, nbots;
+  const size_t m, n, nbots;
   Grid<Cell> initial_cells;
   Grid<Cell> cells;
   std::vector<Grid<Direction>> directions; // bot -> grid
   std::vector<Grid<Operation>> operations; // bot -> grid
   std::vector<Input> inputs;
+  std::vector<Location> outputs;
   std::vector<Color> output;
-  std::string error;
+  QCAError error;
 public:
   // Setup
   Board(size_t m, size_t n, size_t nbots);
-  // add input cell space
+  // add input cell square
   bool add_input(size_t y, size_t x);
-  // add output cell space
+  // add output cell square
   bool add_output(size_t y, size_t x);
-  // set input sequence for input k
+  // set input bit sequence for input k
   bool set_input(size_t k, const std::string &bits);
-  // set output sequence
+  // set output color sequence
   bool set_output(const std::string &colors);
   // set initial cell layout
   bool set_cells(const std::string &grid_cells);
