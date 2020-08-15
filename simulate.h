@@ -90,6 +90,7 @@ public:
   Direction(DirectionEnum v) : v(v) {}
   Direction(char c);
   operator DirectionEnum() const { return v; }
+  explicit operator bool() const { return v != NONE; }
   operator std::string() const;
 private:
   DirectionEnum v;
@@ -116,6 +117,26 @@ public:
   }
   T& at(const Location &location) {
     return const_cast<T&>(std::as_const(*this).at(location));
+  }
+
+  void reset() {
+    for (auto &line : *this) {
+      for (auto &square : line) {
+        square = T();
+      }
+    }
+  }
+  // return true if input error
+  bool reset(const std::string &grid) {
+    std::stringstream ss(grid);
+    std::string line;
+    for (size_t y=0; y<m; ++y) {
+      std::getline(ss, line);
+      if (line.size() != n) return true;
+      for (size_t x=0; x<n; ++x) (*this)[y][x] = line[x];
+    }
+    if (ss) return true;
+    return false;
   }
 
   friend std::ostream& operator<<(std::ostream &os, const Grid &grid) {
@@ -165,6 +186,7 @@ public:
   static void Diode(Direction direction, Cell *src, Cell *dest);
 
   // Representation
+  explicit operator bool() const { return exists; }
   operator char() const;
   char resolved() const;
 };
@@ -189,6 +211,7 @@ struct Operation {
 
   Operation() {}
   Operation(char c);
+  explicit operator bool() const { return type != Type::NONE; }
   operator char() const; // not unique if we let branching for all combinations
 };
 
@@ -200,7 +223,7 @@ class Board {
   std::vector<Grid<Direction>> directions; // bot -> grid
   std::vector<Grid<Operation>> operations; // bot -> grid
   std::vector<Input> inputs;
-  std::vector<Location> outputs;
+  std::vector<Location> output_locations;
   std::vector<Color> output;
   QCAError error;
 public:

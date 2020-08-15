@@ -383,8 +383,8 @@ Board::Board(size_t m, size_t n, size_t nbots) :
     m(m), n(n), nbots(nbots),
     initial_cells(m, n),
     cells(m, n),
-    directions(nbots),
-    operations(nbots) {}
+    directions(nbots, {m, n}),
+    operations(nbots, {m, n}) {}
 
 bool Board::add_input(size_t y, size_t x) {
   if (y >= m || x >= n) {
@@ -400,7 +400,7 @@ bool Board::add_output(size_t y, size_t x) {
     error = QCAError::OutOfRange;
     return true;
   }
-  outputs.push_back({y, x});
+  output_locations.push_back({y, x});
   return false;
 }
 
@@ -425,6 +425,120 @@ bool Board::set_output(const std::string &colors) {
   }
   std::copy(colors.begin(), colors.end(), output.begin());
   return false;
+}
+
+bool Board::set_cells(const std::string &grid_cells) {
+  initial_cells.reset();
+  std::stringstream ss(grid_cells);
+  std::string line;
+  bool invalid = false;
+  for (size_t y=0; y<m; ++y) {
+    std::getline(ss, line);
+    if (line.size() != n) {
+      error = QCAError::InvalidInput;
+      return true;
+    }
+    for (size_t x=0; x<n; ++x) {
+      char c = line[x];
+      // specially set multi-square cells
+      switch (c) {
+      case '<':
+        if (x > 0) Cell::Diode(Direction::LEFT, &initial_cells[y][x], &initial_cells[y][x-1]);
+        break;
+      case 'v':
+        if (y > 0) Cell::Diode(Direction::DOWN, &initial_cells[y][x], &initial_cells[y-1][x]);
+        break;
+      case '>':
+        if (x + 1 < n) Cell::Diode(Direction::RIGHT, &initial_cells[y][x], &initial_cells[y][x+1]);
+        break;
+      case '^':
+        if (y + 1 < m) Cell::Diode(Direction::UP, &initial_cells[y][x], &initial_cells[y+1][x]);
+        break;
+      case ']':
+        if (x + 1 < n) Cell::OffsetCell(true, &initial_cells[y][x], &initial_cells[y][x+1]);
+        break;
+      case 'W':
+        if (y + 1 < m) Cell::OffsetCell(false, &initial_cells[y][x], &initial_cells[y+1][x]);
+        break;
+      }
+      // set 1x1 cells
+      if (!initial_cells[y][x].exists) initial_cells[y][x] = Cell(c);
+      if (!initial_cells[y][x].exists && c != ' ') invalid = true;
+    }
+  }
+  // check for multi-square consistency
+  for (const auto &line : initial_cells) {
+    for (const auto &cell : line) {
+      if (cell.partner) {
+        if (cell.partner->partner != &cell) invalid = true;
+      }
+    }
+  }
+  if (ss) invalid = true;
+  if (invalid) error = QCAError::InvalidInput;
+  return invalid;
+}
+
+bool Board::set_instructions(size_t k, const std::string &grid_directions, const std::string &grid_operations) {
+  if (k >= nbots) {
+    error = QCAError::OutOfRange;
+    return true;
+  }
+  bool invalid = false;
+  invalid |= directions[k].reset(grid_directions);
+  invalid |= operations[k].reset(grid_operations);
+  if (invalid) error = QCAError::InvalidInput;
+  return invalid;
+}
+
+bool Board::validate(const std::string &grid_fixed) {
+  std::stringstream ss(grid_fixed);
+  std::string line;
+  bool invalid = false;
+  // check grids
+  for (size_t y=0; y<m; ++y) {
+    std::getline(ss, line);
+    if (line.size() != n) {
+      error = QCAError::InvalidInput;
+      return true;
+    }
+    // validate cells
+    for (size_t x=0; x<n; ++x) {
+      switch (line[x]) {
+      case ' ':
+        break;
+      case '.':
+        if (initial_cells[y][x]) invalid = true;
+        break;
+      case '<':
+        if (x <= 0 || initial_cells[y][x] != initial_cells[y][x-1]) invalid = true;
+        break;
+      case 'v':
+        if (y + 1 >= m || initial_cells[y][x] != initial_cells[y+1][x]) invalid = true;
+        break;
+      case '>':
+        if (x + 1 >= n || initial_cells[y][x] != initial_cells[y][x+1]) invalid = true;
+        break;
+      case '^':
+        if (y <= 0 || initial_cells[y][x] != initial_cells[y-1][x]) invalid = true;
+        break;
+      default:
+        if (initial_cells[y][x] != line[x]) invalid = true;
+        break;
+      }
+      // validate instructions
+      if (line[x] != ' ') {
+        for (const auto &_directions : directions) if (_directions[y][x]) invalid = true;
+        for (const auto &_operations : operations) if (_operations[y][x]) invalid = true;
+      }
+    }
+  }
+  // check I/O sequence sizes
+  for (const auto &input : inputs) {
+    if (input.bits.size() != output.size()) invalid = true;
+  }
+  if (invalid) error = QCAError::InvalidInput;
+  return invalid;
 }
 
 } // namespace qca
