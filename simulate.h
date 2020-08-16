@@ -130,8 +130,6 @@ struct Output {
 
 
 class Cell {
-private:
-  static Cell _Cell(char c); // dispatcher
 public:
   enum class Value {
     UNKNOWN,
@@ -177,6 +175,10 @@ public:
   bool is_latchable() const;
   bool is_refreshable() const;
   bool is_rotateable() const;
+  bool is_diode() const;
+
+private:
+  static Cell _Cell(char c); // dispatcher
 };
 
 
@@ -227,10 +229,11 @@ public:
   static const OperationConstant POWER_A;
   static const OperationConstant POWER_B;
   static const OperationConstant NEXT;
+
 private:
   constexpr Operation(Type type, uint8_t value=0, Direction direction=Direction_::NONE) :
       type(type), value(value), direction(direction) {}
-  static constexpr Operation Operation_(char c);
+  static constexpr Operation Operation_(char c); // dispatcher
 };
 struct Operation::OperationConstant {
   char c;
@@ -326,6 +329,16 @@ public:
     }
     if (ss) return true;
     return false;
+  }
+
+  // convert Location to size_t (1-indexed because NONE maps to 0)
+  size_t flat_index(const Location &location) const {
+    if (!valid(location)) return 0;
+    return location.y * n + location.x + 1;
+  }
+
+  size_t max_flat_index() const {
+    return m * n + 1;
   }
 
   friend std::ostream& operator<<(std::ostream &os, const Grid &grid) {

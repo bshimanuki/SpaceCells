@@ -1,7 +1,9 @@
 #include "simulate.h"
 
 #include <algorithm>
+#include <array>
 #include <iostream>
+#include <list>
 #include <sstream>
 #include <string>
 #include <stack>
@@ -14,6 +16,9 @@ namespace qca {
 
 const QCAError QCAError::OutOfRange("Out of range error");
 const QCAError QCAError::InvalidInput("Invalid input");
+
+
+static int sqr(int x) { return x * x; }
 
 
 Color::Color(char c) {
@@ -229,10 +234,10 @@ Cell Cell::OffsetCell(Direction direction) {
   c.offset = true;
   c.direction = direction;
   switch (direction) {
-  case Direction_::LEFT: c.partner_delta = {0, -1}; break;
-  case Direction_::DOWN: c.partner_delta = {1, 0}; break;
-  case Direction_::RIGHT: c.partner_delta = {0, 1}; break;
-  case Direction_::UP: c.partner_delta = {-1, 0}; break;
+  case Direction_::LEFT: c.partner_delta = {0, 1}; break;
+  case Direction_::DOWN: c.partner_delta = {-1, 0}; break;
+  case Direction_::RIGHT: c.partner_delta = {0, -1}; break;
+  case Direction_::UP: c.partner_delta = {1, 0}; break;
   default: break;
   }
   return c;
@@ -372,6 +377,9 @@ bool Cell::is_refreshable() const {
 }
 bool Cell::is_rotateable() const {
   return is_1x1();
+}
+bool Cell::is_diode() const {
+  return direction && !offset;
 }
 
 constexpr Operation Operation::Operation_(char c) {
@@ -680,9 +688,6 @@ bool Board::reset_and_validate(const std::string &grid_fixed) {
     Cell &input_cell = cells.at(input.location);
     if (input_cell != 'x' && input_cell != '+') invalid = true;
     input_cell.latched = true;
-    if (!input.bits.empty()) {
-      input_cell.value = input.bits[0] ? Cell::Value::ONE : Cell::Value::ZERO;
-    }
   }
   status = output_colors.empty() ? Status::DONE : Status::RUNNING;
   if (invalid) return error = QCAError::InvalidInput;
@@ -691,6 +696,157 @@ bool Board::reset_and_validate(const std::string &grid_fixed) {
 }
 
 bool Board::resolve() {
+  enum R {
+    // r^2 distances where cell side length is 2
+    R0, // same offset cell
+    R4, // adjacent cells
+    R5, // 1x1 next to offset cell
+    R8, // kitty corner
+    R9, // 1x1 next to offset cell lengthwise
+    R13, // 1x1 kitty corner to offset cell
+    R16, // distance 2
+    R20, // distance (2, 1)
+    MAXR, // number of elements of R
+  };
+  constexpr int RANGE = 2; // max range of 2 cells in each dimension
+  struct Node;
+  struct Edge {
+    Node *source;
+    Node *sink;
+    R r;
+  };
+  struct Node {
+    // Helper struct for cell resolution
+    // Union find data structure
+    // Identity
+    Location location;
+    bool anti;
+
+    // Node properties
+    // Link to parent in the same group. parent is equal to this for the root.
+    Node *parent;
+    // link to node for opposite value
+    Node *antinode;
+    Cell *cell;
+    // Edges
+    std::array<std::vector<Edge*>, MAXR> sources;
+    std::array<std::vector<Edge*>, MAXR> sinks;
+
+    // Group properties
+    Cell::Value value;
+    size_t size;
+    R r; // current r^2 distance being merged
+    std::array<size_t, MAXR> num_finished_nodes; // for each R level
+
+    static void add_edge(Node *source, Node *sink, R r, Edge *edge) {
+      edge->source = source;
+      edge->sink = sink;
+      edge->r = r;
+      source->sinks[r].push_back(edge);
+      sink->sources[r].push_back(edge);
+    }
+  };
+
+  if (status != Status::RUNNING) return false;
+  for (Input &input : inputs) {
+    Cell &input_cell = cells.at(input.location);
+    if (!input.bits.empty()) {
+      input_cell.value = input.bits[0] ? Cell::Value::ONE : Cell::Value::ZERO;
+    }
+  }
+  Grid<Node> grid_nodes(m, n);
+  Grid<Node> grid_antinodes(m, n);
+  std::list<Node*> nodes;
+  std::list<Edge> edges;
+  // Construct nodes and edges
+  for (size_t y=0; y<m; ++y) {
+    for (size_t x=0; x<n; ++x) {
+      const Location location(y, x);
+      Cell &cell = cells.at(location);
+      if (!cell) continue;
+
+      Node *node = &grid_nodes.at(location);
+      Node *antinode = &grid_antinodes.at(location);
+      nodes.push_back(node);
+      nodes.push_back(antinode);
+      // set node properties
+      node->location = location;
+      antinode->location = location;
+      node->anti = false;
+      antinode->anti = true;
+      node->parent = node;
+      antinode->parent = antinode;
+      node->antinode = antinode;
+      antinode->antinode = node;
+      node->cell = &cell;
+      antinode->cell = &cell;
+      node->size = 1;
+      antinode->size = 1;
+
+      // find and add edges
+      for (int dy=-RANGE; dy<=RANGE; ++dy) {
+        for (int dx=-RANGE; dx<=RANGE; ++dx) {
+          if (dy == 0 && dx == 0) continue;
+          const Location delta(dy, dx);
+          const Location neighbor_location = location + delta;
+          if (!cells.valid(neighbor_location)) continue;
+          Cell &neighbor = cells.at(neighbor_location);
+          if (!neighbor) continue;
+          // diode only goes the other way
+          if (cell.is_diode() && cell.partner_delta == delta && cell.latched) continue;
+          Node *neighbor_node = &grid_nodes.at(neighbor_location);
+          Node *neighbor_antinode = &grid_antinodes.at(neighbor_location);
+          // calcualte R distance (double coordinates and account for offset)
+          Location _delta(2 * dy, 2 * dx);
+          if (cell.offset) _delta = _delta - Location(cell.direction);
+          if (neighbor.offset) _delta = _delta + Location(neighbor.direction);
+          const int dist = sqr(_delta.y) + sqr(_delta.x);
+          // opposite orientation in same alignment have no effect
+          if (cell.x != neighbor.x && (_delta.y == 0 || _delta.x == 0)) continue;
+          R r = MAXR;
+          bool anti = !cell.x;
+          switch (dist) {
+          case 0:
+            r = R0; anti = false; break;
+          case 4:
+            r = R4; break;
+          case 5:
+            r = R5;
+            if (cell.x == neighbor.x) anti ^= true;
+            else {
+              // rotate
+              int _dy = 2 * _delta.y + _delta.x;
+              int _dx = -_delta.y + 2 * _delta.x;
+              anti = _dy != 0 && _dx != 0;
+            }
+            break;
+          case 8:
+            r = R8; anti ^= true; break;
+          case 9:
+            r = R9; break;
+          case 13:
+            r = R13;
+            if (cell.x == neighbor.x) anti ^= true;
+            else {
+              // rotate
+              int _dy = 3 * _delta.y + 2 * _delta.x;
+              int _dx = -2 * _delta.y + 3 * _delta.x;
+              anti = _dy != 0 && _dx != 0;
+            }
+            break;
+          case 16:
+            r = R16; break;
+          case 20:
+            r = R20; anti ^= true; break;
+          default:
+            break;
+          }
+          edges.emplace_back();
+          Node::add_edge(node, anti ? neighbor_antinode : neighbor_node, r, &edges.back());
+        }
+      }
+    }
+  }
   // TODO
   return false;
 }
@@ -735,6 +891,7 @@ bool Board::move() {
           break;
         default:
           if (operation.value & (0b11 << (2 * !cell.x))) {
+            status = Status::INVALID;
             return error = QCAError("Branch on undetermined state");
           }
           break;
@@ -805,6 +962,7 @@ bool Board::move() {
       if (cell.moving) {
         Location dest = location + Location(cell.moving);
         if (!trespassable.valid(dest) || !trespassable.at(dest)) {
+          status = Status::INVALID;
           return error = QCAError("Collided with boundary");
         }
         Cell &next_cell = cells.at(dest);
@@ -814,6 +972,7 @@ bool Board::move() {
             st.push(dest);
           } else {
             // collided with cell
+            status = Status::INVALID;
             return error = QCAError("Cells collided");
           }
         } else {
@@ -837,6 +996,7 @@ bool Board::move() {
       // bot can move
       Location dest = bot.location + Location(bot.moving);
       if (!trespassable.valid(dest) || !trespassable.at(dest)) {
+        status = Status::INVALID;
         return error = QCAError("Collided with boundary");
       }
       bot.location = dest;
@@ -850,18 +1010,24 @@ bool Board::move() {
       color = color + cells.at(_output.location);
     }
     if (color != output_colors[step]) {
+      status = Status::INVALID;
       return error = QCAError("Wrong output");
     }
     ++step;
+    if (step >= output_colors.size()) status = Status::DONE;
   }
   return false;
 }
 
 std::pair<bool, bool> Board::run(size_t max_cycles) {
   // make sure it starts resolved
-  if (resolve()) return {false, true};
+  if (resolve()) {
+    return {false, status != Status::INVALID};
+  }
   for (size_t cycle=0; cycle<max_cycles; ++cycle) {
-    if (move()) return {false, true};
+    if (move()) {
+      return {false, status != Status::INVALID};
+    }
     switch (status) {
     case Status::INVALID:
       return {false, false};
