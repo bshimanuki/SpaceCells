@@ -44,59 +44,57 @@ public:
 };
 
 
-enum Status {
+enum class Status {
   INVALID,
   RUNNING,
   DONE,
 };
 
 
+enum class Color_ {
+  INVALID,
+  BLACK,
+  BROWN,
+  RED,
+  ORANGE,
+  YELLOW,
+  GREEN,
+  BLUE,
+  PURPLE,
+  // GRAY, // not constructible
+  WHITE,
+  // non-resistor code colors
+  CYAN,
+  REDORANGE,
+};
 class Color {
+  Color_ v;
 public:
-  enum ColorEnum {
-    INVALID,
-    BLACK,
-    BROWN,
-    RED,
-    ORANGE,
-    YELLOW,
-    GREEN,
-    BLUE,
-    PURPLE,
-    // GRAY, // not constructible
-    WHITE,
-    // non-resistor code colors
-    CYAN,
-    REDORANGE,
-  };
   Color() {}
-  Color(ColorEnum v) : v(v) {}
+  Color(Color_ v) : v(v) {}
   Color(char c);
-  operator ColorEnum() const { return v; }
+  operator Color_() const { return v; }
   operator std::string() const;
-  Color operator+(const Color &oth) const;
-private:
-  ColorEnum v;
+  friend Color operator+(const Color &lhs, const Color &rhs);
 };
 
 
+enum class Direction_ {
+  NONE,
+  LEFT,
+  DOWN,
+  RIGHT,
+  UP,
+};
 class Direction {
+  Direction_ v;
 public:
-  enum DirectionEnum {
-    NONE,
-    LEFT,
-    DOWN,
-    RIGHT,
-    UP,
-  };
   Direction() {}
-  Direction(DirectionEnum v) : v(v) {}
+  Direction(Direction_ v) : v(v) {}
   Direction(char c);
-  operator DirectionEnum() const { return v; }
-  explicit operator bool() const { return v != NONE; }
+  operator Direction_() const { return v; }
+  explicit operator bool() const { return v != Direction_::NONE; }
   operator std::string() const;
-private:
-  DirectionEnum v;
 };
 
 
@@ -120,6 +118,11 @@ struct Location {
 struct Input {
   Location location;
   std::vector<bool> bits;
+};
+
+struct Output {
+  Location location;
+  bool power = true;
 };
 
 
@@ -156,6 +159,7 @@ public:
   explicit operator bool() const { return exists; }
   operator char() const;
   char resolved() const;
+  operator Color() const;
 };
 
 
@@ -185,7 +189,7 @@ struct Operation {
 
 struct Bot {
   Location location;
-  Direction direction = Direction::LEFT; // default start going left
+  Direction direction = Direction_::LEFT; // default start going left
   bool holding;
   bool rotated; // ROTATE takes a cycle so needs state
   Bot() {}
@@ -207,11 +211,12 @@ public:
     return location && 0 <= location.y && location.y < m && 0 <= location.x && location.x < n;
   }
 
-  const T& at(const Location &location) const {
-    return this->at(location.y).at(location.x);
+  typename std::vector<T>::const_reference at(const Location &location) const {
+    return this->std::vector<std::vector<T>>::at(location.y).at(location.x);
   }
-  T& at(const Location &location) {
-    return const_cast<T&>(std::as_const(*this).at(location));
+  typename std::vector<T>::reference at(const Location &location) {
+    // const_casting gives an error for the specialized vector<bool>
+    return this->std::vector<std::vector<T>>::at(location.y).at(location.x);
   }
 
   template<typename Q=T>
@@ -228,11 +233,10 @@ public:
     return const_cast<T*>(std::as_const(*this).partner(location));
   }
 
-  void reset() {
+  void reset() { reset(T()); }
+  bool reset(const T &v) {
     for (auto &line : *this) {
-      for (auto &square : line) {
-        square = T();
-      }
+      std::fill(line.begin(), line.end(), v);
     }
   }
   // return true if input error
@@ -263,12 +267,13 @@ class Board {
   // setup
   const size_t m, n, nbots;
   Grid<Cell> initial_cells;
+  Grid<bool> trespassable;
   std::vector<Grid<Direction>> directions; // bot -> grid
   std::vector<Grid<Operation>> operations; // bot -> grid
   std::vector<Bot> bots;
   std::vector<Input> inputs;
-  std::vector<Location> output_locations;
-  std::vector<Color> output;
+  std::vector<Output> outputs;
+  std::vector<Color> output_colors;
   // error
   QCAError error;
   // runtime
@@ -285,7 +290,7 @@ public:
   // set input bit sequence for input k
   bool set_input(size_t k, const std::string &bits);
   // set output color sequence
-  bool set_output(const std::string &colors);
+  bool set_output_colors(const std::string &colors);
   // set initial cell layout
   bool set_cells(const std::string &grid_cells);
   // set instructions for bot k

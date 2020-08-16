@@ -18,144 +18,144 @@ const QCAError QCAError::InvalidInput("Invalid input");
 Color::Color(char c) {
   switch (c) {
   // cells
-  case '/': *this = BLUE; break;
-  case '\\': *this = GREEN; break;
-  case '-': *this = RED; break;
-  case '|': *this = ORANGE; break;
+  case '/': *this = Color_::BLUE; break;
+  case '\\': *this = Color_::GREEN; break;
+  case '-': *this = Color_::RED; break;
+  case '|': *this = Color_::ORANGE; break;
   // color codes
-  case 'K': *this = BLACK; break;
-  case 'N': *this = BROWN; break;
-  case 'R': *this = RED; break;
-  case 'O': *this = ORANGE; break;
-  case 'Y': *this = YELLOW; break;
-  case 'G': *this = GREEN; break;
-  case 'B': *this = BLUE; break;
-  case 'P': *this = PURPLE; break;
-  case 'W': *this = WHITE; break;
-  case 'C': *this = CYAN; break;
-  case 'E': *this = REDORANGE; break;
-  default: *this = INVALID; break;
+  case 'K': *this = Color_::BLACK; break;
+  case 'N': *this = Color_::BROWN; break;
+  case 'R': *this = Color_::RED; break;
+  case 'O': *this = Color_::ORANGE; break;
+  case 'Y': *this = Color_::YELLOW; break;
+  case 'G': *this = Color_::GREEN; break;
+  case 'B': *this = Color_::BLUE; break;
+  case 'P': *this = Color_::PURPLE; break;
+  case 'W': *this = Color_::WHITE; break;
+  case 'C': *this = Color_::CYAN; break;
+  case 'E': *this = Color_::REDORANGE; break;
+  default: *this = Color_::INVALID; break;
   }
 }
 
 Color::operator std::string() const {
   switch (*this) {
-  case BLACK: return "K";
-  case BROWN: return "N";
-  case RED: return "R";
-  case ORANGE: return "O";
-  case YELLOW: return "Y";
-  case GREEN: return "G";
-  case BLUE: return "B";
-  case PURPLE: return "P";
-  case WHITE: return "W";
-  case CYAN: return "C";
-  case REDORANGE: return "E";
-  case INVALID: default: return "#";
+  case Color_::BLACK: return "K";
+  case Color_::BROWN: return "N";
+  case Color_::RED: return "R";
+  case Color_::ORANGE: return "O";
+  case Color_::YELLOW: return "Y";
+  case Color_::GREEN: return "G";
+  case Color_::BLUE: return "B";
+  case Color_::PURPLE: return "P";
+  case Color_::WHITE: return "W";
+  case Color_::CYAN: return "C";
+  case Color_::REDORANGE: return "E";
+  case Color_::INVALID: default: return "#";
   }
 }
 
-Color Color::operator+(const Color &oth) const {
-  if (*this == oth) return *this;
+Color operator+(const Color &lhs, const Color &rhs) {
+  if (lhs == rhs) return lhs;
   // check black before white
-  if (*this == BLACK) return oth;
-  if (oth == BLACK) return *this;
-  if (*this == WHITE) return oth;
-  if (oth == WHITE) return *this;
-  switch (*this) {
-  case RED:
-    switch (oth) {
-    case ORANGE: return REDORANGE;
-    case YELLOW: return ORANGE;
-    case GREEN: return YELLOW;
-    case BLUE: return PURPLE;
-    case CYAN: return WHITE;
+  if (lhs == Color_::BLACK) return rhs;
+  if (rhs == Color_::BLACK) return lhs;
+  if (lhs == Color_::WHITE) return rhs;
+  if (rhs == Color_::WHITE) return lhs;
+  switch (lhs) {
+  case Color_::RED:
+    switch (rhs) {
+    case Color_::ORANGE: return Color_::REDORANGE;
+    case Color_::YELLOW: return Color_::ORANGE;
+    case Color_::GREEN: return Color_::YELLOW;
+    case Color_::BLUE: return Color_::PURPLE;
+    case Color_::CYAN: return Color_::WHITE;
     default: break;
     }
     break;
-  case ORANGE:
-    switch (oth) {
-    case RED: return REDORANGE;
-    case GREEN: return BROWN;
-    case BLUE: return WHITE;
+  case Color_::ORANGE:
+    switch (rhs) {
+    case Color_::RED: return Color_::REDORANGE;
+    case Color_::GREEN: return Color_::BROWN;
+    case Color_::BLUE: return Color_::WHITE;
     default: break;
     }
     break;
-  case YELLOW:
-    switch (oth) {
-    case RED: return ORANGE;
-    case BLUE: return WHITE;
+  case Color_::YELLOW:
+    switch (rhs) {
+    case Color_::RED: return Color_::ORANGE;
+    case Color_::BLUE: return Color_::WHITE;
     default: break;
     }
     break;
-  case GREEN:
-    switch (oth) {
-    case RED: return YELLOW;
-    case ORANGE: return BROWN;
-    case BLUE: return CYAN;
-    case PURPLE: return WHITE;
+  case Color_::GREEN:
+    switch (rhs) {
+    case Color_::RED: return Color_::YELLOW;
+    case Color_::ORANGE: return Color_::BROWN;
+    case Color_::BLUE: return Color_::CYAN;
+    case Color_::PURPLE: return Color_::WHITE;
     default: break;
     }
     break;
-  case BLUE:
-    switch (oth) {
-    case RED: return PURPLE;
-    case ORANGE: return WHITE;
-    case YELLOW: return WHITE;
-    case GREEN: return CYAN;
+  case Color_::BLUE:
+    switch (rhs) {
+    case Color_::RED: return Color_::PURPLE;
+    case Color_::ORANGE: return Color_::WHITE;
+    case Color_::YELLOW: return Color_::WHITE;
+    case Color_::GREEN: return Color_::CYAN;
     default: break;
     }
     break;
-  case PURPLE:
-    switch (oth) {
-    case GREEN: return WHITE;
+  case Color_::PURPLE:
+    switch (rhs) {
+    case Color_::GREEN: return Color_::WHITE;
     default: break;
     }
     break;
-  case CYAN:
-    switch (oth) {
-    case RED: return WHITE;
+  case Color_::CYAN:
+    switch (rhs) {
+    case Color_::RED: return Color_::WHITE;
     default: break;
     }
     break;
   default:
     break;
   }
-  return INVALID;
+  return Color_::INVALID;
 }
 
 
 Direction::Direction(char c) {
   switch (c) {
   case '<':
-    *this = Direction::LEFT;
+    *this = Direction_::LEFT;
     break;
   case 'v':
-    *this = Direction::DOWN;
+    *this = Direction_::DOWN;
     break;
   case '>':
-    *this = Direction::RIGHT;
+    *this = Direction_::RIGHT;
     break;
   case '^':
-    *this = Direction::UP;
+    *this = Direction_::UP;
     break;
   default:
-    *this = Direction::NONE;
+    *this = Direction_::NONE;
     break;
   }
 }
 
 Direction::operator std::string() const {
   switch (*this) {
-  case Direction::NONE:
+  case Direction_::NONE:
     return " ";
-  case Direction::LEFT:
+  case Direction_::LEFT:
     return "]";
-  case Direction::DOWN:
+  case Direction_::DOWN:
     return "M";
-  case Direction::RIGHT:
+  case Direction_::RIGHT:
     return "[";
-  case Direction::UP:
+  case Direction_::UP:
     return "W";
   }
 }
@@ -176,13 +176,13 @@ Cell Cell::_Cell(char c) {
   case '|':
     return LatchedCell(false, Value::ZERO);
   case ']':
-    return OffsetCell(Direction::LEFT);
+    return OffsetCell(Direction_::LEFT);
   case '[':
-    return OffsetCell(Direction::RIGHT);
+    return OffsetCell(Direction_::RIGHT);
   case 'W':
-    return OffsetCell(Direction::UP);
+    return OffsetCell(Direction_::UP);
   case 'M':
-    return OffsetCell(Direction::DOWN);
+    return OffsetCell(Direction_::DOWN);
   default:
     return Cell();
   }
@@ -209,10 +209,10 @@ Cell Cell::OffsetCell(Direction direction) {
   c.offset = true;
   c.direction = direction;
   switch (direction) {
-  case Direction::LEFT: c.partner_delta = {0, -1}; break;
-  case Direction::DOWN: c.partner_delta = {1, 0}; break;
-  case Direction::RIGHT: c.partner_delta = {0, 1}; break;
-  case Direction::UP: c.partner_delta = {-1, 0}; break;
+  case Direction_::LEFT: c.partner_delta = {0, -1}; break;
+  case Direction_::DOWN: c.partner_delta = {1, 0}; break;
+  case Direction_::RIGHT: c.partner_delta = {0, 1}; break;
+  case Direction_::UP: c.partner_delta = {-1, 0}; break;
   default: break;
   }
   return c;
@@ -224,19 +224,19 @@ std::pair<Cell, Cell> Cell::Diode(Direction direction) {
   src.direction = direction;
   dest.direction = direction;
   switch (direction) {
-  case Direction::LEFT:
+  case Direction_::LEFT:
     src.partner_delta = {0, -1};
     dest.partner_delta = {0, 1};
     break;
-  case Direction::DOWN:
+  case Direction_::DOWN:
     src.partner_delta = {1, 0};
     dest.partner_delta = {-1, 0};
     break;
-  case Direction::RIGHT:
+  case Direction_::RIGHT:
     src.partner_delta = {0, 1};
     dest.partner_delta = {0, -1};
     break;
-  case Direction::UP:
+  case Direction_::UP:
     src.partner_delta = {-1, 0};
     dest.partner_delta = {1, 0};
     break;
@@ -251,29 +251,29 @@ Cell::operator char() const {
   // offset cells
   if (this->offset) {
     switch (this->direction) {
-    case Direction::NONE:
+    case Direction_::NONE:
       return '#'; // error
-    case Direction::LEFT:
+    case Direction_::LEFT:
       return ']';
-    case Direction::DOWN:
+    case Direction_::DOWN:
       return 'M';
-    case Direction::RIGHT:
+    case Direction_::RIGHT:
       return '[';
-    case Direction::UP:
+    case Direction_::UP:
       return 'W';
     }
   }
   // diode
   switch (this->direction) {
-  case Direction::NONE:
+  case Direction_::NONE:
     break;
-  case Direction::LEFT:
+  case Direction_::LEFT:
     return this->latched ? 'x' : '<';
-  case Direction::DOWN:
+  case Direction_::DOWN:
     return this->latched ? 'x' : 'v';
-  case Direction::RIGHT:
+  case Direction_::RIGHT:
     return this->latched ? 'x' : '>';
-  case Direction::UP:
+  case Direction_::UP:
     return this->latched ? 'x' : '^';
   }
   // 1x1 cell
@@ -301,6 +301,43 @@ char Cell::resolved() const {
   }
 }
 
+Cell::operator Color() const {
+  switch (*this) {
+  case '/':
+    return Color_::BLUE;
+  case '\\':
+    return Color_::GREEN;
+  case '-':
+    return Color_::RED;
+  case '|':
+    return Color_::ORANGE;
+  case 'x':
+  case '[':
+  case ']':
+  case 'W':
+  case 'M':
+  case '<':
+  case 'v':
+  case '>':
+  case '^':
+    switch (value) {
+    case Value::ONE: return Color_::BLUE;
+    case Value::ZERO: return Color_::GREEN;
+    default: return Color_::INVALID;
+    }
+  case '+':
+    switch (value) {
+    case Value::ONE: return Color_::RED;
+    case Value::ZERO: return Color_::ORANGE;
+    default: return Color_::INVALID;
+    }
+  case ' ':
+    return Color_::BLACK;
+  default:
+    return Color_::INVALID;
+  }
+}
+
 
 Operation::Operation(char c) {
   switch (c) {
@@ -313,21 +350,21 @@ Operation::Operation(char c) {
   case 's': // SYNC
     type = Type::SYNC; break;
   case '<': // BRANCH < /-
-    type = Type::BRANCH; direction = Direction::LEFT; value = 0b0101; break;
+    type = Type::BRANCH; direction = Direction_::LEFT; value = 0b0101; break;
   case 'v': // BRANCH v /-
-    type = Type::BRANCH; direction = Direction::DOWN; value = 0b0101; break;
+    type = Type::BRANCH; direction = Direction_::DOWN; value = 0b0101; break;
   case '>': // BRANCH > /-
-    type = Type::BRANCH; direction = Direction::RIGHT; value = 0b0101; break;
+    type = Type::BRANCH; direction = Direction_::RIGHT; value = 0b0101; break;
   case '^': // BRANCH ^ /-
-    type = Type::BRANCH; direction = Direction::UP; value = 0b0101; break;
+    type = Type::BRANCH; direction = Direction_::UP; value = 0b0101; break;
   case '[': // BRANCH < \|
-    type = Type::BRANCH; direction = Direction::LEFT; value = 0b1010; break;
+    type = Type::BRANCH; direction = Direction_::LEFT; value = 0b1010; break;
   case 'W': // BRANCH v \|
-    type = Type::BRANCH; direction = Direction::DOWN; value = 0b1010; break;
+    type = Type::BRANCH; direction = Direction_::DOWN; value = 0b1010; break;
   case ']': // BRANCH > \|
-    type = Type::BRANCH; direction = Direction::RIGHT; value = 0b1010; break;
+    type = Type::BRANCH; direction = Direction_::RIGHT; value = 0b1010; break;
   case 'M': // BRANCH ^ \|
-    type = Type::BRANCH; direction = Direction::UP; value = 0b1010; break;
+    type = Type::BRANCH; direction = Direction_::UP; value = 0b1010; break;
   case 'S': // START
     type = Type::START; break;
   case 'r': // ROTATE
@@ -366,18 +403,18 @@ Operation::operator char() const {
     switch (value) {
     case 0b0101: // /-
       switch (direction) {
-      case Direction::LEFT: return '<';
-      case Direction::DOWN: return 'v';
-      case Direction::RIGHT: return '>';
-      case Direction::UP: return '^';
+      case Direction_::LEFT: return '<';
+      case Direction_::DOWN: return 'v';
+      case Direction_::RIGHT: return '>';
+      case Direction_::UP: return '^';
       default: return '#'; // error
       }
     case 0b1010: // \|
       switch (direction) {
-      case Direction::LEFT: return '[';
-      case Direction::DOWN: return 'W';
-      case Direction::RIGHT: return ']';
-      case Direction::UP: return 'M';
+      case Direction_::LEFT: return '[';
+      case Direction_::DOWN: return 'W';
+      case Direction_::RIGHT: return ']';
+      case Direction_::UP: return 'M';
       default: return '#'; // error
       }
     default: return '#'; // error
@@ -412,6 +449,7 @@ Operation::operator char() const {
 Board::Board(size_t m, size_t n, size_t nbots) :
     m(m), n(n), nbots(nbots),
     initial_cells(m, n),
+    trespassable(m, n),
     directions(nbots, {m, n}),
     operations(nbots, {m, n}),
     bots(nbots),
@@ -431,7 +469,7 @@ bool Board::add_output(size_t y, size_t x) {
     error = QCAError::OutOfRange;
     return true;
   }
-  output_locations.push_back(Location(y, x));
+  outputs.push_back({Location(y, x)});
   return false;
 }
 
@@ -449,12 +487,12 @@ bool Board::set_input(size_t k, const std::string &bits) {
   return false;
 }
 
-bool Board::set_output(const std::string &colors) {
-  if (std::any_of(colors.begin(), colors.end(), [](char c){ return c == Color::INVALID; })) {
+bool Board::set_output_colors(const std::string &colors) {
+  if (std::any_of(colors.begin(), colors.end(), [](char c){ return Color(c) == Color(Color_::INVALID); })) {
     error = QCAError::InvalidInput;
     return true;
   }
-  std::copy(colors.begin(), colors.end(), output.begin());
+  std::copy(colors.begin(), colors.end(), output_colors.begin());
   return false;
 }
 
@@ -473,16 +511,16 @@ bool Board::set_cells(const std::string &grid_cells) {
       // specially set multi-square cells
       switch (c) {
       case '<':
-        if (x > 0) std::tie(initial_cells[y][x], initial_cells[y][x-1]) = Cell::Diode(Direction::LEFT);
+        if (x > 0) std::tie(initial_cells[y][x], initial_cells[y][x-1]) = Cell::Diode(Direction_::LEFT);
         break;
       case 'v':
-        if (y > 0) std::tie(initial_cells[y][x], initial_cells[y+1][x]) = Cell::Diode(Direction::DOWN);
+        if (y > 0) std::tie(initial_cells[y][x], initial_cells[y+1][x]) = Cell::Diode(Direction_::DOWN);
         break;
       case '>':
-        if (x + 1 < n) std::tie(initial_cells[y][x], initial_cells[y][x+1]) = Cell::Diode(Direction::RIGHT);
+        if (x + 1 < n) std::tie(initial_cells[y][x], initial_cells[y][x+1]) = Cell::Diode(Direction_::RIGHT);
         break;
       case '^':
-        if (y + 1 < m) std::tie(initial_cells[y][x], initial_cells[y-1][x]) = Cell::Diode(Direction::UP);
+        if (y + 1 < m) std::tie(initial_cells[y][x], initial_cells[y-1][x]) = Cell::Diode(Direction_::UP);
         break;
       }
       // set 1x1 cells
@@ -522,6 +560,11 @@ bool Board::reset_and_validate(const std::string &grid_fixed) {
   std::string line;
   bool invalid = false;
   for (auto &bot : bots) bot = Bot();
+  trespassable.reset(true);
+  for (auto &_output : outputs) {
+    trespassable.at(_output.location) = false;
+    _output.power = true;
+  }
   // check grids
   for (size_t y=0; y<m; ++y) {
     std::getline(ss, line);
@@ -584,8 +627,13 @@ bool Board::reset_and_validate(const std::string &grid_fixed) {
         }
         break;
       }
+      // set non trespassable
+      switch (line[x]) {
+      case ' ': break;
+      default: trespassable[y][x] = false; break;
+      }
       // validate instructions
-      if (line[x] != ' ') {
+      if (!trespassable[y][x]) {
         for (const auto &_directions : directions) if (_directions[y][x]) invalid = true;
         for (const auto &_operations : operations) if (_operations[y][x]) invalid = true;
       }
@@ -609,15 +657,61 @@ bool Board::reset_and_validate(const std::string &grid_fixed) {
     }
   }
   // check I/O sequence sizes
-  for (const auto &input : inputs) {
-    if (input.bits.size() != output.size()) invalid = true;
+  for (const Input &input : inputs) {
+    if (input.bits.size() != output_colors.size()) invalid = true;
   }
   // reset state
   cells = initial_cells;
   step = 0;
-  status = Status::RUNNING;
-  if (invalid) error = QCAError::InvalidInput;
-  return invalid;
+  for (Input &input : inputs) {
+    Cell &input_cell = cells.at(input.location);
+    if (input_cell != 'x' && input_cell != '+') invalid = true;
+    input_cell.latched = true;
+    if (!input.bits.empty()) {
+      input_cell.value = input.bits[0] ? Cell::Value::ONE : Cell::Value::ZERO;
+    }
+  }
+  status = output_colors.empty() ? Status::DONE : Status::RUNNING;
+  if (invalid) return error = QCAError::InvalidInput;
+  if (resolve()) return true;
+  return false;
+}
+
+bool Board::move() {
+  if (status != Status::RUNNING) return false;
+  bool next = false;
+  for (auto &bot : bots) {
+     // TODO
+  }
+  if (resolve()) return true;
+  if (next) {
+    Color color = Color_::BLACK;
+    for (const auto& _output : outputs) {
+      color = color + cells.at(_output.location);
+    }
+    if (color != output_colors[step]) {
+      return error = QCAError("Wrong output");
+    }
+    ++step;
+  }
+  return false;
+}
+
+std::pair<bool, bool> Board::run(size_t max_cycles) {
+  // make sure it starts resolved
+  if (resolve()) return {false, true};
+  for (size_t cycle=0; cycle<max_cycles; ++cycle) {
+    if (move()) return {false, true};
+    switch (status) {
+    case Status::INVALID:
+      return {false, false};
+    case Status::RUNNING:
+      break;
+    case Status::DONE:
+      return {true, false};
+    }
+  }
+  return {false, false};
 }
 
 std::pair<std::string, bool> Board::get_error() {
