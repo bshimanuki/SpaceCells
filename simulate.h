@@ -70,7 +70,7 @@ enum class Color_ {
 class Color {
   Color_ v;
 public:
-  Color() {}
+  constexpr Color() : v() {}
   Color(Color_ v) : v(v) {}
   Color(char c);
   operator Color_() const { return v; }
@@ -89,8 +89,8 @@ enum class Direction_ {
 class Direction {
   Direction_ v;
 public:
-  Direction() {}
-  Direction(Direction_ v) : v(v) {}
+  constexpr Direction() : v() {}
+  constexpr Direction(Direction_ v) : v(v) {}
   Direction(char c);
   operator Direction_() const { return v; }
   explicit operator bool() const { return v != Direction_::NONE; }
@@ -102,8 +102,8 @@ struct Location {
   bool valid;
   int y;
   int x;
-  Location() {}
-  Location(int y, int x) : valid(true), y(y), x(x) {}
+  constexpr Location() : valid(), y(), x() {}
+  constexpr Location(int y, int x) : valid(true), y(y), x(x) {}
   explicit operator bool() const { return valid; }
   Location operator-() const { return *this ? Location(-y, -x) : Location(); }
   Location operator+(const Location &oth) const { return *this && oth ? Location(y + oth.y, x + oth.x) : Location(); }
@@ -145,7 +145,13 @@ public:
   Direction direction;
   Location partner_delta; // dy, dx to partner
   Value value;
+  // partial state
   Value previous_value;
+  Direction moving;
+  bool held;
+  bool rotating;
+  bool refreshing;
+
 
   Cell() {}
   Cell(char c) : Cell(_Cell(c)) {}; // does not account for multisquare cells
@@ -160,10 +166,19 @@ public:
   operator char() const;
   char resolved() const;
   operator Color() const;
+
+  // State checkers
+  bool is_1x1() const;
+  bool is_swappable() const;
+  bool is_latchable() const;
+  bool is_refreshable() const;
+  bool is_rotateable() const;
 };
 
 
-struct Operation {
+class Operation {
+  struct OperationConstant;
+public:
   enum class Type {
     NONE,
     SWAP,
@@ -177,19 +192,76 @@ struct Operation {
     NEXT,
   };
   Type type;
-  Direction direction;
   uint8_t value;
+  Direction direction;
 
-  Operation() {}
-  Operation(char c);
+  constexpr Operation() : type(), value(), direction() {}
+  Operation(char c) : Operation(Operation_(c)) {}
   explicit operator bool() const { return type != Type::NONE; }
   operator char() const; // not unique if we let branching for all combinations
+
+  // static values
+  static const OperationConstant NONE;
+  static const OperationConstant GRAB;
+  static const OperationConstant DROP;
+  static const OperationConstant SWAP;
+  static const OperationConstant SYNC;
+  static const OperationConstant BRANCH_LEFT_ONE;
+  static const OperationConstant BRANCH_DOWN_ONE;
+  static const OperationConstant BRANCH_RIGHT_ONE;
+  static const OperationConstant BRANCH_UP_ONE;
+  static const OperationConstant BRANCH_LEFT_ZERO;
+  static const OperationConstant BRANCH_DOWN_ZERO;
+  static const OperationConstant BRANCH_RIGHT_ZERO;
+  static const OperationConstant BRANCH_UP_ZERO;
+  static const OperationConstant START;
+  static const OperationConstant ROTATE;
+  static const OperationConstant UNLATCH;
+  static const OperationConstant LATCH;
+  static const OperationConstant TOGGLE_LATCH;
+  static const OperationConstant REFRESH;
+  static const OperationConstant POWER_A;
+  static const OperationConstant POWER_B;
+  static const OperationConstant NEXT;
+private:
+  constexpr Operation(Type type, uint8_t value=0, Direction direction=Direction_::NONE) :
+      type(type), value(value), direction(direction) {}
+  static constexpr Operation Operation_(char c);
 };
+struct Operation::OperationConstant {
+  char c;
+  Operation op;
+  template<typename ...Args>
+  constexpr OperationConstant(char c, Args &&...type) : c(c), op(std::forward<Args>(type)...) {}
+  operator Operation() const { return op; }
+};
+constexpr Operation::OperationConstant Operation::NONE(' ', Type::NONE);
+constexpr Operation::OperationConstant Operation::GRAB('g', Type::SWAP, 0b01);
+constexpr Operation::OperationConstant Operation::DROP('d', Type::SWAP, 0b10);
+constexpr Operation::OperationConstant Operation::SWAP('w', Type::SWAP, 0b11);
+constexpr Operation::OperationConstant Operation::SYNC('s', Type::SYNC);
+constexpr Operation::OperationConstant Operation::BRANCH_LEFT_ONE('<', Type::BRANCH, 0b0101, Direction_::LEFT);
+constexpr Operation::OperationConstant Operation::BRANCH_DOWN_ONE('v', Type::BRANCH, 0b0101, Direction_::DOWN);
+constexpr Operation::OperationConstant Operation::BRANCH_RIGHT_ONE('>', Type::BRANCH, 0b0101, Direction_::RIGHT);
+constexpr Operation::OperationConstant Operation::BRANCH_UP_ONE('^', Type::BRANCH, 0b0101, Direction_::UP);
+constexpr Operation::OperationConstant Operation::BRANCH_LEFT_ZERO('[', Type::BRANCH, 0b1010, Direction_::LEFT);
+constexpr Operation::OperationConstant Operation::BRANCH_DOWN_ZERO('W', Type::BRANCH, 0b1010, Direction_::DOWN);
+constexpr Operation::OperationConstant Operation::BRANCH_RIGHT_ZERO(']', Type::BRANCH, 0b1010, Direction_::RIGHT);
+constexpr Operation::OperationConstant Operation::BRANCH_UP_ZERO('M', Type::BRANCH, 0b1010, Direction_::UP);
+constexpr Operation::OperationConstant Operation::START('S', Type::START);
+constexpr Operation::OperationConstant Operation::ROTATE('r', Type::ROTATE);
+constexpr Operation::OperationConstant Operation::UNLATCH('u', Type::LATCH, 0b01);
+constexpr Operation::OperationConstant Operation::LATCH('l', Type::LATCH, 0b10);
+constexpr Operation::OperationConstant Operation::TOGGLE_LATCH('t', Type::LATCH, 0b11);
+constexpr Operation::OperationConstant Operation::REFRESH('*', Type::REFRESH);
+constexpr Operation::OperationConstant Operation::POWER_A('p', Type::POWER, 0b0);
+constexpr Operation::OperationConstant Operation::POWER_B('P', Type::POWER, 0b1);
+constexpr Operation::OperationConstant Operation::NEXT('n', Type::NEXT);
 
 
 struct Bot {
   Location location;
-  Direction direction = Direction_::LEFT; // default start going left
+  Direction moving = Direction_::LEFT; // default start going left
   bool holding;
   bool rotated; // ROTATE takes a cycle so needs state
   Bot() {}

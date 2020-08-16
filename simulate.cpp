@@ -338,53 +338,46 @@ Cell::operator Color() const {
   }
 }
 
+bool Cell::is_1x1() const {
+  return exists && !partner_delta;
+}
+bool Cell::is_swappable() const {
+  return is_1x1();
+}
+bool Cell::is_latchable() const {
+  return is_1x1();
+}
+bool Cell::is_refreshable() const {
+  return is_1x1() && latched;
+}
+bool Cell::is_rotateable() const {
+  return is_1x1();
+}
 
-Operation::Operation(char c) {
+constexpr Operation Operation::Operation_(char c) {
   switch (c) {
-  case 'g': // GRAB
-    type = Type::SWAP; value = 0b01; break;
-  case 'd': // DROP
-    type = Type::SWAP; value = 0b10; break;
-  case 'w': // SWAP
-    type = Type::SWAP; value = 0b11; break;
-  case 's': // SYNC
-    type = Type::SYNC; break;
-  case '<': // BRANCH < /-
-    type = Type::BRANCH; direction = Direction_::LEFT; value = 0b0101; break;
-  case 'v': // BRANCH v /-
-    type = Type::BRANCH; direction = Direction_::DOWN; value = 0b0101; break;
-  case '>': // BRANCH > /-
-    type = Type::BRANCH; direction = Direction_::RIGHT; value = 0b0101; break;
-  case '^': // BRANCH ^ /-
-    type = Type::BRANCH; direction = Direction_::UP; value = 0b0101; break;
-  case '[': // BRANCH < \|
-    type = Type::BRANCH; direction = Direction_::LEFT; value = 0b1010; break;
-  case 'W': // BRANCH v \|
-    type = Type::BRANCH; direction = Direction_::DOWN; value = 0b1010; break;
-  case ']': // BRANCH > \|
-    type = Type::BRANCH; direction = Direction_::RIGHT; value = 0b1010; break;
-  case 'M': // BRANCH ^ \|
-    type = Type::BRANCH; direction = Direction_::UP; value = 0b1010; break;
-  case 'S': // START
-    type = Type::START; break;
-  case 'r': // ROTATE
-    type = Type::ROTATE; break;
-  case 'u': // UNLATCH
-    type = Type::LATCH; value = 0b01; break;
-  case 'l': // LATCH
-    type = Type::LATCH; value = 0b10; break;
-  case 't': // TOGGLE LATCH
-    type = Type::LATCH; value = 0b11; break;
-  case '*': // REFRESH
-    type = Type::REFRESH; break;
-  case 'p': // POWER
-    type = Type::POWER; value = 0b0; break;
-  case 'P': // POWER
-    type = Type::POWER; value = 0b1; break;
-  case 'n': // NEXT
-    type = Type::NEXT; break;
-  default:
-    type = Type::NONE; break;
+  case GRAB.c: return GRAB;
+  case DROP.c: return DROP;
+  case SWAP.c: return SWAP;
+  case SYNC.c: return SYNC;
+  case BRANCH_LEFT_ONE.c: return BRANCH_LEFT_ONE;
+  case BRANCH_DOWN_ONE.c: return BRANCH_DOWN_ONE;
+  case BRANCH_RIGHT_ONE.c: return BRANCH_RIGHT_ONE;
+  case BRANCH_UP_ONE.c: return BRANCH_UP_ONE;
+  case BRANCH_LEFT_ZERO.c: return BRANCH_LEFT_ZERO;
+  case BRANCH_DOWN_ZERO.c: return BRANCH_DOWN_ZERO;
+  case BRANCH_RIGHT_ZERO.c: return BRANCH_RIGHT_ZERO;
+  case BRANCH_UP_ZERO.c: return BRANCH_UP_ZERO;
+  case START.c: return START;
+  case ROTATE.c: return ROTATE;
+  case UNLATCH.c: return UNLATCH;
+  case LATCH.c: return LATCH;
+  case TOGGLE_LATCH.c: return TOGGLE_LATCH;
+  case REFRESH.c: return REFRESH;
+  case POWER_A.c: return POWER_A;
+  case POWER_B.c: return POWER_B;
+  case NEXT.c: return NEXT;
+  case NONE.c: default: return NONE;
   }
 }
 
@@ -680,8 +673,22 @@ bool Board::reset_and_validate(const std::string &grid_fixed) {
 bool Board::move() {
   if (status != Status::RUNNING) return false;
   bool next = false;
-  for (auto &bot : bots) {
-     // TODO
+  for (size_t k=0; k<nbots; ++k) {
+    auto &bot = bots[k];
+    const auto &direction = directions[k].at(bot.location);
+    const auto &operation = operations[k].at(bot.location);
+    auto &cell = cells.at(bot.location);
+    if (direction) bot.moving = direction;
+    switch (operation.type) {
+    case Operation::Type::SWAP:
+      if (cell.is_swappable()) {
+        if (bot.holding) {
+          if (!cell.held && operation.value) ;
+        } else {
+        }
+      }
+      break;
+    }
   }
   if (resolve()) return true;
   if (next) {
