@@ -94,6 +94,7 @@ public:
   Direction(char c);
   operator Direction_() const { return v; }
   explicit operator bool() const { return v != Direction_::NONE; }
+  explicit operator struct Location() const;
   operator std::string() const;
 };
 
@@ -123,6 +124,8 @@ struct Input {
 struct Output {
   Location location;
   bool power = true;
+  // toggle state to only toggle once when multiple bots hit at once
+  bool toggle_power = false;
 };
 
 
@@ -136,6 +139,7 @@ public:
     ONE,
     UNDETERMINED,
   };
+  static Cell::Value rotate(const Value &v);
   bool exists;
   bool x; // x or +
   bool latched;
@@ -169,7 +173,7 @@ public:
 
   // State checkers
   bool is_1x1() const;
-  bool is_swappable() const;
+  bool is_grabbable() const;
   bool is_latchable() const;
   bool is_refreshable() const;
   bool is_rotateable() const;
@@ -250,8 +254,8 @@ constexpr Operation::OperationConstant Operation::BRANCH_RIGHT_ZERO(']', Type::B
 constexpr Operation::OperationConstant Operation::BRANCH_UP_ZERO('M', Type::BRANCH, 0b1010, Direction_::UP);
 constexpr Operation::OperationConstant Operation::START('S', Type::START);
 constexpr Operation::OperationConstant Operation::ROTATE('r', Type::ROTATE);
-constexpr Operation::OperationConstant Operation::UNLATCH('u', Type::LATCH, 0b01);
 constexpr Operation::OperationConstant Operation::LATCH('l', Type::LATCH, 0b10);
+constexpr Operation::OperationConstant Operation::UNLATCH('u', Type::LATCH, 0b01);
 constexpr Operation::OperationConstant Operation::TOGGLE_LATCH('t', Type::LATCH, 0b11);
 constexpr Operation::OperationConstant Operation::REFRESH('*', Type::REFRESH);
 constexpr Operation::OperationConstant Operation::POWER_A('p', Type::POWER, 0b0);
@@ -263,7 +267,7 @@ struct Bot {
   Location location;
   Direction moving = Direction_::LEFT; // default start going left
   bool holding;
-  bool rotated; // ROTATE takes a cycle so needs state
+  bool rotating; // ROTATE takes a cycle so needs state
   Bot() {}
   Bot(const Location &location) : location(location) {}
   explicit operator bool() const { return (bool) location; }

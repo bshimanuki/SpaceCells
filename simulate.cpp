@@ -4,6 +4,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <stack>
 #include <tuple>
 #include <vector>
 #include <utility>
@@ -145,6 +146,16 @@ Direction::Direction(char c) {
   }
 }
 
+Direction::operator Location() const  {
+  switch (*this) {
+  case Direction_::LEFT: return Location(0, -1);
+  case Direction_::DOWN: return Location(1, 0);
+  case Direction_::RIGHT: return Location(0, 1);
+  case Direction_::UP: return Location(-1, 0);
+  case Direction_::NONE: default: return Location();
+  }
+}
+
 Direction::operator std::string() const {
   switch (*this) {
   case Direction_::NONE:
@@ -160,6 +171,15 @@ Direction::operator std::string() const {
   }
 }
 
+
+Cell::Value Cell::rotate(const Value &v) {
+  switch (v) {
+  case Value::UNKNOWN: return Value::UNKNOWN;
+  case Value::ZERO: return Value::ONE;
+  case Value::ONE: return Value::ZERO;
+  case Value::UNDETERMINED: return Value::UNDETERMINED;
+  }
+}
 
 Cell Cell::_Cell(char c) {
   switch (c) {
@@ -341,7 +361,7 @@ Cell::operator Color() const {
 bool Cell::is_1x1() const {
   return exists && !partner_delta;
 }
-bool Cell::is_swappable() const {
+bool Cell::is_grabbable() const {
   return is_1x1();
 }
 bool Cell::is_latchable() const {
@@ -670,9 +690,16 @@ bool Board::reset_and_validate(const std::string &grid_fixed) {
   return false;
 }
 
+bool Board::resolve() {
+  // TODO
+  return false;
+}
+
 bool Board::move() {
   if (status != Status::RUNNING) return false;
   bool next = false;
+  size_t syncing = 0;
+  // toggle states
   for (size_t k=0; k<nbots; ++k) {
     auto &bot = bots[k];
     const auto &direction = directions[k].at(bot.location);
@@ -681,15 +708,141 @@ bool Board::move() {
     if (direction) bot.moving = direction;
     switch (operation.type) {
     case Operation::Type::SWAP:
-      if (cell.is_swappable()) {
+      if (cell.is_grabbable()) {
         if (bot.holding) {
-          if (!cell.held && operation.value) ;
+          if (operation.value & Operation::DROP.op.value)  {
+            bot.holding = false;
+            cell.held = false;
+          }
         } else {
+          if (!cell.held && operation.value & Operation::GRAB.op.value)  {
+            bot.holding = true;
+            cell.held = true;
+          }
         }
       }
       break;
+    case Operation::Type::SYNC:
+      ++syncing;
+      break;
+    case Operation::Type::BRANCH:
+      switch (cell.value) {
+        case Cell::Value::ONE:
+          if (operation.value & (0b01 << (2 * !cell.x))) bot.moving = operation.direction;
+          break;
+        case Cell::Value::ZERO:
+          if (operation.value & (0b01 << (2 * !cell.x))) bot.moving = operation.direction;
+          break;
+        default:
+          if (operation.value & (0b11 << (2 * !cell.x))) {
+            return error = QCAError("Branch on undetermined state");
+          }
+          break;
+      }
+      break;
+    case Operation::Type::START:
+      break;
+    case Operation::Type::ROTATE:
+      bot.rotating ^= true;
+      if (cell.is_rotateable()) {
+        cell.rotating = true;
+      }
+      break;
+    case Operation::Type::LATCH:
+      if (cell.is_latchable()) {
+        if (operation.value & Operation::UNLATCH.op.value)  {
+          cell.latched = true;
+        } else if (operation.value & Operation::LATCH.op.value)  {
+          cell.latched = false;
+        }
+      }
+      break;
+    case Operation::Type::REFRESH:
+      if (cell.is_refreshable()) {
+        cell.refreshing = true;
+      }
+      break;
+    case Operation::Type::POWER:
+      if (operation.value < outputs.size()) {
+        outputs[operation.value].toggle_power = true;
+      }
+      break;
+    case Operation::Type::NEXT:
+      next = true;
+      break;
+    case Operation::Type::NONE:
+    default:
+      break;
     }
   }
+  // set cell movement
+  for (size_t k=0; k<nbots; ++k) {
+    auto &bot = bots[k];
+    const auto &operation = operations[k].at(bot.location);
+    auto &cell = cells.at(bot.location);
+    if (bot.holding) {
+      if (operation.type == Operation::Type::SYNC || syncing <= 1) {
+        cell.moving = Direction_::NONE;
+      } else if (bot.rotating) {
+        cell.moving = Direction_::NONE;
+      } else {
+        cell.moving = bot.moving;
+      }
+    }
+  }
+  // move cells
+  for (size_t k=0; k<nbots; ++k) {
+    std::stack<Location> st;
+    auto &bot = bots[k];
+    st.push(bot.location);
+    while(!st.empty()) {
+      Location location = st.top();
+      Cell &cell = cells.at(location);
+      if (cell.rotating) {
+        cell.value = Cell::rotate(cell.value);
+        cell.rotating = false;
+      }
+      if (cell.moving) {
+        Location dest = location + Location(cell.moving);
+        if (!trespassable.valid(dest) || !trespassable.at(dest)) {
+          return error = QCAError("Collided with boundary");
+        }
+        Cell &next_cell = cells.at(dest);
+        if (next_cell) {
+          if (next_cell.moving == cell.moving) {
+            // need to move the next cell first
+            st.push(dest);
+          } else {
+            // collided with cell
+            return error = QCAError("Cells collided");
+          }
+        } else {
+          // space is empty, cell can move
+          next_cell = cell;
+          cell = Cell();
+          next_cell.moving = false;
+        }
+      }
+    }
+  }
+  // move bots
+  for (size_t k=0; k<nbots; ++k) {
+    auto &bot = bots[k];
+    const auto &operation = operations[k].at(bot.location);
+    if (operation.type == Operation::Type::SYNC || syncing <= 1) {
+      continue;
+    } else if (bot.rotating) {
+      continue;
+    } else {
+      // bot can move
+      Location dest = bot.location + Location(bot.moving);
+      if (!trespassable.valid(dest) || !trespassable.at(dest)) {
+        return error = QCAError("Collided with boundary");
+      }
+      bot.location = dest;
+    }
+  }
+  // resolve
   if (resolve()) return true;
   if (next) {
     Color color = Color_::BLACK;
