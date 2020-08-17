@@ -138,7 +138,7 @@ public:
     UNKNOWN,
     ZERO,
     ONE,
-    UNDETERMINED,
+    UNDEFINED,
   };
 
   class Value {

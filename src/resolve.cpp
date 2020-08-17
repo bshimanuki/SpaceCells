@@ -65,7 +65,6 @@ int main(int argc, char *argv[]) {
   bool err;
   std::string result;
   if (board.reset_and_validate(level)) return show(board.get_error());
-  if (board.resolve()) return show(board.get_error());
   std::tie(result, err) = board.get_resolved_board();
   if (err) return show(board.get_error());
   std::cout << result;

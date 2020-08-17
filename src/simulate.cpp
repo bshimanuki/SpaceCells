@@ -184,7 +184,7 @@ Cell::Value::Value(char c) {
   switch (c) {
     case '0': v = Value_::ZERO; break;
     case '1': v = Value_::ONE; break;
-    default: v = Value_::UNDETERMINED; break;
+    default: v = Value_::UNDEFINED; break;
   }
 }
 
@@ -193,7 +193,7 @@ Cell::Value Cell::Value::operator-() const {
   case Value_::UNKNOWN: return Value_::UNKNOWN;
   case Value_::ZERO: return Value_::ONE;
   case Value_::ONE: return Value_::ZERO;
-  case Value_::UNDETERMINED: default: return Value_::UNDETERMINED;
+  case Value_::UNDEFINED: default: return Value_::UNDEFINED;
   }
 }
 
@@ -201,7 +201,7 @@ Cell::Value operator+(const Cell::Value &a, const Cell::Value &b) {
   if (a == b) return a;
   if (a == Cell::Value_::UNKNOWN) return b;
   if (b == Cell::Value_::UNKNOWN) return a;
-  return Cell::Value_::UNDETERMINED;
+  return Cell::Value_::UNDEFINED;
 }
 
 Cell::Value::operator std::string() const {
@@ -209,7 +209,7 @@ Cell::Value::operator std::string() const {
   case Value_::UNKNOWN: return "?";
   case Value_::ZERO: return "0";
   case Value_::ONE: return "1";
-  case Value_::UNDETERMINED: default: return "x";
+  case Value_::UNDEFINED: default: return "x";
   }
 }
 
@@ -341,7 +341,7 @@ char Cell::resolved() const {
   case Value_::ONE:
     return x ? '/': '-';
   case Value_::UNKNOWN:
-  case Value_::UNDETERMINED:
+  case Value_::UNDEFINED:
   default:
     return x ? 'x': '+';
   }
@@ -789,16 +789,34 @@ bool Board::resolve() {
     void finished_node(Queue *que) {
       if (!processed) return;
       if (resolved()) return;
-      if (++num_finished_nodes() == size()) {
+      ++num_finished_nodes();
+      if (num_finished_nodes() == size() && antinode->num_finished_nodes() == antinode->size()) {
         num_finished_nodes() = 0;
+        antinode->num_finished_nodes() = 0;
         r() = static_cast<R>(r() + 1);
+        antinode->r() = static_cast<R>(antinode->r() + 1);
         for (Node *node : group()) {
           node->num_finished_merges = 0;
           node->num_finished_sources = 0;
           node->processed = false;
         }
-        if (r() < MAXR) {
+        for (Node *node : antinode->group()) {
+          node->num_finished_merges = 0;
+          node->num_finished_sources = 0;
+          node->processed = false;
+        }
+        if (root() == antinode->root()) value() = Cell::Value_::UNDEFINED;
+        value() += -antinode->value();
+        if (value()) {
+          antinode->value() = -value();
+          resolved() = true;
+          antinode->resolved() = true;
+        }
+        if (resolved() || r() < MAXR) {
           for (Node* node : group()) {
+            que->push(node);
+          }
+          for (Node* node : antinode->group()) {
             que->push(node);
           }
         }
@@ -833,7 +851,7 @@ bool Board::resolve() {
       if (!edge->used) {
         Node *sink = edge->sink;
         if (!sink->resolved()) {
-          if (++sink->num_finished_sources == sink->sources.size()) {
+          if (++sink->num_finished_sources == sink->sources[edge->r].size()) {
             Cell::Value v = Cell::Value_::UNKNOWN;
             int weight = 0;
             for (Edge *source_edge : sink->sources[edge->r]) {
@@ -843,10 +861,13 @@ bool Board::resolve() {
               case Cell::Value_::ONE:
                 ++weight; break;
               case Cell::Value_::UNKNOWN: // TODO: error for UNKNOWN? should not happen
-              case Cell::Value_::UNDETERMINED:
-                v = Cell::Value_::UNDETERMINED;
+              case Cell::Value_::UNDEFINED:
+                v = Cell::Value_::UNDEFINED;
+                break;
               }
             }
+            if (weight > 0) v += Cell::Value_::ONE;
+            if (weight < 0) v += Cell::Value_::ZERO;
             sink->value() += v;
             if (sink->num_finished_merges == sink->merges.size()) {
               sink->finished_node(que);
@@ -955,12 +976,6 @@ bool Board::resolve() {
       antinode->antinode = node;
       node->cell = &cell;
       antinode->cell = &cell;
-      node->parent = node;
-      antinode->parent = antinode;
-      node->value() = cell.value;
-      antinode->value() = -cell.value;
-      node->group().push_back(node);
-      antinode->group().push_back(antinode);
 
       // find and add edges
       for (int dy=-RANGE; dy<=RANGE; ++dy) {
@@ -1040,12 +1055,19 @@ bool Board::resolve() {
   }
   Queue que;
   for (Node* node : nodes) {
+    node->parent = node;
+    node->value() = node->anti ? -node->cell->value : node->cell->value;
+    node->group().push_back(node);
+    if (node->cell->latched && node->value()) node->resolved() = true;
     que.push(node);
   }
   while (!que.empty()) {
     Node *node = que.front();
     que.pop();
     node->process(&que);
+  }
+  for (Node *node : nodes) {
+    if (!node->anti) node->cell->value = node->value();
   }
   return false;
 }
