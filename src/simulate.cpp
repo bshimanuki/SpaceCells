@@ -241,14 +241,14 @@ Cell Cell::_Cell(char c) {
 }
 
 Cell Cell::UnlatchedCell(bool x) {
-  Cell c;
+  Cell c{};
   c.exists = true;
   c.x = x;
   return c;
 }
 
 Cell Cell::LatchedCell(bool x, Value v) {
-  Cell c;
+  Cell c{};
   c.exists = true;
   c.latched = true;
   c.x = x;
@@ -299,10 +299,10 @@ std::pair<Cell, Cell> Cell::Diode(Direction direction) {
 
 Cell::operator char() const {
   // empty
-  if (!this->exists) return ' ';
+  if (!exists) return ' ';
   // offset cells
-  if (this->offset) {
-    switch (this->direction) {
+  if (offset) {
+    switch (direction) {
     case Direction_::NONE:
       return '#'; // error
     case Direction_::LEFT:
@@ -316,42 +316,34 @@ Cell::operator char() const {
     }
   }
   // diode
-  switch (this->direction) {
+  switch (direction) {
   case Direction_::NONE:
     break;
   case Direction_::LEFT:
-    return this->latched ? 'x' : '<';
+    return latched ? 'x' : '<';
   case Direction_::DOWN:
-    return this->latched ? 'x' : 'v';
+    return latched ? 'x' : 'v';
   case Direction_::RIGHT:
-    return this->latched ? 'x' : '>';
+    return latched ? 'x' : '>';
   case Direction_::UP:
-    return this->latched ? 'x' : '^';
+    return latched ? 'x' : '^';
   }
   // 1x1 cell
-  switch (this->value) {
-  case Value_::ZERO:
-    return this->x ? '\\': '|';
-  case Value_::ONE:
-    return this->x ? '/': '-';
-  case Value_::UNKNOWN:
-  case Value_::UNDETERMINED:
-    return this->x ? 'x': '+';
-  }
-  return '#'; // error
+  if (latched) return resolved();
+  return x ? 'x': '+';
 }
 
 char Cell::resolved() const {
-  if (!this->exists) return ' ';
-  switch (this->value) {
+  if (!exists) return ' ';
+  switch (value) {
   case Value_::ZERO:
-    return this->x ? '\\': '|';
+    return x ? '\\': '|';
   case Value_::ONE:
-    return this->x ? '/': '-';
+    return x ? '/': '-';
   case Value_::UNKNOWN:
   case Value_::UNDETERMINED:
   default:
-    return this->x ? 'x': '+';
+    return x ? 'x': '+';
   }
 }
 
@@ -544,6 +536,7 @@ bool Board::set_output_colors(const std::string &colors) {
     error = Error::InvalidInput;
     return true;
   }
+  output_colors.resize(colors.size());
   std::copy(colors.begin(), colors.end(), output_colors.begin());
   return false;
 }
@@ -577,7 +570,7 @@ bool Board::set_cells(const std::string &grid_cells) {
       }
       // set 1x1 cells
       if (!initial_cells[y][x].exists) initial_cells[y][x] = Cell(c);
-      if (!initial_cells[y][x].exists && c != ' ') return error = Error::InvalidInput;
+      // if (!initial_cells[y][x].exists && c != ' ') return error = Error::InvalidInput;
     }
   }
   // check for multi-square consistency
@@ -591,7 +584,7 @@ bool Board::set_cells(const std::string &grid_cells) {
       }
     }
   }
-  if (ss) return error = Error::InvalidInput;
+  if (ss.peek() != EOF) return error = Error::InvalidInput;
   return false;
 }
 
@@ -610,7 +603,6 @@ bool Board::set_instructions(size_t k, const std::string &grid_directions, const
 bool Board::reset_and_validate(const std::string &grid_fixed) {
   std::stringstream ss(grid_fixed);
   std::string line;
-  bool invalid = false;
   for (auto &bot : bots) bot = Bot();
   trespassable.reset(true);
   for (auto &_output : outputs) {
@@ -630,22 +622,22 @@ bool Board::reset_and_validate(const std::string &grid_fixed) {
       case ' ':
         break;
       case '.':
-        if (initial_cells[y][x]) invalid = true;
+        if (initial_cells[y][x]) return error = Error::InvalidInput;
         break;
       case '<':
-        if (x <= 0 || initial_cells[y][x] != initial_cells[y][x-1]) invalid = true;
+        if (x <= 0 || initial_cells[y][x] != initial_cells[y][x-1]) return error = Error::InvalidInput;
         break;
       case 'v':
-        if (y + 1 >= m || initial_cells[y][x] != initial_cells[y+1][x]) invalid = true;
+        if (y + 1 >= m || initial_cells[y][x] != initial_cells[y+1][x]) return error = Error::InvalidInput;
         break;
       case '>':
-        if (x + 1 >= n || initial_cells[y][x] != initial_cells[y][x+1]) invalid = true;
+        if (x + 1 >= n || initial_cells[y][x] != initial_cells[y][x+1]) return error = Error::InvalidInput;
         break;
       case '^':
-        if (y <= 0 || initial_cells[y][x] != initial_cells[y-1][x]) invalid = true;
+        if (y <= 0 || initial_cells[y][x] != initial_cells[y-1][x]) return error = Error::InvalidInput;
         break;
       default:
-        if (initial_cells[y][x] != line[x]) invalid = true;
+        if (initial_cells[y][x] != line[x]) return error = Error::InvalidInput;
         Location location(y, x);
         const Cell &cell = initial_cells[y][x];
         const Cell *partner = initial_cells.partner(location);
@@ -654,25 +646,25 @@ bool Board::reset_and_validate(const std::string &grid_fixed) {
         case 'v':
         case '>':
         case '^':
-          if (!partner || *partner != 'x') invalid = true;
-          if (!partner || cell.partner_delta != -partner->partner_delta) invalid = true;
-          if (!partner || cell.direction != partner->direction) invalid = true;
+          if (!partner || *partner != 'x') return error = Error::InvalidInput;
+          if (!partner || cell.partner_delta != -partner->partner_delta) return error = Error::InvalidInput;
+          if (!partner || cell.direction != partner->direction) return error = Error::InvalidInput;
           break;
         case '[':
-          if (!partner || cell.partner_delta != -partner->partner_delta) invalid = true;
-          if (!partner || *partner != ']') invalid = true;
+          if (!partner || cell.partner_delta != -partner->partner_delta) return error = Error::InvalidInput;
+          if (!partner || *partner != ']') return error = Error::InvalidInput;
           break;
         case ']':
-          if (!partner || cell.partner_delta != -partner->partner_delta) invalid = true;
-          if (!partner || *partner != '[') invalid = true;
+          if (!partner || cell.partner_delta != -partner->partner_delta) return error = Error::InvalidInput;
+          if (!partner || *partner != '[') return error = Error::InvalidInput;
           break;
         case 'W':
-          if (!partner || cell.partner_delta != -partner->partner_delta) invalid = true;
-          if (!partner || *partner != 'M') invalid = true;
+          if (!partner || cell.partner_delta != -partner->partner_delta) return error = Error::InvalidInput;
+          if (!partner || *partner != 'M') return error = Error::InvalidInput;
           break;
         case 'M':
-          if (!partner || cell.partner_delta != -partner->partner_delta) invalid = true;
-          if (!partner || *partner != 'W') invalid = true;
+          if (!partner || cell.partner_delta != -partner->partner_delta) return error = Error::InvalidInput;
+          if (!partner || *partner != 'W') return error = Error::InvalidInput;
           break;
         default:
           break;
@@ -686,8 +678,8 @@ bool Board::reset_and_validate(const std::string &grid_fixed) {
       }
       // validate instructions
       if (!trespassable[y][x]) {
-        for (const auto &_directions : directions) if (_directions[y][x]) invalid = true;
-        for (const auto &_operations : operations) if (_operations[y][x]) invalid = true;
+        for (const auto &_directions : directions) if (_directions[y][x]) return error = Error::InvalidInput;
+        for (const auto &_operations : operations) if (_operations[y][x]) return error = Error::InvalidInput;
       }
       // check bot start locations
       for (size_t k=0; k<nbots; ++k) {
@@ -710,18 +702,17 @@ bool Board::reset_and_validate(const std::string &grid_fixed) {
   }
   // check I/O sequence sizes
   for (const Input &input : inputs) {
-    if (input.bits.size() != output_colors.size()) invalid = true;
+    if (input.bits.size() != output_colors.size()) return error = Error::InvalidInput;
   }
   // reset state
   cells = initial_cells;
   step = 0;
   for (Input &input : inputs) {
     Cell &input_cell = cells.at(input.location);
-    if (input_cell != 'x' && input_cell != '+') invalid = true;
+    if (input_cell != 'x' && input_cell != '+') return error = Error::InvalidInput;
     input_cell.latched = true;
   }
   status = output_colors.empty() ? Status::DONE : Status::RUNNING;
-  if (invalid) return error = Error::InvalidInput;
   if (resolve()) return true;
   return false;
 }
@@ -746,7 +737,7 @@ bool Board::resolve() {
     Node *source;
     Node *sink;
     R r;
-    bool used;
+    bool used = false;
     Node* neighbor(Node* node) const {
       // TODO: assumes node is source or sink
       return node == sink ? source : sink;
@@ -758,7 +749,7 @@ bool Board::resolve() {
     // Union find data structure
     // Identity
     Location location;
-    bool anti;
+    bool anti = false;
 
     // Node properties
     // Link to parent in the same group. parent is equal to this for the root.
@@ -767,12 +758,12 @@ bool Board::resolve() {
     Node *antinode;
     Cell *cell;
     // Edges
-    std::array<std::vector<Edge*>, MAXR> merges{};
-    std::array<std::vector<Edge*>, MAXR> sources{};
-    std::array<std::vector<Edge*>, MAXR> sinks{};
-    size_t num_finished_merges;
-    size_t num_finished_sources;
-    bool processed;
+    std::array<std::vector<Edge*>, MAXR> merges = {};
+    std::array<std::vector<Edge*>, MAXR> sources = {};
+    std::array<std::vector<Edge*>, MAXR> sinks = {};
+    size_t num_finished_merges = 0;
+    size_t num_finished_sources = 0;
+    bool processed = false;
     // size_t, num_finished_sinks{};
 
     // Group properties
@@ -780,8 +771,8 @@ bool Board::resolve() {
     Cell::Value _value;
     std::list<Node*> _group;
     R _r; // current r^2 distance being merged
-    size_t _num_finished_nodes;
-    bool _resolved;
+    size_t _num_finished_nodes = 0;
+    bool _resolved = false;
   public:
     Cell::Value& value() { return root()->_value; }
     std::list<Node*>& group() { return root()->_group; }
@@ -964,8 +955,12 @@ bool Board::resolve() {
       antinode->antinode = node;
       node->cell = &cell;
       antinode->cell = &cell;
+      node->parent = node;
+      antinode->parent = antinode;
       node->value() = cell.value;
       antinode->value() = -cell.value;
+      node->group().push_back(node);
+      antinode->group().push_back(antinode);
 
       // find and add edges
       for (int dy=-RANGE; dy<=RANGE; ++dy) {
@@ -1045,8 +1040,6 @@ bool Board::resolve() {
   }
   Queue que;
   for (Node* node : nodes) {
-    node->parent = node;
-    node->group().push_back(node);
     que.push(node);
   }
   while (!que.empty()) {
@@ -1246,8 +1239,8 @@ std::pair<bool, bool> Board::run(size_t max_cycles) {
   return {false, false};
 }
 
-std::pair<std::string, bool> Board::get_error() {
-  return {error, false};
+std::string Board::get_error() {
+  return error;
 }
 
 std::pair<Status, bool> Board::get_status() {

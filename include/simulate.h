@@ -39,6 +39,9 @@ public:
   bool operator==(const Error &oth) const { return error == oth.error; }
   bool operator!=(const Error &oth) const { return !(error == oth.error); }
 
+  // TODO: remove
+  Error& operator=(const Error &error) { this->error = error.error;  throw std::runtime_error(this->error); }
+
   static const Error OutOfRange;
   static const Error InvalidInput;
 };
@@ -100,10 +103,10 @@ public:
 
 
 struct Location {
-  bool valid;
-  int y;
-  int x;
-  constexpr Location() : valid(), y(), x() {}
+  bool valid = false;
+  int y = 0;
+  int x = 0;
+  constexpr Location() {}
   constexpr Location(int y, int x) : valid(true), y(y), x(x) {}
   explicit operator bool() const { return valid; }
   Location operator-() const { return *this ? Location(-y, -x) : Location(); }
@@ -152,10 +155,10 @@ public:
     friend Value operator+(const Value &lhs, const Value &rhs);
   };
 
-  bool exists;
-  bool x; // x or +
-  bool latched;
-  bool offset;
+  bool exists = false;
+  bool x = false; // x or +
+  bool latched = false;
+  bool offset = false;
   // for diodes, direction is the direction of the diode
   // for offset cells, direction is the side from the cell center
   Direction direction;
@@ -164,13 +167,12 @@ public:
   // partial state
   Value previous_value;
   Direction moving;
-  bool held;
-  bool rotating;
-  bool refreshing;
+  bool held = false;
+  bool rotating = false;
+  bool refreshing = false;
 
-
-  Cell() {}
-  Cell(char c) : Cell(_Cell(c)) {}; // does not account for multisquare cells
+  constexpr Cell() {}
+  Cell(char c) : Cell(_Cell(c)) {}; // does not account for diode cells
   // Producers
   static Cell UnlatchedCell(bool x);
   static Cell LatchedCell(bool x, Value v);
@@ -212,7 +214,7 @@ public:
     NEXT,
   };
   Type type;
-  uint8_t value;
+  uint8_t value = 0;
   Direction direction;
 
   constexpr Operation() : type(), value(), direction() {}
@@ -342,7 +344,7 @@ public:
       if (line.size() != n) return true;
       for (size_t x=0; x<n; ++x) (*this)[y][x] = line[x];
     }
-    if (ss) return true;
+    if (ss.peek() != EOF) return true;
     return false;
   }
 
@@ -384,7 +386,7 @@ class Board {
   // runtime
   Grid<Cell> cells;
   Status status;
-  size_t step; // step index for I/O
+  size_t step = 0; // step index for I/O
 public:
   // Setup
   Board(size_t m, size_t n, size_t nbots);
@@ -415,7 +417,7 @@ public:
 
   // Output
   // read value of last error
-  std::pair<std::string, bool> get_error();
+  std::string get_error();
   // check status
   std::pair<Status, bool> get_status();
   // return the most recent board
