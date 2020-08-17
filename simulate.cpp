@@ -2,8 +2,10 @@
 
 #include <algorithm>
 #include <array>
+#include <functional>
 #include <iostream>
 #include <list>
+#include <queue>
 #include <sstream>
 #include <string>
 #include <stack>
@@ -177,12 +179,36 @@ Direction::operator std::string() const {
 }
 
 
-Cell::Value Cell::rotate(const Value &v) {
-  switch (v) {
-  case Value::UNKNOWN: return Value::UNKNOWN;
-  case Value::ZERO: return Value::ONE;
-  case Value::ONE: return Value::ZERO;
-  case Value::UNDETERMINED: return Value::UNDETERMINED;
+Cell::Value::Value(char c) {
+  switch (c) {
+    case '0': v = Value_::ZERO; break;
+    case '1': v = Value_::ONE; break;
+    default: v = Value_::UNDETERMINED; break;
+  }
+}
+
+Cell::Value Cell::Value::operator-() const {
+  switch (*this) {
+  case Value_::UNKNOWN: return Value_::UNKNOWN;
+  case Value_::ZERO: return Value_::ONE;
+  case Value_::ONE: return Value_::ZERO;
+  case Value_::UNDETERMINED: return Value_::UNDETERMINED;
+  }
+}
+
+Cell::Value operator+(const Cell::Value &a, const Cell::Value &b) {
+  if (a == b) return a;
+  if (a == Cell::Value_::UNKNOWN) return b;
+  if (b == Cell::Value_::UNKNOWN) return a;
+  return Cell::Value_::UNDETERMINED;
+}
+
+Cell::Value::operator std::string() const {
+  switch (*this) {
+  case Value_::UNKNOWN: return "?";
+  case Value_::ZERO: return "0";
+  case Value_::ONE: return "1";
+  case Value_::UNDETERMINED: return "x";
   }
 }
 
@@ -193,13 +219,13 @@ Cell Cell::_Cell(char c) {
   case '+':
     return UnlatchedCell(false);
   case '/':
-    return LatchedCell(true, Value::ONE);
+    return LatchedCell(true, Value_::ONE);
   case '\\':
-    return LatchedCell(true, Value::ZERO);
+    return LatchedCell(true, Value_::ZERO);
   case '-':
-    return LatchedCell(false, Value::ONE);
+    return LatchedCell(false, Value_::ONE);
   case '|':
-    return LatchedCell(false, Value::ZERO);
+    return LatchedCell(false, Value_::ZERO);
   case ']':
     return OffsetCell(Direction_::LEFT);
   case '[':
@@ -245,7 +271,7 @@ Cell Cell::OffsetCell(Direction direction) {
 
 std::pair<Cell, Cell> Cell::Diode(Direction direction) {
   Cell src = UnlatchedCell(true);
-  Cell dest = LatchedCell(true, Value::UNKNOWN);
+  Cell dest = LatchedCell(true, Value_::UNKNOWN);
   src.direction = direction;
   dest.direction = direction;
   switch (direction) {
@@ -303,12 +329,12 @@ Cell::operator char() const {
   }
   // 1x1 cell
   switch (this->value) {
-  case Value::ZERO:
+  case Value_::ZERO:
     return this->x ? '\\': '|';
-  case Value::ONE:
+  case Value_::ONE:
     return this->x ? '/': '-';
-  case Value::UNKNOWN:
-  case Value::UNDETERMINED:
+  case Value_::UNKNOWN:
+  case Value_::UNDETERMINED:
     return this->x ? 'x': '+';
   }
 }
@@ -316,12 +342,12 @@ Cell::operator char() const {
 char Cell::resolved() const {
   if (!this->exists) return ' ';
   switch (this->value) {
-  case Value::ZERO:
+  case Value_::ZERO:
     return this->x ? '\\': '|';
-  case Value::ONE:
+  case Value_::ONE:
     return this->x ? '/': '-';
-  case Value::UNKNOWN:
-  case Value::UNDETERMINED:
+  case Value_::UNKNOWN:
+  case Value_::UNDETERMINED:
     return this->x ? 'x': '+';
   }
 }
@@ -346,14 +372,14 @@ Cell::operator Color() const {
   case '>':
   case '^':
     switch (value) {
-    case Value::ONE: return Color_::BLUE;
-    case Value::ZERO: return Color_::GREEN;
+    case Value_::ONE: return Color_::BLUE;
+    case Value_::ZERO: return Color_::GREEN;
     default: return Color_::INVALID;
     }
   case '+':
     switch (value) {
-    case Value::ONE: return Color_::RED;
-    case Value::ZERO: return Color_::ORANGE;
+    case Value_::ONE: return Color_::RED;
+    case Value_::ZERO: return Color_::ORANGE;
     default: return Color_::INVALID;
     }
   case ' ':
@@ -696,6 +722,8 @@ bool Board::reset_and_validate(const std::string &grid_fixed) {
 }
 
 bool Board::resolve() {
+  class Node;
+  using Queue = std::queue<Node*>;
   enum R {
     // r^2 distances where cell side length is 2
     R0, // same offset cell
@@ -709,13 +737,18 @@ bool Board::resolve() {
     MAXR, // number of elements of R
   };
   constexpr int RANGE = 2; // max range of 2 cells in each dimension
-  struct Node;
   struct Edge {
     Node *source;
     Node *sink;
     R r;
+    bool used;
+    Node* neighbor(Node* node) const {
+      // TODO: assumes node is source or sink
+      return node == sink ? source : sink;
+    }
   };
-  struct Node {
+  class Node {
+  public:
     // Helper struct for cell resolution
     // Union find data structure
     // Identity
@@ -729,31 +762,179 @@ bool Board::resolve() {
     Node *antinode;
     Cell *cell;
     // Edges
-    std::array<std::vector<Edge*>, MAXR> sources;
-    std::array<std::vector<Edge*>, MAXR> sinks;
+    std::array<std::vector<Edge*>, MAXR> merges{};
+    std::array<std::vector<Edge*>, MAXR> sources{};
+    std::array<std::vector<Edge*>, MAXR> sinks{};
+    size_t num_finished_merges;
+    size_t num_finished_sources;
+    bool processed;
+    // size_t, num_finished_sinks{};
 
     // Group properties
-    Cell::Value value;
-    size_t size;
-    R r; // current r^2 distance being merged
-    std::array<size_t, MAXR> num_finished_nodes; // for each R level
+  private:
+    Cell::Value _value;
+    std::list<Node*> _group;
+    R _r; // current r^2 distance being merged
+    size_t _num_finished_nodes;
+    bool _resolved;
+  public:
+    Cell::Value& value() { return root()->_value; }
+    std::list<Node*>& group() { return root()->_group; }
+    R& r() { return root()->_r; }
+    size_t& num_finished_nodes() { return root()->_num_finished_nodes; }
+    bool& resolved() { return root()->_resolved; }
 
-    static void add_edge(Node *source, Node *sink, R r, Edge *edge) {
+    Node* root() {
+      if (this->parent != this) this->parent = this->parent->root();
+      return this->parent;
+    }
+    size_t size() { return group().size(); }
+  private:
+    void finished_node(Queue *que) {
+      if (!processed) return;
+      if (resolved()) return;
+      if (++num_finished_nodes() == size()) {
+        num_finished_nodes() = 0;
+        r() = static_cast<R>(r() + 1);
+        for (Node *node : group()) {
+          node->num_finished_merges = 0;
+          node->num_finished_sources = 0;
+          node->processed = false;
+        }
+        if (r() < MAXR) {
+          for (Node* node : group()) {
+            que->push(node);
+          }
+        }
+      }
+    }
+
+    static void merge_internal(Node *a, Node *b) {
+      a = a->root();
+      b = b->root();
+      if (a == b) return;
+      if (a->size() < b->size()) std::swap(a, b);
+      a->group().splice(a->group().end(), b->group());
+      a->value() += b->value();
+      a->num_finished_nodes() += b->num_finished_nodes();
+      b->parent = a;
+    }
+  public:
+    // merges nodes and antinodes
+    static void merge(Queue *que, Edge *edge) {
+      if (!edge->used) {
+        if (!edge->source->resolved() || !edge->sink->resolved()) {
+          merge_internal(edge->source, edge->sink);
+          merge_internal(edge->source->antinode, edge->sink->antinode);
+          edge->source->finished_merged_edge(que);
+          edge->sink->finished_merged_edge(que);
+        }
+        edge->used = true;
+      }
+    }
+
+    static void propagate(Queue *que, Edge *edge) {
+      if (!edge->used) {
+        Node *sink = edge->sink;
+        if (!sink->resolved()) {
+          if (++sink->num_finished_sources == sink->sources.size()) {
+            Cell::Value v = Cell::Value_::UNKNOWN;
+            int weight = 0;
+            for (Edge *source_edge : sink->sources[edge->r]) {
+              switch (source_edge->source->value()) {
+              case Cell::Value_::ZERO:
+                --weight; break;
+              case Cell::Value_::ONE:
+                ++weight; break;
+              case Cell::Value_::UNKNOWN: // TODO: error for UNKNOWN? should not happen
+              case Cell::Value_::UNDETERMINED:
+                v = Cell::Value_::UNDETERMINED;
+              }
+            }
+            sink->value() += v;
+            if (sink->num_finished_merges == sink->merges.size()) {
+              sink->finished_node(que);
+            }
+          }
+        }
+        edge->used = true;
+      }
+    }
+
+    // populates edge and insert it
+    static void add_merge_edge(Node *source, Node *sink, R r, Edge *edge) {
+      edge->source = source;
+      edge->sink = sink;
+      edge->r = r;
+      source->merges[r].push_back(edge);
+      sink->merges[r].push_back(edge);
+    }
+
+    // populates edge and insert it
+    static void add_directed_edge(Node *source, Node *sink, R r, Edge *edge) {
       edge->source = source;
       edge->sink = sink;
       edge->r = r;
       source->sinks[r].push_back(edge);
       sink->sources[r].push_back(edge);
     }
+
+    void finished_merged_edge(Queue *que) {
+      if (++num_finished_merges == merges.size()) {
+        if (num_finished_sources == sources.size()) {
+          finished_node(que);
+        }
+      }
+    }
+
+    void process(Queue *que) {
+      if (resolved()) {
+        for (size_t _r=0; _r<R::MAXR; ++_r) {
+          for (auto &edge : sinks[_r]) {
+            Node *neighbor = edge->neighbor(this);
+            if (neighbor->r() == _r) {
+              propagate(que, edge);
+            }
+          }
+        }
+      } else {
+        for (Edge *edge : merges[r()]) {
+          Node *neighbor = edge->neighbor(this);
+          if (neighbor->r() == r()) {
+            Node::merge(que, edge);
+          }
+        }
+        for (Edge *edge : sources[r()]) {
+          Node *neighbor = edge->neighbor(this);
+          if (neighbor->resolved()) {
+            Node::propagate(que, edge);
+          }
+        }
+      }
+      processed = true;
+      if (num_finished_merges == merges[r()].size() && num_finished_sources == sources[r()].size()) {
+        finished_node(que);
+      }
+    }
+
   };
 
   if (status != Status::RUNNING) return false;
+  for (size_t y=0; y<m; ++y) {
+    for (size_t x=0; x<n; ++x) {
+      Cell &cell = cells[y][x];
+      cell.previous_value = cell.value;
+      if (cell.is_diode() || !cell.latched) cell.value = Cell::Value_::UNKNOWN;
+    }
+  }
   for (Input &input : inputs) {
     Cell &input_cell = cells.at(input.location);
     if (!input.bits.empty()) {
-      input_cell.value = input.bits[0] ? Cell::Value::ONE : Cell::Value::ZERO;
+      input_cell.value = input.bits[0] ? Cell::Value_::ONE : Cell::Value_::ZERO;
     }
   }
+  // NB: Pointers into vectors are not safe on reallocate, but Grid is fixed size.
+  // Pointers into lists are safe.
   Grid<Node> grid_nodes(m, n);
   Grid<Node> grid_antinodes(m, n);
   std::list<Node*> nodes;
@@ -774,14 +955,12 @@ bool Board::resolve() {
       antinode->location = location;
       node->anti = false;
       antinode->anti = true;
-      node->parent = node;
-      antinode->parent = antinode;
       node->antinode = antinode;
       antinode->antinode = node;
       node->cell = &cell;
       antinode->cell = &cell;
-      node->size = 1;
-      antinode->size = 1;
+      node->value() = cell.value;
+      antinode->value() = -cell.value;
 
       // find and add edges
       for (int dy=-RANGE; dy<=RANGE; ++dy) {
@@ -792,11 +971,9 @@ bool Board::resolve() {
           if (!cells.valid(neighbor_location)) continue;
           Cell &neighbor = cells.at(neighbor_location);
           if (!neighbor) continue;
-          // diode only goes the other way
-          if (cell.is_diode() && cell.partner_delta == delta && cell.latched) continue;
           Node *neighbor_node = &grid_nodes.at(neighbor_location);
           Node *neighbor_antinode = &grid_antinodes.at(neighbor_location);
-          // calcualte R distance (double coordinates and account for offset)
+          // calculate R distance (double coordinates and account for offset)
           Location _delta(2 * dy, 2 * dx);
           if (cell.offset) _delta = _delta - Location(cell.direction);
           if (neighbor.offset) _delta = _delta + Location(neighbor.direction);
@@ -841,13 +1018,37 @@ bool Board::resolve() {
           default:
             break;
           }
-          edges.emplace_back();
-          Node::add_edge(node, anti ? neighbor_antinode : neighbor_node, r, &edges.back());
+          // diode only goes the other way
+          if (cell.is_diode() && cell.partner_delta == delta && cell.latched) continue;
+          if (neighbor.latched) {
+            // only latched diodes cells can be affected
+            if (cell.is_diode() && cell.partner_delta == delta) {
+              edges.emplace_back();
+              Node::add_directed_edge(node, anti ? neighbor_antinode : neighbor_node, r, &edges.back());
+            }
+          } else {
+            edges.emplace_back();
+            if (cell.latched) {
+              Node::add_directed_edge(node, anti ? neighbor_antinode : neighbor_node, r, &edges.back());
+            } else {
+              Node::add_merge_edge(node, anti ? neighbor_antinode : neighbor_node, r, &edges.back());
+            }
+          }
         }
       }
     }
   }
-  // TODO
+  Queue que;
+  for (Node* node : nodes) {
+    node->parent = node;
+    node->group().push_back(node);
+    que.push(node);
+  }
+  while (!que.empty()) {
+    Node *node = que.front();
+    que.pop();
+    node->process(&que);
+  }
   return false;
 }
 
@@ -883,10 +1084,10 @@ bool Board::move() {
       break;
     case Operation::Type::BRANCH:
       switch (cell.value) {
-        case Cell::Value::ONE:
+        case Cell::Value_::ONE:
           if (operation.value & (0b01 << (2 * !cell.x))) bot.moving = operation.direction;
           break;
-        case Cell::Value::ZERO:
+        case Cell::Value_::ZERO:
           if (operation.value & (0b01 << (2 * !cell.x))) bot.moving = operation.direction;
           break;
         default:
@@ -956,7 +1157,7 @@ bool Board::move() {
       Location location = st.top();
       Cell &cell = cells.at(location);
       if (cell.rotating) {
-        cell.value = Cell::rotate(cell.value);
+        cell.value = -cell.value;
         cell.rotating = false;
       }
       if (cell.moving) {

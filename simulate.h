@@ -131,13 +131,27 @@ struct Output {
 
 class Cell {
 public:
-  enum class Value {
+  enum class Value_ {
     UNKNOWN,
     ZERO,
     ONE,
     UNDETERMINED,
   };
-  static Cell::Value rotate(const Value &v);
+
+  class Value {
+    Value_ v;
+  public:
+    constexpr Value() : v() {}
+    constexpr Value(Value_ v) : v(v) {}
+    explicit Value(char c);
+    operator Value_() const { return v; }
+    explicit operator bool() const { return v != Value_::UNKNOWN; }
+    operator std::string() const;
+    Value operator-() const;
+    Value& operator+=(const Value &rhs) { return *this = *this + rhs; }
+    friend Value operator+(const Value &lhs, const Value &rhs);
+  };
+
   bool exists;
   bool x; // x or +
   bool latched;
