@@ -165,8 +165,6 @@ Direction::operator Location() const  {
 
 Direction::operator std::string() const {
   switch (*this) {
-  case Direction_::NONE:
-    return " ";
   case Direction_::LEFT:
     return "]";
   case Direction_::DOWN:
@@ -175,6 +173,9 @@ Direction::operator std::string() const {
     return "[";
   case Direction_::UP:
     return "W";
+  case Direction_::NONE:
+  default:
+    return " ";
   }
 }
 
@@ -192,7 +193,7 @@ Cell::Value Cell::Value::operator-() const {
   case Value_::UNKNOWN: return Value_::UNKNOWN;
   case Value_::ZERO: return Value_::ONE;
   case Value_::ONE: return Value_::ZERO;
-  case Value_::UNDETERMINED: return Value_::UNDETERMINED;
+  case Value_::UNDETERMINED: default: return Value_::UNDETERMINED;
   }
 }
 
@@ -208,7 +209,7 @@ Cell::Value::operator std::string() const {
   case Value_::UNKNOWN: return "?";
   case Value_::ZERO: return "0";
   case Value_::ONE: return "1";
-  case Value_::UNDETERMINED: return "x";
+  case Value_::UNDETERMINED: default: return "x";
   }
 }
 
@@ -337,6 +338,7 @@ Cell::operator char() const {
   case Value_::UNDETERMINED:
     return this->x ? 'x': '+';
   }
+  return '#'; // error
 }
 
 char Cell::resolved() const {
@@ -348,6 +350,7 @@ char Cell::resolved() const {
     return this->x ? '/': '-';
   case Value_::UNKNOWN:
   case Value_::UNDETERMINED:
+  default:
     return this->x ? 'x': '+';
   }
 }
@@ -408,7 +411,7 @@ bool Cell::is_diode() const {
   return direction && !offset;
 }
 
-constexpr Operation Operation::Operation_(char c) {
+Operation Operation::Operation_(char c) {
   switch (c) {
   case GRAB.c: return GRAB;
   case DROP.c: return DROP;
@@ -437,6 +440,8 @@ constexpr Operation Operation::Operation_(char c) {
 
 Operation::operator char() const {
   switch (type) {
+  case Type::NONE:
+    return ' ';
   case Type::SWAP:
     switch (value) {
     case 0b01: return 'g';
@@ -487,8 +492,8 @@ Operation::operator char() const {
     }
   case Type::NEXT:
     return 'n';
-  case Type::NONE:
-    return ' ';
+  default:
+    return '#'; // error
   }
 }
 
@@ -1274,5 +1279,6 @@ std::pair<std::string, bool> Board::get_resolved_board() {
 std::pair<std::vector<Bot>, bool> Board::get_bots() {
   return {bots, false};
 }
+
 
 } // namespace puzzle

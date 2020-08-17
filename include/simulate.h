@@ -247,7 +247,7 @@ public:
 private:
   constexpr Operation(Type type, uint8_t value=0, Direction direction=Direction_::NONE) :
       type(type), value(value), direction(direction) {}
-  static constexpr Operation Operation_(char c); // dispatcher
+  static Operation Operation_(char c); // dispatcher
 };
 struct Operation::OperationConstant {
   char c;
@@ -301,7 +301,7 @@ public:
   }
 
   bool valid(const Location &location) const {
-    return location && 0 <= location.y && location.y < m && 0 <= location.x && location.x < n;
+    return location && 0 <= location.y && location.y < (int) m && 0 <= location.x && location.x < (int) n;
   }
 
   typename std::vector<T>::const_reference at(const Location &location) const {
@@ -326,11 +326,12 @@ public:
     return const_cast<T*>(std::as_const(*this).partner(location));
   }
 
-  void reset() { reset(T()); }
+  bool reset() { return reset(T()); }
   bool reset(const T &v) {
     for (auto &line : *this) {
       std::fill(line.begin(), line.end(), v);
     }
+    return false;
   }
   // return true if input error
   bool reset(const std::string &grid) {
@@ -362,6 +363,7 @@ public:
       }
       os << std::endl;
     }
+    return os;
   }
 };
 

@@ -1,0 +1,10 @@
+# binaries
+/bin
+/obj
+
+# build files
+*.o
+*.d
+
+# compiled python
+*.py[cdo]
