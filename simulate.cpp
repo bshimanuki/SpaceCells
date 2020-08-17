@@ -13,11 +13,11 @@
 #include <vector>
 #include <utility>
 
-namespace qca {
+namespace puzzle {
 
 
-const QCAError QCAError::OutOfRange("Out of range error");
-const QCAError QCAError::InvalidInput("Invalid input");
+const Error Error::OutOfRange("Out of range error");
+const Error Error::InvalidInput("Invalid input");
 
 
 static int sqr(int x) { return x * x; }
@@ -504,7 +504,7 @@ Board::Board(size_t m, size_t n, size_t nbots) :
 
 bool Board::add_input(size_t y, size_t x) {
   if (y >= m || x >= n) {
-    error = QCAError::OutOfRange;
+    error = Error::OutOfRange;
     return true;
   }
   inputs.push_back({Location(y, x), {}});
@@ -513,7 +513,7 @@ bool Board::add_input(size_t y, size_t x) {
 
 bool Board::add_output(size_t y, size_t x) {
   if (y >= m || x >= n) {
-    error = QCAError::OutOfRange;
+    error = Error::OutOfRange;
     return true;
   }
   outputs.push_back({Location(y, x)});
@@ -522,11 +522,11 @@ bool Board::add_output(size_t y, size_t x) {
 
 bool Board::set_input(size_t k, const std::string &bits) {
   if (k > inputs.size()) {
-    error = QCAError::OutOfRange;
+    error = Error::OutOfRange;
     return true;
   }
   if (std::any_of(bits.begin(), bits.end(), [](char b){ return (b & '0') != '0'; })) {
-    error = QCAError::InvalidInput;
+    error = Error::InvalidInput;
     return true;
   }
   inputs[k].bits.resize(bits.size());
@@ -536,7 +536,7 @@ bool Board::set_input(size_t k, const std::string &bits) {
 
 bool Board::set_output_colors(const std::string &colors) {
   if (std::any_of(colors.begin(), colors.end(), [](char c){ return Color(c) == Color(Color_::INVALID); })) {
-    error = QCAError::InvalidInput;
+    error = Error::InvalidInput;
     return true;
   }
   std::copy(colors.begin(), colors.end(), output_colors.begin());
@@ -550,7 +550,7 @@ bool Board::set_cells(const std::string &grid_cells) {
   for (size_t y=0; y<m; ++y) {
     std::getline(ss, line);
     if (line.size() != n) {
-      error = QCAError::InvalidInput;
+      error = Error::InvalidInput;
       return true;
     }
     for (size_t x=0; x<n; ++x) {
@@ -572,7 +572,7 @@ bool Board::set_cells(const std::string &grid_cells) {
       }
       // set 1x1 cells
       if (!initial_cells[y][x].exists) initial_cells[y][x] = Cell(c);
-      if (!initial_cells[y][x].exists && c != ' ') return error = QCAError::InvalidInput;
+      if (!initial_cells[y][x].exists && c != ' ') return error = Error::InvalidInput;
     }
   }
   // check for multi-square consistency
@@ -581,24 +581,24 @@ bool Board::set_cells(const std::string &grid_cells) {
       if (initial_cells[y][x].partner_delta) {
         const Cell* partner = initial_cells.partner(Location(y, x));
         if (!partner || initial_cells[y][x].partner_delta != -partner->partner_delta) {
-          return error = QCAError::InvalidInput;
+          return error = Error::InvalidInput;
         }
       }
     }
   }
-  if (ss) return error = QCAError::InvalidInput;
+  if (ss) return error = Error::InvalidInput;
   return false;
 }
 
 bool Board::set_instructions(size_t k, const std::string &grid_directions, const std::string &grid_operations) {
   if (k >= nbots) {
-    error = QCAError::OutOfRange;
+    error = Error::OutOfRange;
     return true;
   }
   bool invalid = false;
   invalid |= directions[k].reset(grid_directions);
   invalid |= operations[k].reset(grid_operations);
-  if (invalid) error = QCAError::InvalidInput;
+  if (invalid) error = Error::InvalidInput;
   return invalid;
 }
 
@@ -616,7 +616,7 @@ bool Board::reset_and_validate(const std::string &grid_fixed) {
   for (size_t y=0; y<m; ++y) {
     std::getline(ss, line);
     if (line.size() != n) {
-      error = QCAError::InvalidInput;
+      error = Error::InvalidInput;
       return true;
     }
     // validate cells
@@ -688,7 +688,7 @@ bool Board::reset_and_validate(const std::string &grid_fixed) {
       for (size_t k=0; k<nbots; ++k) {
         if (operations[k][y][x].type == Operation::Type::START) {
           if (bots[k]) {
-            error = QCAError("Bot has multiple START instructions");
+            error = Error("Bot has multiple START instructions");
             return true;
           }
           bots[k] = Bot(Location(y, x));
@@ -699,7 +699,7 @@ bool Board::reset_and_validate(const std::string &grid_fixed) {
   // ensure each bot has a start location
   for (size_t k=0; k<nbots; ++k) {
     if (!bots[k].location.valid) {
-      error = QCAError("Bot does not have a START instruction");
+      error = Error("Bot does not have a START instruction");
       return true;
     }
   }
@@ -716,7 +716,7 @@ bool Board::reset_and_validate(const std::string &grid_fixed) {
     input_cell.latched = true;
   }
   status = output_colors.empty() ? Status::DONE : Status::RUNNING;
-  if (invalid) return error = QCAError::InvalidInput;
+  if (invalid) return error = Error::InvalidInput;
   if (resolve()) return true;
   return false;
 }
@@ -1093,7 +1093,7 @@ bool Board::move() {
         default:
           if (operation.value & (0b11 << (2 * !cell.x))) {
             status = Status::INVALID;
-            return error = QCAError("Branch on undetermined state");
+            return error = Error("Branch on undetermined state");
           }
           break;
       }
@@ -1164,7 +1164,7 @@ bool Board::move() {
         Location dest = location + Location(cell.moving);
         if (!trespassable.valid(dest) || !trespassable.at(dest)) {
           status = Status::INVALID;
-          return error = QCAError("Collided with boundary");
+          return error = Error("Collided with boundary");
         }
         Cell &next_cell = cells.at(dest);
         if (next_cell) {
@@ -1174,7 +1174,7 @@ bool Board::move() {
           } else {
             // collided with cell
             status = Status::INVALID;
-            return error = QCAError("Cells collided");
+            return error = Error("Cells collided");
           }
         } else {
           // space is empty, cell can move
@@ -1198,7 +1198,7 @@ bool Board::move() {
       Location dest = bot.location + Location(bot.moving);
       if (!trespassable.valid(dest) || !trespassable.at(dest)) {
         status = Status::INVALID;
-        return error = QCAError("Collided with boundary");
+        return error = Error("Collided with boundary");
       }
       bot.location = dest;
     }
@@ -1212,7 +1212,7 @@ bool Board::move() {
     }
     if (color != output_colors[step]) {
       status = Status::INVALID;
-      return error = QCAError("Wrong output");
+      return error = Error("Wrong output");
     }
     ++step;
     if (step >= output_colors.size()) status = Status::DONE;
@@ -1275,4 +1275,4 @@ std::pair<std::vector<Bot>, bool> Board::get_bots() {
   return {bots, false};
 }
 
-} // namespace qca
+} // namespace puzzle

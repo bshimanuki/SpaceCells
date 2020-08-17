@@ -13,7 +13,7 @@
 // Resolved cells:
 // x + \ / - |, with x and + for unresolved (multi-space cells will each be set)
 
-namespace qca {
+namespace puzzle {
 
 
 class Formatter {
@@ -29,18 +29,18 @@ public:
 };
 
 
-class QCAError {
+class Error {
   std::string error;
 public:
-  QCAError() {}
-  QCAError(const std::string &error) : error(error) {}
+  Error() {}
+  Error(const std::string &error) : error(error) {}
   operator std::string() const { return error; }
   operator bool() const { return !error.empty(); }
-  bool operator==(const QCAError &oth) const { return error == oth.error; }
-  bool operator!=(const QCAError &oth) const { return !(error == oth.error); }
+  bool operator==(const Error &oth) const { return error == oth.error; }
+  bool operator!=(const Error &oth) const { return !(error == oth.error); }
 
-  static const QCAError OutOfRange;
-  static const QCAError InvalidInput;
+  static const Error OutOfRange;
+  static const Error InvalidInput;
 };
 
 
@@ -378,7 +378,7 @@ class Board {
   std::vector<Output> outputs;
   std::vector<Color> output_colors;
   // error
-  QCAError error;
+  Error error;
   // runtime
   Grid<Cell> cells;
   Status status;
@@ -423,4 +423,4 @@ public:
 };
 
 
-} // namespace qca
+} // namespace puzzle
