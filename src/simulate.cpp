@@ -166,13 +166,13 @@ Direction::operator Location() const  {
 Direction::operator std::string() const {
   switch (*this) {
   case Direction_::LEFT:
-    return "]";
+    return "<";
   case Direction_::DOWN:
-    return "M";
+    return "v";
   case Direction_::RIGHT:
-    return "[";
+    return ">";
   case Direction_::UP:
-    return "W";
+    return "^";
   case Direction_::NONE:
   default:
     return " ";
@@ -707,12 +707,11 @@ bool Board::reset_and_validate(const std::string &grid_fixed) {
   // reset state
   cells = initial_cells;
   step = 0;
-  for (Input &input : inputs) {
+  for (const Input &input : inputs) {
     Cell &input_cell = cells.at(input.location);
     if (input_cell != 'x' && input_cell != '+') return error = Error::InvalidInput;
     input_cell.latched = true;
   }
-  status = output_colors.empty() ? Status::DONE : Status::RUNNING;
   if (resolve()) return true;
   return false;
 }
@@ -942,7 +941,7 @@ bool Board::resolve() {
 
   };
 
-  if (status != Status::RUNNING) return false;
+  if (check_status() != Status::RUNNING) return false;
   for (size_t y=0; y<m; ++y) {
     for (size_t x=0; x<n; ++x) {
       Cell &cell = cells[y][x];
@@ -950,11 +949,9 @@ bool Board::resolve() {
       if (cell.is_diode() || !cell.latched) cell.value = Cell::Value_::UNKNOWN;
     }
   }
-  for (Input &input : inputs) {
+  for (const Input &input : inputs) {
     Cell &input_cell = cells.at(input.location);
-    if (!input.bits.empty()) {
-      input_cell.value = input.bits[0] ? Cell::Value_::ONE : Cell::Value_::ZERO;
-    }
+    input_cell.value = input.bits[step] ? Cell::Value_::ONE : Cell::Value_::ZERO;
   }
   // NB: Pointers into vectors are not safe on reallocate, but Grid is fixed size.
   // Pointers into lists are safe.
@@ -1079,7 +1076,7 @@ bool Board::resolve() {
 }
 
 bool Board::move() {
-  if (status != Status::RUNNING) return false;
+  if (check_status() != Status::RUNNING) return false;
   bool next = false;
   size_t syncing = 0;
   // toggle states
@@ -1118,7 +1115,7 @@ bool Board::move() {
           break;
         default:
           if (operation.value & (0b11 << (2 * !cell.x))) {
-            status = Status::INVALID;
+            invalid = true;
             return error = Error("Branch on undetermined state");
           }
           break;
@@ -1174,6 +1171,25 @@ bool Board::move() {
       }
     }
   }
+  // check cell collisions
+  for (const auto &bot : bots) {
+    const Cell &cell = cells.at(bot.location);
+    if (cell.moving) {
+      Location dest = bot.location + Location(cell.moving);
+      if (!trespassable.valid(dest) || !trespassable.at(dest)) {
+        invalid = true;
+        return error = Error("Collided with boundary");
+      }
+      Cell &next_cell = cells.at(dest);
+      if (next_cell) {
+        if (next_cell.moving != cell.moving) {
+          // collided with cell
+          invalid = true;
+          return error = Error("Cells collided");
+        }
+      }
+    }
+  }
   // move cells
   for (size_t k=0; k<nbots; ++k) {
     std::stack<Location> st;
@@ -1188,20 +1204,12 @@ bool Board::move() {
       }
       if (cell.moving) {
         Location dest = location + Location(cell.moving);
-        if (!trespassable.valid(dest) || !trespassable.at(dest)) {
-          status = Status::INVALID;
-          return error = Error("Collided with boundary");
-        }
         Cell &next_cell = cells.at(dest);
         if (next_cell) {
-          if (next_cell.moving == cell.moving) {
-            // need to move the next cell first
-            st.push(dest);
-          } else {
-            // collided with cell
-            status = Status::INVALID;
-            return error = Error("Cells collided");
-          }
+          // need to move the next cell first
+          // (already checked that cell moves out of the way)
+          st.push(dest);
+          continue;
         } else {
           // space is empty, cell can move
           next_cell = cell;
@@ -1209,13 +1217,14 @@ bool Board::move() {
           next_cell.moving = false;
         }
       }
+      st.pop();
     }
   }
   // move bots
   for (size_t k=0; k<nbots; ++k) {
     auto &bot = bots[k];
     const auto &operation = operations[k].at(bot.location);
-    if (operation.type == Operation::Type::SYNC || syncing <= 1) {
+    if (operation.type == Operation::Type::SYNC && syncing <= 1) {
       continue;
     } else if (bot.rotating) {
       continue;
@@ -1223,7 +1232,7 @@ bool Board::move() {
       // bot can move
       Location dest = bot.location + Location(bot.moving);
       if (!trespassable.valid(dest) || !trespassable.at(dest)) {
-        status = Status::INVALID;
+        invalid = true;
         return error = Error("Collided with boundary");
       }
       bot.location = dest;
@@ -1237,25 +1246,26 @@ bool Board::move() {
       color = color + cells.at(_output.location);
     }
     if (color != output_colors[step]) {
-      status = Status::INVALID;
+      invalid = true;
       return error = Error("Wrong output");
     }
     ++step;
-    if (step >= output_colors.size()) status = Status::DONE;
   }
   return false;
 }
 
-std::pair<bool, bool> Board::run(size_t max_cycles) {
+std::pair<bool, bool> Board::run(size_t max_cycles, bool print_board) {
   // make sure it starts resolved
   if (resolve()) {
-    return {false, status != Status::INVALID};
+    return {false, invalid};
   }
+  if (print_board) std::cout << "Step 0:" << std::endl << get_resolved_board();
   for (size_t cycle=0; cycle<max_cycles; ++cycle) {
     if (move()) {
-      return {false, status != Status::INVALID};
+      return {false, invalid};
     }
-    switch (status) {
+    if (print_board) std::cout << "Step " << (cycle + 1) << ":" << std::endl << get_resolved_board();
+    switch (check_status()) {
     case Status::INVALID:
       return {false, false};
     case Status::RUNNING:
@@ -1264,18 +1274,21 @@ std::pair<bool, bool> Board::run(size_t max_cycles) {
       return {true, false};
     }
   }
+  error = Error(Formatter() << "Did not complete within " << max_cycles << " cycles");
   return {false, false};
 }
 
-std::string Board::get_error() {
+Status Board::check_status() const {
+  if (invalid) return Status::INVALID;
+  if (step >= output_colors.size()) return Status::DONE;
+  return Status::RUNNING;
+}
+
+std::string Board::get_error() const {
   return error;
 }
 
-std::pair<Status, bool> Board::get_status() {
-  return {status, false};
-}
-
-std::pair<std::string, bool> Board::get_unresolved_board() {
+std::string Board::get_unresolved_board() const {
   std::stringstream ss;
   for (const auto &line : cells) {
     for (const auto &square : line) {
@@ -1283,10 +1296,10 @@ std::pair<std::string, bool> Board::get_unresolved_board() {
     }
     ss << std::endl;
   }
-  return {ss.str(), false};
+  return ss.str();
 }
 
-std::pair<std::string, bool> Board::get_resolved_board() {
+std::string Board::get_resolved_board() const {
   std::stringstream ss;
   for (const auto &line : cells) {
     for (const auto &square : line) {
@@ -1294,11 +1307,11 @@ std::pair<std::string, bool> Board::get_resolved_board() {
     }
     ss << std::endl;
   }
-  return {ss.str(), false};
+  return ss.str();
 }
 
-std::pair<std::vector<Bot>, bool> Board::get_bots() {
-  return {bots, false};
+std::vector<Bot> Board::get_bots() const {
+  return bots;
 }
 
 

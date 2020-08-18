@@ -62,10 +62,11 @@ int main(int argc, char *argv[]) {
     std::string operations = get_grid(submission_file, m);
     if (board.set_instructions(k, directions, operations)) return show(board.get_error());
   }
-  bool err;
-  std::string result;
   if (board.reset_and_validate(level)) return show(board.get_error());
-  std::tie(result, err) = board.get_resolved_board();
+  // constexpr int MAX_CYCLES = 999;
+  constexpr int MAX_CYCLES = 8;
+  auto [passes, err] = board.run(MAX_CYCLES, true);
   if (err) return show(board.get_error());
-  std::cout << result;
+  if (passes) std::cout << "Passed!" << std::endl;
+  else std::cout << "Failed:" << board.get_error() << std::endl;
 }

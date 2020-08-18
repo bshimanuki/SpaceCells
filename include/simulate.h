@@ -99,6 +99,9 @@ public:
   explicit operator bool() const { return v != Direction_::NONE; }
   explicit operator struct Location() const;
   operator std::string() const;
+  friend std::ostream& operator<<(std::ostream &os, const Direction &direction) {
+    return os << static_cast<std::string>(direction);
+  }
 };
 
 
@@ -151,6 +154,7 @@ public:
     operator Value_() const { return v; }
     explicit operator bool() const { return v != Value_::UNKNOWN; }
     operator std::string() const;
+    friend std::ostream& operator<<(std::ostream &os, const Value &value) { return os << static_cast<std::string>(value); }
     Value operator-() const;
     Value& operator+=(const Value &rhs) { return *this = *this + rhs; }
     friend Value operator+(const Value &lhs, const Value &rhs);
@@ -386,7 +390,7 @@ class Board {
   Error error;
   // runtime
   Grid<Cell> cells;
-  Status status;
+  bool invalid = false;
   size_t step = 0; // step index for I/O
 public:
   // Setup
@@ -414,17 +418,17 @@ public:
   // step forward one cycle
   bool move();
   // run through verification and return true if finishes
-  std::pair<bool, bool> run(size_t max_cycles);
+  std::pair<bool, bool> run(size_t max_cycles, bool print_board=false);
 
   // Output
-  // read value of last error
-  std::string get_error();
   // check status
-  std::pair<Status, bool> get_status();
+  Status check_status() const;
+  // read value of last error
+  std::string get_error() const;
   // return the most recent board
-  std::pair<std::string, bool> get_unresolved_board();
-  std::pair<std::string, bool> get_resolved_board();
-  std::pair<std::vector<Bot>, bool> get_bots();
+  std::string get_unresolved_board() const;
+  std::string get_resolved_board() const;
+  std::vector<Bot> get_bots() const;
 };
 
 
