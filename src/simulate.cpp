@@ -64,6 +64,7 @@ Color::operator std::string() const {
 }
 
 Color operator+(const Color &lhs, const Color &rhs) {
+  if (lhs == Color_::INVALID || rhs == Color_::INVALID) return Color_::INVALID;
   if (lhs == rhs) return lhs;
   // check black before white
   if (lhs == Color_::BLACK) return rhs;
@@ -129,7 +130,8 @@ Color operator+(const Color &lhs, const Color &rhs) {
   default:
     break;
   }
-  return Color_::INVALID;
+  // all other combinations do not have names
+  return Color_::UNNAMED;
 }
 
 
@@ -719,7 +721,7 @@ bool Board::reset_and_validate(const std::string &grid_fixed) {
 bool Board::resolve() {
   class Node;
   using Queue = std::queue<Node*>;
-  enum R {
+  enum R_ {
     // r^2 distances where cell side length is 2
     R0, // same offset cell
     R4, // adjacent cells
@@ -730,6 +732,27 @@ bool Board::resolve() {
     R16, // distance 2
     R20, // distance (2, 1)
     MAXR, // number of elements of R
+  };
+  class R {
+    R_ r;
+  public:
+    constexpr R() : r(R_::R0) {}
+    constexpr R(R_ r) : r(r) {}
+    constexpr R(size_t r) : r(static_cast<R_>(r)) {}
+    operator R_() const { return r; }
+    int v() const {
+      switch (*this) {
+      case R0: return 0;
+      case R4: return 4;
+      case R5: return 5;
+      case R8: return 8;
+      case R9: return 9;
+      case R13: return 13;
+      case R16: return 16;
+      case R20: return 20;
+      case MAXR: default: return -1;
+      }
+    }
   };
   constexpr int RANGE = 2; // max range of 2 cells in each dimension
   struct Edge {
@@ -788,12 +811,37 @@ bool Board::resolve() {
     void finished_node(Queue *que) {
       if (!processed) return;
       if (resolved()) return;
+      // compute value from sources
+      Cell::Value v = Cell::Value_::UNKNOWN;
+      int weight = 0;
+      for (const auto &edges : {sources, merges}) {
+        for (Edge *edge : edges[r()]) {
+          Node *source = edge->neighbor(this);
+          if (source->resolved()) {
+            switch (source->value()) {
+            case Cell::Value_::ZERO:
+              --weight; break;
+            case Cell::Value_::ONE:
+              ++weight; break;
+            case Cell::Value_::UNKNOWN: // TODO: error for UNKNOWN? should not happen
+            case Cell::Value_::UNDEFINED:
+              v = Cell::Value_::UNDEFINED;
+              break;
+            }
+          }
+        }
+      }
+      if (weight > 0) v += Cell::Value_::ONE;
+      if (weight < 0) v += Cell::Value_::ZERO;
+      value() += v;
+      // check if group is done with range
       ++num_finished_nodes();
       if (num_finished_nodes() == size() && antinode->num_finished_nodes() == antinode->size()) {
         num_finished_nodes() = 0;
         antinode->num_finished_nodes() = 0;
-        r() = static_cast<R>(r() + 1);
-        antinode->r() = static_cast<R>(antinode->r() + 1);
+        r() = r() + 1;
+        if (root() != antinode->root()) antinode->r() = antinode->r() + 1;
+        else value() = Cell::Value_::UNDEFINED;
         for (Node *node : group()) {
           node->num_finished_merges = 0;
           node->num_finished_sources = 0;
@@ -804,7 +852,6 @@ bool Board::resolve() {
           node->num_finished_sources = 0;
           node->processed = false;
         }
-        if (root() == antinode->root()) value() = Cell::Value_::UNDEFINED;
         value() += -antinode->value();
         if (value()) {
           antinode->value() = -value();
@@ -836,12 +883,15 @@ bool Board::resolve() {
     // merges nodes and antinodes
     static void merge(Queue *que, Edge *edge) {
       if (!edge->used) {
-        if (!edge->source->resolved() || !edge->sink->resolved()) {
-          merge_internal(edge->source, edge->sink);
-          merge_internal(edge->source->antinode, edge->sink->antinode);
-          edge->source->finished_merged_edge(que);
-          edge->sink->finished_merged_edge(que);
+        if (!edge->source->resolved() && !edge->sink->resolved()) {
+          if (edge->source->root() != edge->sink->antinode->root() &&
+              edge->source->antinode->root() != edge->sink->root()) {
+            merge_internal(edge->source, edge->sink);
+            merge_internal(edge->source->antinode, edge->sink->antinode);
+          }
         }
+        if (!edge->source->resolved()) edge->source->finished_merged_edge(que);
+        if (!edge->sink->resolved()) edge->sink->finished_merged_edge(que);
         edge->used = true;
       }
     }
@@ -851,23 +901,6 @@ bool Board::resolve() {
         Node *sink = edge->sink;
         if (!sink->resolved()) {
           if (++sink->num_finished_sources == sink->sources[edge->r].size()) {
-            Cell::Value v = Cell::Value_::UNKNOWN;
-            int weight = 0;
-            for (Edge *source_edge : sink->sources[edge->r]) {
-              switch (source_edge->source->value()) {
-              case Cell::Value_::ZERO:
-                --weight; break;
-              case Cell::Value_::ONE:
-                ++weight; break;
-              case Cell::Value_::UNKNOWN: // TODO: error for UNKNOWN? should not happen
-              case Cell::Value_::UNDEFINED:
-                v = Cell::Value_::UNDEFINED;
-                break;
-              }
-            }
-            if (weight > 0) v += Cell::Value_::ONE;
-            if (weight < 0) v += Cell::Value_::ZERO;
-            sink->value() += v;
             if (sink->num_finished_merges == sink->merges.size()) {
               sink->finished_node(que);
             }
@@ -879,6 +912,7 @@ bool Board::resolve() {
 
     // populates edge and insert it
     static void add_merge_edge(Node *source, Node *sink, R r, Edge *edge) {
+      // if (!source->anti) std::cerr << "merge edge " << source->location << " " << sink->location << " " << r.v() << std::endl;
       edge->source = source;
       edge->sink = sink;
       edge->r = r;
@@ -888,6 +922,7 @@ bool Board::resolve() {
 
     // populates edge and insert it
     static void add_directed_edge(Node *source, Node *sink, R r, Edge *edge) {
+      // if (!source->anti) std::cerr << "directed edge " << source->location << " " << sink->location << " " << r.v() << std::endl;
       edge->source = source;
       edge->sink = sink;
       edge->r = r;
@@ -904,8 +939,9 @@ bool Board::resolve() {
     }
 
     void process(Queue *que) {
+      // if (!this->anti) std::cerr << this->value() << this->location << " " << this->r().v() << " " <<  this->resolved() << " " << this->root()->location << " " << this->merges[r()].size() << std::endl;
       if (resolved()) {
-        for (size_t _r=0; _r<R::MAXR; ++_r) {
+        for (size_t _r=0; _r<R_::MAXR; ++_r) {
           for (auto &edge : sinks[_r]) {
             Node *neighbor = edge->neighbor(this);
             if (neighbor->r() == _r) {
@@ -1244,6 +1280,10 @@ bool Board::move() {
     Color color = Color_::BLACK;
     for (const auto& _output : outputs) {
       color = color + cells.at(_output.location);
+    }
+    if (color == Color_::INVALID) {
+      invalid = true;
+      return error = Error("Output is in undetermined state");
     }
     if (color != output_colors[step]) {
       invalid = true;

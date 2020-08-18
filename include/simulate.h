@@ -69,6 +69,7 @@ enum class Color_ {
   // non-resistor code colors
   CYAN,
   REDORANGE,
+  UNNAMED, // mixture that is not canonical
 };
 class Color {
   Color_ v;
