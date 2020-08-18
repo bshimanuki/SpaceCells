@@ -913,11 +913,17 @@ bool Board::resolve() {
               propagate(que, edge);
             }
           }
+          for (auto &edge : merges[_r]) {
+            Node *neighbor = edge->neighbor(this);
+            if (neighbor->r() == _r) {
+              merge(que, edge);
+            }
+          }
         }
       } else {
         for (Edge *edge : merges[r()]) {
           Node *neighbor = edge->neighbor(this);
-          if (neighbor->r() == r()) {
+          if (neighbor->resolved() || neighbor->r() == r()) {
             Node::merge(que, edge);
           }
         }
@@ -1031,7 +1037,7 @@ bool Board::resolve() {
           case 20:
             r = R20; anti ^= true; break;
           default:
-            break;
+            continue; // distance beyond simulated range of effect
           }
           // diode only goes the other way
           if (cell.is_diode() && cell.partner_delta == delta && cell.latched) continue;

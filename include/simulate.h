@@ -116,6 +116,7 @@ struct Location {
     return (!valid && !oth.valid) || (valid == oth.valid && y == oth.y && x == oth.x);
   }
   bool operator!=(const Location &oth) const { return !(*this == oth); }
+  friend std::ostream& operator<<(std::ostream &os, const Location &location) { return os << "[" << location.y << ", " << location.x << "]"; }
 };
 
 
