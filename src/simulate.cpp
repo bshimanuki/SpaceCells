@@ -777,6 +777,7 @@ bool Board::resolve() {
     Node *sink;
     R r;
     bool used = false;
+    bool dead = false; // rendered dead from prioritization
     Node* neighbor(Node* node) const {
       // TODO: assumes node is source or sink
       return node == sink ? source : sink;
@@ -792,7 +793,8 @@ bool Board::resolve() {
 
     // Node properties
     // Link to parent in the same group. parent is equal to this for the root.
-    Node *parent;
+    Node *value_parent;
+    Node *connectivity_parent;
     // link to node for opposite value
     Node *antinode;
     Cell *cell;
@@ -813,6 +815,7 @@ bool Board::resolve() {
     R _r; // current r^2 distance being merged
     size_t _num_finished_nodes = 0;
     bool _resolved = false;
+    size_t _connectivity_size = 1;
   public:
     Cell::Value& value() { return root()->_value; }
     std::list<Node*>& group() { return root()->_group; }
@@ -821,10 +824,15 @@ bool Board::resolve() {
     bool& resolved() { return root()->_resolved; }
 
     Node* root() {
-      if (this->parent != this) this->parent = this->parent->root();
-      return this->parent;
+      if (value_parent != this) value_parent = value_parent->root();
+      return value_parent;
+    }
+    Node* connectivity_root() {
+      if (connectivity_parent != this) connectivity_parent = connectivity_parent->root();
+      return connectivity_parent;
     }
     size_t size() { return group().size(); }
+    size_t& connectivity_size() { return connectivity_root()->_connectivity_size; }
   private:
     bool diode_source_connected(Node *node) {
       if (!node->cell->is_diode()) return false;
@@ -837,13 +845,15 @@ bool Board::resolve() {
     void finished_node(Queue *que) {
       if (!processed) return;
       if (resolved()) return;
+      if (!anti) std::cerr << "finish " << location << " " << r() << " " << group().size() << " " << num_finished_nodes() << std::endl;
       // compute value from sources
       Cell::Value v = Cell::Value_::UNKNOWN;
       int weight = 0;
       for (auto &edges : {sources, merges}) {
         for (Edge *edge : edges[r()]) {
           Node *source = edge->neighbor(this);
-          if (source->resolved() && !diode_source_connected(source)) {
+          if (source->resolved() && !edge->dead) {
+            if (!anti) std::cerr << "finish-sourcing " << location << " <- " << source->location << std::endl;
             switch (source->value()) {
             case Cell::Value_::ZERO:
               --weight; break;
@@ -889,8 +899,12 @@ bool Board::resolve() {
               for (Edge *edge : gnode->merges[r()]) {
                 if (edge->source->root() == edge->sink->antinode->root() ||
                     edge->source->antinode->root() == edge->sink->root()) {
-                  // fake merge to kill edge
-                  merge(que, edge, true);
+                  edge->dead = true;
+                }
+              }
+              for (Edge *edge : gnode->sources[r()]) {
+                if (edge->source->diode_source_connected(this)) {
+                  edge->dead = true;
                 }
               }
             }
@@ -907,6 +921,7 @@ bool Board::resolve() {
     }
 
     static void merge_internal(Node *a, Node *b) {
+      merge_connectivity(a, b);
       a = a->root();
       b = b->root();
       if (a == b) return;
@@ -914,15 +929,26 @@ bool Board::resolve() {
       a->group().splice(a->group().end(), b->group());
       a->value() += b->value();
       a->num_finished_nodes() += b->num_finished_nodes();
-      b->parent = a;
+      b->value_parent = a;
     }
   public:
+    static void merge_connectivity(Node *a, Node *b) {
+      a = a->connectivity_root();
+      b = b->connectivity_root();
+      if (a == b) return;
+      if (a->connectivity_size() < b->connectivity_size()) std::swap(a, b);
+      a->connectivity_size() += b->connectivity_size();
+      b->connectivity_parent = a;
+    }
     // merges nodes and antinodes
-    static void merge(Queue *que, Edge *edge, bool fake=false) {
+    static void merge(Queue *que, Edge *edge) {
       if (!edge->used) {
-        if (!edge->source->resolved() && !edge->sink->resolved() && !fake) {
-          merge_internal(edge->source, edge->sink);
-          merge_internal(edge->source->antinode, edge->sink->antinode);
+        if (!edge->dead) {
+          if (!edge->source->resolved() && !edge->sink->resolved()) {
+            if (!edge->source->anti) std::cerr << "merge " << edge->source->location << " " << edge->sink->location << std::endl;
+            merge_internal(edge->source, edge->sink);
+            merge_internal(edge->source->antinode, edge->sink->antinode);
+          }
         }
         if (!edge->source->resolved()) edge->source->finished_merged_edge(que);
         if (!edge->sink->resolved()) edge->sink->finished_merged_edge(que);
@@ -945,21 +971,19 @@ bool Board::resolve() {
     }
 
     // populates edge and insert it
-    static void add_merge_edge(Node *source, Node *sink, R r, Edge *edge) {
-      // if (!source->anti) std::cerr << "merge edge " << source->location << " " << sink->location << " " << r.v() << std::endl;
-      edge->source = source;
-      edge->sink = sink;
-      edge->r = r;
+    static void add_merge_edge(std::list<Edge> *edges, Node *source, Node *sink, R r) {
+      if (!source->anti) std::cerr << "merge edge " << source->location << " " << sink->location << " " << r.v() << std::endl;
+      edges->push_back({source, sink, r});
+      Edge *edge = &edges->back();
       source->merges[r].push_back(edge);
       sink->merges[r].push_back(edge);
     }
 
     // populates edge and insert it
-    static void add_directed_edge(Node *source, Node *sink, R r, Edge *edge) {
-      // if (!source->anti) std::cerr << "directed edge " << source->location << " " << sink->location << " " << r.v() << std::endl;
-      edge->source = source;
-      edge->sink = sink;
-      edge->r = r;
+    static void add_directed_edge(std::list<Edge> *edges, Node *source, Node *sink, R r) {
+      if (!source->anti) std::cerr << "directed edge " << source->location << " " << sink->location << " " << r.v() << std::endl;
+      edges->push_back({source, sink, r});
+      Edge *edge = &edges->back();
       source->sinks[r].push_back(edge);
       sink->sources[r].push_back(edge);
     }
@@ -975,40 +999,34 @@ bool Board::resolve() {
     void process(Queue *que) {
       if (resolved()) {
         for (size_t _r=0; _r<R_::MAXR; ++_r) {
-          for (auto &edge : sinks[_r]) {
-            Node *neighbor = edge->neighbor(this);
-            if (neighbor->r() == _r) {
-              propagate(que, edge);
-            }
-          }
           for (auto &edge : merges[_r]) {
             Node *neighbor = edge->neighbor(this);
-            if (neighbor->r() == _r && neighbor->processed) {
+            if (!neighbor->resolved() && neighbor->r() == _r && neighbor->processed) {
               merge(que, edge);
+            }
+          }
+          for (auto &edge : sinks[_r]) {
+            Node *neighbor = edge->neighbor(this);
+            if (!neighbor->resolved() && neighbor->r() == _r && neighbor->processed) {
+              propagate(que, edge);
             }
           }
         }
       } else {
-        for (Edge *edge : sources[r()]) {
-          Node *neighbor = edge->neighbor(this);
-          if (neighbor->resolved() || diode_source_connected(neighbor)) {
-            Node::propagate(que, edge);
-          }
-        }
         for (Edge *edge : merges[r()]) {
           Node *neighbor = edge->neighbor(this);
-          if (neighbor->resolved() || (neighbor->r() == r() && neighbor->processed)) {
+          if (neighbor->resolved() || (neighbor->r() == r() && neighbor->processed) || edge->dead) {
             Node::merge(que, edge);
           }
         }
-        // for (Edge *edge : sources[r()]) {
-          // Node *neighbor = edge->neighbor(this);
-          // if (neighbor->resolved() || diode_source_connected(neighbor)) {
-            // Node::propagate(que, edge);
-          // }
-        // }
+        for (Edge *edge : sources[r()]) {
+          Node *neighbor = edge->neighbor(this);
+          if (neighbor->resolved() || edge->dead) {
+            Node::propagate(que, edge);
+          }
+        }
       }
-      // if (!this->anti) std::cerr << this->value() << this->location << " " << this->r().v() << " " <<  this->resolved() << " " << this->root()->location << " " << this->merges[r()].size() << std::endl;
+      if (!this->anti) std::cerr << this->value() << this->location << " " << this->r().v() << " " <<  this->resolved() << " " << this->root()->location << " " << this->merges[r()].size() << std::endl;
       processed = true;
       if (num_finished_merges == merges[r()].size() && num_finished_sources == sources[r()].size()) {
         finished_node(que);
@@ -1035,7 +1053,7 @@ bool Board::resolve() {
   Grid<Node> grid_antinodes(m, n);
   std::list<Node*> nodes;
   std::list<Edge> edges;
-  // Construct nodes and edges
+  // Construct nodes
   for (size_t y=0; y<m; ++y) {
     for (size_t x=0; x<n; ++x) {
       const Location location(y, x);
@@ -1055,6 +1073,11 @@ bool Board::resolve() {
       antinode->antinode = node;
       node->cell = &cell;
       antinode->cell = &cell;
+      node->value_parent = node;
+      antinode->value_parent = antinode;
+      node->connectivity_parent = node;
+      antinode->connectivity_parent = antinode;
+      Node::merge_connectivity(node, antinode);
       if (cell.partner_delta) {
         Location partner_location = location + cell.partner_delta;
         if (cells.valid(partner_location)) {
@@ -1062,8 +1085,16 @@ bool Board::resolve() {
           antinode->partner = &grid_antinodes.at(partner_location);
         }
       }
+    }
+  }
 
-      // find and add edges
+  // find and add edges
+  for (Node *node : nodes) {
+    if (!node->anti) {
+      const Location &location = node->location;
+      const Cell *cell = node->cell;
+      Node *antinode = node->antinode;
+
       for (int dy=-RANGE; dy<=RANGE; ++dy) {
         for (int dx=-RANGE; dx<=RANGE; ++dx) {
           if (dy == 0 && dx == 0) continue;
@@ -1076,32 +1107,33 @@ bool Board::resolve() {
           Node *neighbor_antinode = &grid_antinodes.at(neighbor_location);
           // calculate R distance (double coordinates and account for offset)
           Location _delta(2 * dy, 2 * dx);
-          if (cell.offset) _delta = _delta + Location(cell.direction);
+          if (cell->offset) _delta = _delta + Location(cell->direction);
           if (neighbor.offset) _delta = _delta - Location(neighbor.direction);
           const int dist = sqr(_delta.y) + sqr(_delta.x);
           // opposite orientation in same alignment have no effect
-          if (cell.x != neighbor.x && cell.offset == neighbor.offset) continue;
+          if (cell->x != neighbor.x && cell->offset == neighbor.offset) continue;
           R r = R::FromInt(dist);
           // distance beyond simulated range of effect
           if (r == MAXR) continue;
           // compute whether cells are correlated or anticorrelated
           bool anti;
-          if (cell.x == neighbor.x) anti = cell.x ^ (_delta.y == 0 || _delta.x == 0);
+          if (cell->x == neighbor.x) anti = cell->x ^ (_delta.y == 0 || _delta.x == 0);
           else anti = (_delta.y > _delta.x) ^ (-_delta.y > _delta.x) ^ (_delta.y * _delta.x < 0);
           // diode only goes the other way
-          if (cell.is_diode() && cell.partner_delta == delta && cell.latched) continue;
+          if (cell->is_diode() && cell->partner_delta == delta && cell->latched) continue;
           if (neighbor.latched) {
             // only latched diodes cells can be affected
-            if (cell.is_diode() && cell.partner_delta == delta) {
-              edges.emplace_back();
-              Node::add_directed_edge(node, anti ? neighbor_antinode : neighbor_node, r, &edges.back());
+            if (cell->is_diode() && cell->partner_delta == delta) {
+              Node::add_directed_edge(&edges, node, anti ? neighbor_antinode : neighbor_node, r);
+              Node::add_directed_edge(&edges, antinode, anti ? neighbor_node : neighbor_antinode, r);
             }
           } else {
-            edges.emplace_back();
-            if (cell.latched) {
-              Node::add_directed_edge(node, anti ? neighbor_antinode : neighbor_node, r, &edges.back());
+            if (cell->latched) {
+              Node::add_directed_edge(&edges, node, anti ? neighbor_antinode : neighbor_node, r);
+              Node::add_directed_edge(&edges, antinode, anti ? neighbor_node : neighbor_antinode, r);
             } else {
-              Node::add_merge_edge(node, anti ? neighbor_antinode : neighbor_node, r, &edges.back());
+              Node::add_merge_edge(&edges, node, anti ? neighbor_antinode : neighbor_node, r);
+              Node::add_merge_edge(&edges, antinode, anti ? neighbor_node : neighbor_antinode, r);
             }
           }
         }
@@ -1110,7 +1142,6 @@ bool Board::resolve() {
   }
   Queue que;
   for (Node* node : nodes) {
-    node->parent = node;
     node->value() = node->anti ? -node->cell->value : node->cell->value;
     node->group().push_back(node);
     if (node->cell->latched && node->value()) node->resolved() = true;
