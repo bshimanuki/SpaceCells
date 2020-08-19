@@ -11,6 +11,8 @@ using namespace puzzle;
 std::string get_grid(std::istream &is, int m) {
   std::stringstream ss;
   std::string line;
+  // ignore leading blank lines
+  while (is.peek() == '\n') is.get();
   for (int i=0; i<m; ++i) {
     getline(is, line);
     // treat '_' as an alternative to ' '
@@ -32,9 +34,11 @@ int main(int argc, char *argv[]) {
   }
   std::ifstream level_file(argv[1]);
   std::ifstream submission_file(argv[2]);
+  std::string line;
   // Level
   int m, n, b, ni, no;
-  level_file >> m >> n >> b >> ni >> no >> std::ws;
+  level_file >> m >> n >> b >> ni >> no;
+  std::getline(level_file, line);
   std::string level = get_grid(level_file, m);
   Board board(m, n, b);
   int y, x;
@@ -47,7 +51,6 @@ int main(int argc, char *argv[]) {
     if (board.add_output(y, x)) return show(board.get_error());
   }
   // I/O
-  std::string line;
   for (int k=0; k<ni; ++k) {
     level_file >> line;
     if (board.set_input(k, line)) return show(board.get_error());
