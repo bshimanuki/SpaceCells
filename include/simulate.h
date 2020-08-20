@@ -115,6 +115,7 @@ struct Location {
   explicit operator bool() const { return valid; }
   Location operator-() const { return *this ? Location(-y, -x) : Location(); }
   Location operator+(const Location &oth) const { return *this && oth ? Location(y + oth.y, x + oth.x) : Location(); }
+  int operator*(const Location &oth) const { return *this && oth ? y * oth.y + x * oth.x : 0; }
   Location operator-(const Location &oth) const { return *this + -oth; }
   bool operator==(const Location &oth) const {
     return (!valid && !oth.valid) || (valid == oth.valid && y == oth.y && x == oth.x);
