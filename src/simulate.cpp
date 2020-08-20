@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <array>
+#include <deque>
 #include <functional>
 #include <iostream>
 #include <list>
@@ -938,6 +939,7 @@ bool Board::resolve() {
     }
     // merges nodes and antinodes
     static void merge(Queue *que, Edge *edge) {
+      // if (!edge->source->anti && edge->source->root() != edge->sink->root()) std::cerr << "trymerge " << edge->source->location << " " << edge->sink->location << " " << edge->used << " " << edge->dead << std::endl;
       if (!edge->used) {
         if (!edge->dead) {
           if (!edge->source->resolved() && !edge->sink->resolved()) {
@@ -956,6 +958,7 @@ bool Board::resolve() {
       if (!edge->used) {
         Node *sink = edge->sink;
         if (!sink->resolved()) {
+          // if (!edge->source->anti) std::cerr << "propagate " << edge->source->location << " " << edge->sink->location << std::endl;
           if (++sink->num_finished_sources == sink->sources[edge->r].size()) {
             if (sink->num_finished_merges == sink->merges[edge->r].size()) {
               sink->finished_node(que);
@@ -967,7 +970,7 @@ bool Board::resolve() {
     }
 
     // populates edge and insert it
-    static void add_merge_edge(std::list<Edge> *edges, Node *source, Node *sink, R r) {
+    static void add_merge_edge(std::deque<Edge> *edges, Node *source, Node *sink, R r) {
       // if (!source->anti) std::cerr << "merge edge " << source->location << " " << sink->location << " " << r.v() << std::endl;
       edges->push_back({source, sink, r});
       Edge *edge = &edges->back();
@@ -976,7 +979,7 @@ bool Board::resolve() {
     }
 
     // populates edge and insert it
-    static void add_directed_edge(std::list<Edge> *edges, Node *source, Node *sink, R r) {
+    static void add_directed_edge(std::deque<Edge> *edges, Node *source, Node *sink, R r) {
       // if (!source->anti) std::cerr << "directed edge " << source->location << " " << sink->location << " " << r.v() << std::endl;
       edges->push_back({source, sink, r});
       Edge *edge = &edges->back();
@@ -995,6 +998,7 @@ bool Board::resolve() {
     void process(Queue *que) {
       if (resolved()) {
         for (size_t _r=0; _r<R_::MAXR; ++_r) {
+          // if (!this->anti) std::cerr << "resolved " << this->location << " " << R(_r).v() << " " << merges[_r].size() << " " << sinks[_r].size() << std::endl;
           for (auto &edge : merges[_r]) {
             Node *neighbor = edge->neighbor(this);
             if (!neighbor->resolved() && neighbor->r() == _r && neighbor->processed) {
@@ -1022,7 +1026,7 @@ bool Board::resolve() {
           }
         }
       }
-       // std::cerr << this->value() << this->location << this->anti << " " << this->r().v() << " " <<  this->resolved() << " " << this->root()->location << " " << this->merges[r()].size() << " " << this->sources[r()].size() << std::endl;
+      // if (!this->anti) std::cerr << this->value() << this->location << " " << this->r().v() << " " <<  this->resolved() << " " << this->root()->location << " " << this->merges[r()].size() << " " << this->sources[r()].size() << std::endl;
       processed = true;
       if (num_finished_merges == merges[r()].size() && num_finished_sources == sources[r()].size()) {
         finished_node(que);
@@ -1044,11 +1048,11 @@ bool Board::resolve() {
     input_cell.value = input.bits[step] ? Cell::Value_::ONE : Cell::Value_::ZERO;
   }
   // NB: Pointers into vectors are not safe on reallocate, but Grid is fixed size.
-  // Pointers into lists are safe.
+  // Pointers into deques are safe.
   Grid<Node> grid_nodes(m, n);
   Grid<Node> grid_antinodes(m, n);
-  std::list<Node*> nodes;
-  std::list<Edge> edges;
+  std::deque<Node*> nodes;
+  std::deque<Edge> edges;
   // Construct nodes
   for (size_t y=0; y<m; ++y) {
     for (size_t x=0; x<n; ++x) {
@@ -1117,9 +1121,13 @@ bool Board::resolve() {
           else anti = (dist_delta.y > dist_delta.x) ^ (-dist_delta.y > dist_delta.x) ^ (dist_delta.y * dist_delta.x < 0);
           if (cell->is_diode() && cell->partner_delta * dist_delta > 0) {
             // cell is a diode and neighbor is closer to diode partner
-            if (cell->latched || cell->partner_delta != delta) continue;
+            if (cell->partner_delta != delta) continue;
             // diode goes the other way
             if (cell->latched) continue;
+          }
+          if (neighbor.is_diode() && neighbor.partner_delta * dist_delta < 0) {
+            // neighbor is a diode and cell is closer to diode partner
+            if (cell->partner_delta != delta) continue;
           }
           if (neighbor.latched) {
             // only latched diodes cells can be affected
