@@ -902,11 +902,6 @@ bool Board::resolve() {
                   edge->dead = true;
                 }
               }
-              // for (Edge *edge : gnode->sources[r()]) {
-                // if (edge->source->diode_source_connected(this)) {
-                  // edge->dead = true;
-                // }
-              // }
             }
           }
         }
