@@ -912,16 +912,24 @@ bool Board::resolve() {
           resolved() = true;
           antinode->resolved() = true;
         }
-        if (!resolved() && r() < MAXR) {
-          for (Node *node : nodes) {
-            for (Node *gnode : node->group()) {
-              for (Edge *edge : gnode->merges[r()]) {
-                if (edge->source->root() == edge->sink->antinode->root() ||
-                    edge->source->antinode->root() == edge->sink->root()) {
-                  edge->dead = true;
+        if (!resolved()) {
+          if (r() < MAXR) {
+            for (Node *node : nodes) {
+              for (Node *gnode : node->group()) {
+                for (Edge *edge : gnode->merges[r()]) {
+                  if (edge->source->root() == edge->sink->antinode->root() ||
+                      edge->source->antinode->root() == edge->sink->root()) {
+                    edge->dead = true;
+                  }
                 }
               }
             }
+          } else {
+            for (Node *node : group()) {
+              value() += node->cell->previous_value;
+              value() += -node->antinode->cell->previous_value;
+            }
+            if (value()) resolved() = true;
           }
         }
         if (resolved() || r() < MAXR) {

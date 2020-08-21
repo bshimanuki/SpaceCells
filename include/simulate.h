@@ -343,7 +343,7 @@ public:
   Grid& operator=(const Grid &grid) {
     if (size() != grid.size()) {
       delete[] data;
-      data = new T[m*n];
+      data = new T[grid.m*grid.n];
     }
     m = grid.m;
     n = grid.n;

@@ -68,7 +68,7 @@ int main(int argc, char *argv[]) {
   if (board.reset_and_validate(level)) return show(board.get_error());
   constexpr int MAX_CYCLES = 999;
   // constexpr int MAX_CYCLES = 8;
-  auto [passes, err] = board.run(MAX_CYCLES, false);
+  auto [passes, err] = board.run(MAX_CYCLES, true);
   if (err) return show(board.get_error());
   if (passes) std::cout << "Passed!" << std::endl;
   else std::cout << "Failed: " << board.get_error() << std::endl;
