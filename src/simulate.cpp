@@ -794,12 +794,12 @@ bool Board::resolve() {
 
     // Node properties
     // Link to parent in the same group. parent is equal to this for the root.
-    Node *value_parent;
-    Node *connectivity_parent;
+    Node *value_parent = nullptr;
+    Node *connectivity_parent = nullptr;
     // link to node for opposite value
-    Node *antinode;
-    Cell *cell;
-    Node *partner;
+    Node *antinode = nullptr;
+    Cell *cell = nullptr;
+    Node *partner = nullptr;
     // Edges
     std::array<std::vector<Edge*>, MAXR> merges;
     std::array<std::vector<Edge*>, MAXR> sources;
@@ -812,17 +812,37 @@ bool Board::resolve() {
     // Group properties
   private:
     Cell::Value _value;
-    std::list<Node*> _group;
+    Node *_group_prev = nullptr;
+    Node *_group_next = nullptr;
+    size_t _group_size = 1;
     R _r; // current r^2 distance being merged
     size_t _num_finished_nodes = 0;
     bool _resolved = false;
     size_t _connectivity_size = 1;
+    class GroupItem {
+      Node *root;
+      Node *current;
+    public:
+      GroupItem(Node *root) : root(root), current(root) {}
+      GroupItem begin() { return *this; }
+      GroupItem end() { return nullptr; }
+      bool operator==(const GroupItem &oth) const { return root == oth.root && current == oth.current; }
+      bool operator!=(const GroupItem &oth) const { return !(*this == oth); }
+      GroupItem& operator++() { if ((current = current->_group_next) == root) current = root = nullptr; return *this; }
+      Node* operator*() { return current; }
+    };
   public:
     Cell::Value& value() { return root()->_value; }
-    std::list<Node*>& group() { return root()->_group; }
+    GroupItem group() { return root(); }
     R& r() { return root()->_r; }
     size_t& num_finished_nodes() { return root()->_num_finished_nodes; }
     bool& resolved() { return root()->_resolved; }
+    void reset_group() { _group_next = _group_prev = this; _group_size = 1; }
+    void splice_group(Node *oth) {
+      std::swap(_group_prev->_group_next, oth->_group_prev->_group_next);
+      std::swap(_group_prev, oth->_group_prev);
+      _group_size += oth->_group_size;
+    }
 
     Node* root() {
       if (value_parent != this) value_parent = value_parent->root();
@@ -832,7 +852,7 @@ bool Board::resolve() {
       if (connectivity_parent != this) connectivity_parent = connectivity_parent->root();
       return connectivity_parent;
     }
-    size_t size() { return group().size(); }
+    size_t size() { return root()->_group_size; }
     size_t& connectivity_size() { return connectivity_root()->_connectivity_size; }
   private:
     bool diode_source_connected(Node *node) {
@@ -922,7 +942,7 @@ bool Board::resolve() {
       b = b->root();
       if (a == b) return;
       if (a->size() < b->size()) std::swap(a, b);
-      a->group().splice(a->group().end(), b->group());
+      a->splice_group(b);
       a->value() += b->value();
       a->num_finished_nodes() += b->num_finished_nodes();
       b->value_parent = a;
@@ -1080,6 +1100,8 @@ bool Board::resolve() {
       antinode->value_parent = antinode;
       node->connectivity_parent = node;
       antinode->connectivity_parent = antinode;
+      node->reset_group();
+      antinode->reset_group();
       Node::merge_connectivity(node, antinode);
       if (cell.partner_delta) {
         Location partner_location = location + cell.partner_delta;
@@ -1154,7 +1176,6 @@ bool Board::resolve() {
   Queue que;
   for (Node* node : nodes) {
     node->value() = node->anti ? -node->cell->value : node->cell->value;
-    node->group().push_back(node);
     if (node->cell->latched && node->value()) node->resolved() = true;
     que.push(node);
   }
