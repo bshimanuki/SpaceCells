@@ -5,7 +5,6 @@
 #include <deque>
 #include <functional>
 #include <iostream>
-#include <list>
 #include <queue>
 #include <sstream>
 #include <string>
@@ -756,7 +755,7 @@ bool Board::resolve() {
       case MAXR: default: return -1;
       }
     }
-    static R FromInt(int d) {
+    static R FromInt(uint8_t d) {
       switch (d) {
       case 0: return R0;
       case 4: return R4;
@@ -893,7 +892,7 @@ bool Board::resolve() {
       value() += v;
       // check if group is done with range
       ++num_finished_nodes();
-      if (num_finished_nodes() == size() && antinode->num_finished_nodes() == antinode->size()) {
+      while (num_finished_nodes() == size() && antinode->num_finished_nodes() == antinode->size()) {
         num_finished_nodes() = 0;
         antinode->num_finished_nodes() = 0;
         std::array<Node*, 2> nodes = {this};
@@ -929,7 +928,11 @@ bool Board::resolve() {
           // std::cerr << "pushing nodes " << root()->location << " " << r() << " " << resolved() << std::endl;
           for (Node *node : nodes) {
             for (Node *gnode : node->group()) {
-              que->push(gnode);
+              if (!resolved() && gnode->merges[r()].empty() && gnode->sources[r()].empty()) {
+                ++gnode->num_finished_nodes();
+              } else {
+                que->push(gnode);
+              }
             }
           }
         }
@@ -1134,7 +1137,7 @@ bool Board::resolve() {
           Location dist_delta(2 * dy, 2 * dx);
           if (cell->offset) dist_delta = dist_delta + Location(cell->direction);
           if (neighbor.offset) dist_delta = dist_delta - Location(neighbor.direction);
-          const int dist = sqr(dist_delta.y) + sqr(dist_delta.x);
+          const uint8_t dist = sqr(dist_delta.y) + sqr(dist_delta.x);
           // opposite orientation in same alignment have no effect
           if (cell->x != neighbor.x && cell->offset == neighbor.offset) continue;
           R r = R::FromInt(dist);
@@ -1173,7 +1176,8 @@ bool Board::resolve() {
       }
     }
   }
-  Queue que;
+  static Queue que;
+  while (!que.empty()) que.pop();
   for (Node* node : nodes) {
     node->value() = node->anti ? -node->cell->value : node->cell->value;
     if (node->cell->latched && node->value()) node->resolved() = true;
@@ -1307,7 +1311,9 @@ bool Board::move() {
   }
   // move cells
   for (size_t k=0; k<nbots; ++k) {
-    std::stack<Location> st;
+    // NB: move doesn't call itself so we can use static variables
+    static std::stack<Location> st;
+    while (!st.empty()) st.pop();
     auto &bot = bots[k];
     st.push(bot.location);
     while(!st.empty()) {
