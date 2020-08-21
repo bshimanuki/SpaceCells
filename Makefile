@@ -1,7 +1,7 @@
 CC = g++
 
-# OPT_LVL = -O3
-OPT_LVL = -g
+# OPT_LVL += -O3
+OPT_LVL += -g
 
 CCFLAGS = -std=c++1z -Wall -Werror
 CCFLAGS += $(OPT_LVL)

@@ -301,25 +301,90 @@ struct Bot {
 
 
 template<typename T>
-class Grid : public std::vector<std::vector<T>> {
+class Grid {
   size_t m, n;
+  T* data = nullptr;
+  template<typename U>
+  class GridRow {
+    size_t n;
+    U* row;
+  public:
+    GridRow(int n, U *row) : n(n), row(row) {}
+    size_t size() const { return n; }
+    const U& operator[](size_t x) const { return row[x]; }
+    U& operator[](size_t x) { return const_cast<U&>(std::as_const(*this)[x]); }
+    const U* begin() const { return row; }
+    U* begin() { return const_cast<U*>(std::as_const(*this).begin()); }
+    const U* end() const { return row + n; }
+    U* end() { return const_cast<U*>(std::as_const(*this).end()); }
+    bool operator==(const GridRow &oth) const { return row == oth.row; }
+    bool operator!=(const GridRow &oth) const { return !(*this == oth); }
+    GridRow& operator++() { row += n; return *this; }
+    const U& operator*() const { return *row; }
+    U& operator*() { return const_cast<U&>(*std::as_const(*this)); }
+  };
+  template<typename U>
+  class GridIterator {
+    GridRow<U> grow;
+  public:
+    GridIterator(int n, U *row) : grow(n, row) {}
+    const GridRow<U>& operator*() const { return grow; }
+    GridRow<U>& operator*() { return const_cast<GridRow<U>&>(*std::as_const(*this)); }
+    GridIterator& operator++() { ++grow; return *this; }
+    bool operator==(const GridIterator &oth) const { return grow == oth.grow; }
+    bool operator!=(const GridIterator &oth) const { return !(*this == oth); }
+  };
 public:
-  Grid(size_t m, size_t n) : m(m), n(n) {
-    this->resize(m);
-    for (auto &v : *this) v.resize(n);
+  Grid(size_t m, size_t n) : m(m), n(n), data(new T[m*n]) {}
+  ~Grid() { delete[] data; }
+  Grid(const Grid &grid) : m(grid.m), n(grid.n), data(new T[m*n]) {
+    for (size_t i=0; i<size(); ++i) data[i] = grid.data[i];
   }
+  Grid& operator=(const Grid &grid) {
+    if (size() != grid.size()) {
+      delete[] data;
+      data = new T[m*n];
+    }
+    m = grid.m;
+    n = grid.n;
+    for (size_t i=0; i<size(); ++i) data[i] = grid.data[i];
+    return *this;
+  }
+  Grid(Grid &&grid) : m(grid.m), n(grid.n), data(grid.data) {
+    grid.m = 0;
+    grid.n = 0;
+    grid.data = nullptr;
+  }
+  Grid& operator=(Grid &&grid) {
+    delete[] data;
+    m = grid.m;
+    n = grid.n;
+    data = grid.data;
+    grid.m = 0;
+    grid.n = 0;
+    grid.data = nullptr;
+    return *this;
+  }
+
+  size_t size() const { return m*n; }
+  size_t rows() const { return m; }
+  size_t cols() const { return n; }
 
   bool valid(const Location &location) const {
     return location && 0 <= location.y && location.y < (int) m && 0 <= location.x && location.x < (int) n;
   }
 
-  typename std::vector<T>::const_reference at(const Location &location) const {
-    return this->std::vector<std::vector<T>>::at(location.y).at(location.x);
-  }
-  typename std::vector<T>::reference at(const Location &location) {
-    // const_casting gives an error for the specialized vector<bool>
-    return this->std::vector<std::vector<T>>::at(location.y).at(location.x);
-  }
+  GridRow<const T> operator[](size_t y) const { return GridRow<const T>(n, data + y*n); }
+  GridRow<T> operator[](size_t y) { return GridRow<T>(n, data + y*n); }
+  const T& at(size_t y, size_t x) const { return data[y*n+x]; }
+  T& at(size_t y, size_t x) { return const_cast<T&>(std::as_const(*this).at(y, x)); }
+  const T& at(const Location &location) const { return at(location.y, location.x); }
+  T& at(const Location &location) { return const_cast<T&>(std::as_const(*this).at(location)); }
+
+  GridIterator<const T> begin() const { return GridIterator<const T>(n, data); }
+  GridIterator<T> begin() { return GridIterator<T>(n, data); }
+  GridIterator<const T> end() const { return GridIterator<const T>(n, data + m*n); }
+  GridIterator<T> end() { return GridIterator<T>(n, data + m*n); }
 
   template<typename Q=T>
   typename std::enable_if<std::is_same<Q, Cell>::value, const T*>::type partner(const Location &location) const {
@@ -337,9 +402,7 @@ public:
 
   bool reset() { return reset(T()); }
   bool reset(const T &v) {
-    for (auto &line : *this) {
-      std::fill(line.begin(), line.end(), v);
-    }
+    for (size_t i=0; i<size(); ++i) data[i] = v;
     return false;
   }
   // return true if input error
@@ -349,20 +412,10 @@ public:
     for (size_t y=0; y<m; ++y) {
       std::getline(ss, line);
       if (line.size() != n) return true;
-      for (size_t x=0; x<n; ++x) (*this)[y][x] = line[x];
+      for (size_t x=0; x<n; ++x) this->at(y, x) = line[x];
     }
     if (ss.peek() != EOF) return true;
     return false;
-  }
-
-  // convert Location to size_t (1-indexed because NONE maps to 0)
-  size_t flat_index(const Location &location) const {
-    if (!valid(location)) return 0;
-    return location.y * n + location.x + 1;
-  }
-
-  size_t max_flat_index() const {
-    return m * n + 1;
   }
 
   friend std::ostream& operator<<(std::ostream &os, const Grid &grid) {
@@ -394,6 +447,7 @@ class Board {
   Grid<Cell> cells;
   bool invalid = false;
   size_t step = 0; // step index for I/O
+  // resolve memory allocation
 public:
   // Setup
   Board(size_t m, size_t n, size_t nbots);

@@ -801,9 +801,9 @@ bool Board::resolve() {
     Cell *cell;
     Node *partner;
     // Edges
-    std::array<std::vector<Edge*>, MAXR> merges = {};
-    std::array<std::vector<Edge*>, MAXR> sources = {};
-    std::array<std::vector<Edge*>, MAXR> sinks = {};
+    std::array<std::vector<Edge*>, MAXR> merges;
+    std::array<std::vector<Edge*>, MAXR> sources;
+    std::array<std::vector<Edge*>, MAXR> sinks;
     size_t num_finished_merges = 0;
     size_t num_finished_sources = 0;
     bool processed = false;
@@ -850,8 +850,8 @@ bool Board::resolve() {
       // compute value from sources
       Cell::Value v = Cell::Value_::UNKNOWN;
       int weight = 0;
-      for (auto &edges : {sources, merges}) {
-        for (Edge *edge : edges[r()]) {
+      for (auto edges : {&sources, &merges}) {
+        for (Edge *edge : (*edges)[r()]) {
           Node *source = edge->neighbor(this);
           if (source->resolved() && !edge->dead) {
             // if (!anti) std::cerr << "finish-sourcing " << location << " <- " << source->location << std::endl;
@@ -876,11 +876,10 @@ bool Board::resolve() {
       if (num_finished_nodes() == size() && antinode->num_finished_nodes() == antinode->size()) {
         num_finished_nodes() = 0;
         antinode->num_finished_nodes() = 0;
-        std::vector<Node*> nodes;
-        nodes.push_back(this);
+        std::array<Node*, 2> nodes = {this};
         if (root() == antinode->root()) value() = Cell::Value_::UNDEFINED;
-        else nodes.push_back(antinode);
-        for (Node *node : nodes) {
+        else nodes = {this, antinode};
+        for (Node *node : nodes) if (node) {
           node->r() = node->r() + 1;
           for (Node *gnode : node->group()) {
             gnode->num_finished_merges = 0;
@@ -1047,12 +1046,16 @@ bool Board::resolve() {
     Cell &input_cell = cells.at(input.location);
     input_cell.value = input.bits[step] ? Cell::Value_::ONE : Cell::Value_::ZERO;
   }
-  // NB: Pointers into vectors are not safe on reallocate, but Grid is fixed size.
-  // Pointers into deques are safe.
-  Grid<Node> grid_nodes(m, n);
-  Grid<Node> grid_antinodes(m, n);
-  std::deque<Node*> nodes;
-  std::deque<Edge> edges;
+  // NB: resolve() does not call itself, so static variables are okay
+  static Grid<Node> grid_nodes(m, n);
+  grid_nodes.reset();
+  static Grid<Node> grid_antinodes(m, n);
+  grid_antinodes.reset();
+  // NB: Pointers into deques are safe.
+  static std::deque<Node*> nodes;
+  nodes.clear();
+  static std::deque<Edge> edges;
+  edges.clear();
   // Construct nodes
   for (size_t y=0; y<m; ++y) {
     for (size_t x=0; x<n; ++x) {
