@@ -46,20 +46,20 @@ Color::Color(char c) {
   }
 }
 
-Color::operator std::string() const {
-  switch (*this) {
-  case Color_::BLACK: return "K";
-  case Color_::BROWN: return "N";
-  case Color_::RED: return "R";
-  case Color_::ORANGE: return "O";
-  case Color_::YELLOW: return "Y";
-  case Color_::GREEN: return "G";
-  case Color_::BLUE: return "B";
-  case Color_::PURPLE: return "P";
-  case Color_::WHITE: return "W";
-  case Color_::CYAN: return "C";
-  case Color_::REDORANGE: return "E";
-  case Color_::INVALID: default: return "#";
+std::ostream& operator<<(std::ostream &os, const Color &color) {
+  switch (color) {
+  case Color_::BLACK: return os << "K";
+  case Color_::BROWN: return os << "N";
+  case Color_::RED: return os << "R";
+  case Color_::ORANGE: return os << "O";
+  case Color_::YELLOW: return os << "Y";
+  case Color_::GREEN: return os << "G";
+  case Color_::BLUE: return os << "B";
+  case Color_::PURPLE: return os << "P";
+  case Color_::WHITE: return os << "W";
+  case Color_::CYAN: return os << "C";
+  case Color_::REDORANGE: return os << "E";
+  case Color_::INVALID: default: return os << "#";
   }
 }
 
@@ -607,12 +607,12 @@ bool Board::reset_and_validate(const std::string &grid_fixed) {
   std::string line;
   for (auto &bot : bots) bot = Bot();
   trespassable.reset(true);
-  for (auto &_input : inputs) {
-    trespassable.at(_input.location) = false;
+  for (auto &input : inputs) {
+    trespassable.at(input.location) = false;
   }
-  for (auto &_output : outputs) {
-    trespassable.at(_output.location) = false;
-    _output.power = true;
+  for (auto &output : outputs) {
+    trespassable.at(output.location) = false;
+    output.power = true;
   }
   // check grids
   for (size_t y=0; y<m; ++y) {
@@ -1277,6 +1277,10 @@ bool Board::move() {
       break;
     }
   }
+  for (auto &output : outputs) {
+    output.power ^= output.toggle_power;
+    output.toggle_power = false;
+  }
   // set cell movement
   for (size_t k=0; k<nbots; ++k) {
     const auto &bot = bots[k];
@@ -1413,14 +1417,17 @@ bool Board::move() {
   }
   if (next) {
     Color color = Color_::BLACK;
-    for (const auto& _output : outputs) {
-      color = color + cells.at(_output.location);
+    for (const auto& output : outputs) {
+      if (output.power) {
+        color = color + Color(cells.at(output.location));
+      }
     }
     if (color == Color_::INVALID) {
       invalid = true;
       return error = Error("Output is in undetermined state");
     }
     if (color != output_colors[step]) {
+      // std::cerr << "Output " << color << " instead of " << output_colors[step] << std::endl;
       invalid = true;
       return error = Error("Wrong output");
     }

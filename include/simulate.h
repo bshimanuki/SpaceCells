@@ -78,7 +78,7 @@ public:
   Color(Color_ v) : v(v) {}
   Color(char c);
   operator Color_() const { return v; }
-  operator std::string() const;
+  friend std::ostream& operator<<(std::ostream &os, const Color &color);
   friend Color operator+(const Color &lhs, const Color &rhs);
 };
 
@@ -190,7 +190,7 @@ public:
   explicit operator bool() const { return exists; }
   operator char() const;
   char resolved() const;
-  operator Color() const;
+  explicit operator Color() const;
 
   // State checkers
   bool is_1x1() const;
