@@ -1233,12 +1233,13 @@ bool Board::move() {
       ++syncing;
       break;
     case Operation::Type::BRANCH:
-      switch (cell.value) {
+      if (cell) {
+        switch (cell.value) {
         case Cell::Value_::ONE:
           if (operation.value & (0b01 << (2 * !cell.x))) bot.moving = operation.direction;
           break;
         case Cell::Value_::ZERO:
-          if (operation.value & (0b01 << (2 * !cell.x))) bot.moving = operation.direction;
+          if (operation.value & (0b10 << (2 * !cell.x))) bot.moving = operation.direction;
           break;
         default:
           if (operation.value & (0b11 << (2 * !cell.x))) {
@@ -1246,6 +1247,7 @@ bool Board::move() {
             return error = Error("Branch on undetermined state");
           }
           break;
+        }
       }
       break;
     case Operation::Type::START:
@@ -1257,18 +1259,8 @@ bool Board::move() {
       }
       break;
     case Operation::Type::LATCH:
-      if (cell.is_latchable()) {
-        if (operation.value & Operation::UNLATCH.op.value)  {
-          cell.latched = true;
-        } else if (operation.value & Operation::LATCH.op.value)  {
-          cell.latched = false;
-        }
-      }
-      break;
     case Operation::Type::REFRESH:
-      if (cell.is_refreshable()) {
-        cell.refreshing = true;
-      }
+      // toggles happen between movement and resolution
       break;
     case Operation::Type::POWER:
       if (operation.value < outputs.size()) {
@@ -1276,7 +1268,6 @@ bool Board::move() {
       }
       break;
     case Operation::Type::NEXT:
-      next = true;
       break;
     case Operation::Type::NONE:
     default:
@@ -1289,7 +1280,7 @@ bool Board::move() {
     const auto &operation = operations[k].at(bot.location);
     auto &cell = cells.at(bot.location);
     if (bot.holding) {
-      if (operation.type == Operation::Type::SYNC || syncing <= 1) {
+      if (operation.type == Operation::Type::SYNC && syncing <= 1) {
         cell.moving = Direction_::NONE;
       } else if (bot.rotating) {
         cell.moving = Direction_::NONE;
@@ -1367,8 +1358,49 @@ bool Board::move() {
       bot.location = dest;
     }
   }
+  // pre resolve latches and checks
+  for (size_t k=0; k<nbots; ++k) {
+    const auto &bot = bots[k];
+    const Operation &operation = operations[k].at(bot.location);
+    Cell &cell = cells.at(bot.location);
+    switch (operation.type) {
+    case Operation::Type::LATCH:
+      if (cell.is_latchable()) {
+        if (cell.latched) {
+          if (operation.value & Operation::UNLATCH.op.value)  {
+            cell.latched = false;
+          }
+        } else {
+          if (operation.value & Operation::LATCH.op.value)  {
+            cell.refreshing = true;
+          }
+        }
+      }
+      break;
+    case Operation::Type::REFRESH:
+      if (cell.is_refreshable() && cell.latched) {
+        cell.latched = false;
+        cell.refreshing = true;
+      }
+      break;
+    case Operation::Type::NEXT:
+      next = true;
+      break;
+    default:
+      break;
+    }
+  }
   // resolve
   if (resolve()) return true;
+  // post resolve latches
+  for (size_t k=0; k<nbots; ++k) {
+    const auto &bot = bots[k];
+    Cell &cell = cells.at(bot.location);
+    if (cell.refreshing) {
+      cell.latched = true;
+      cell.refreshing = false;
+    }
+  }
   if (next) {
     Color color = Color_::BLACK;
     for (const auto& _output : outputs) {

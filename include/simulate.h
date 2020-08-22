@@ -292,8 +292,8 @@ constexpr Operation::OperationConstant Operation::NEXT('n', Type::NEXT);
 struct Bot {
   Location location;
   Direction moving = Direction_::LEFT; // default start going left
-  bool holding;
-  bool rotating; // ROTATE takes a cycle so needs state
+  bool holding = false;
+  bool rotating = false; // ROTATE takes a cycle so needs state
   Bot() {}
   Bot(const Location &location) : location(location) {}
   explicit operator bool() const { return (bool) location; }
