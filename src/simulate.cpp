@@ -607,6 +607,9 @@ bool Board::reset_and_validate(const std::string &grid_fixed) {
   std::string line;
   for (auto &bot : bots) bot = Bot();
   trespassable.reset(true);
+  for (auto &_input : inputs) {
+    trespassable.at(_input.location) = false;
+  }
   for (auto &_output : outputs) {
     trespassable.at(_output.location) = false;
     _output.power = true;
@@ -1276,14 +1279,18 @@ bool Board::move() {
   }
   // set cell movement
   for (size_t k=0; k<nbots; ++k) {
-    auto &bot = bots[k];
+    const auto &bot = bots[k];
     const auto &operation = operations[k].at(bot.location);
     auto &cell = cells.at(bot.location);
+    Location dest = bot.location + Location(bot.moving);
     if (bot.holding) {
       if (operation.type == Operation::Type::SYNC && syncing <= 1) {
         cell.moving = Direction_::NONE;
       } else if (bot.rotating) {
         cell.moving = Direction_::NONE;
+      } else if (!trespassable.valid(dest) || !trespassable.at(dest)) {
+        // stops at boundary
+        cell.moving = false;
       } else {
         cell.moving = bot.moving;
       }
@@ -1295,6 +1302,7 @@ bool Board::move() {
     if (cell.moving) {
       Location dest = bot.location + Location(cell.moving);
       if (!trespassable.valid(dest) || !trespassable.at(dest)) {
+        // will not activate since we stop at boundary instead
         invalid = true;
         return error = Error("Collided with boundary");
       }
@@ -1352,8 +1360,10 @@ bool Board::move() {
       // bot can move
       Location dest = bot.location + Location(bot.moving);
       if (!trespassable.valid(dest) || !trespassable.at(dest)) {
-        invalid = true;
-        return error = Error("Collided with boundary");
+        // stop at boundary
+        continue;
+        // invalid = true;
+        // return error = Error("Collided with boundary");
       }
       bot.location = dest;
     }
