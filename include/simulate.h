@@ -103,7 +103,7 @@ public:
   constexpr Direction() : v() {}
   constexpr Direction(Direction_ v) : v(v) {}
   Direction(char c);
-  operator Direction_() const { return v; }
+  constexpr operator Direction_() const { return v; }
   explicit operator bool() const { return v != Direction_::NONE; }
   explicit operator struct Location() const;
   operator std::string() const;
@@ -119,6 +119,7 @@ struct Location {
   int x = 0;
   constexpr Location() {}
   constexpr Location(int y, int x) : valid(true), y(y), x(x) {}
+  constexpr Location(const Direction &direction) { *this = direction; }
   explicit operator bool() const { return valid; }
   Location operator-() const { return *this ? Location(-y, -x) : Location(); }
   Location operator+(const Location &oth) const { return *this && oth ? Location(y + oth.y, x + oth.x) : Location(); }
@@ -489,7 +490,9 @@ public:
   // step forward one cycle
   bool move();
   // run through verification and return true if finishes
-  std::pair<bool, bool> run(size_t max_cycles, std::ostream *os=nullptr);
+  std::pair<bool, bool> run(size_t max_cycles, std::ostream *os);
+  // default parameter as separate function for binding
+  std::pair<bool, bool> run(size_t max_cycles) { return run(max_cycles, nullptr); }
 
   // Output
   // check status
