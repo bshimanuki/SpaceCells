@@ -2,7 +2,6 @@
 
 #include <algorithm>
 #include <array>
-#include <cassert>
 #include <deque>
 #include <functional>
 #include <iostream>
@@ -98,7 +97,6 @@ public:
   int lowlink = 0;
   bool on_stack = false;
   bool in_subcall = false;
-  bool active = false;
 
   friend std::ostream& operator<<(std::ostream &os, const Node &node) {
     return os << (node.anti ? '-' : '+') << node.r.v() << node.location << node.value;
@@ -178,8 +176,6 @@ bool Board::resolve() {
         antinode->on_stack = false;
         node->in_subcall = false;
         antinode->in_subcall = false;
-        node->active = false;
-        antinode->active = false;
       }
     }
   }
@@ -242,11 +238,12 @@ bool Board::resolve() {
   while (!callstack.empty()) callstack.pop();
   static std::deque<Node*> scc;
   scc.clear();
+  static std::deque<Node*> scc_initial;
+  scc_initial.clear();
   int index = 1;
   for (Node *start : nodes) {
     if (!start->index) {
       callstack.push(start);
-      assert(start->location);
       while (!callstack.empty()) {
         Node *node = callstack.top();
         if (node->in_subcall) {
@@ -259,8 +256,8 @@ bool Board::resolve() {
           // start
           node->lowlink = node->index = index++;
           scc.push_back(node);
-          assert(node->location);
           node->on_stack = true;
+          scc_initial.push_back(node);
         }
         Node *next = nullptr;
         while (!next && node->source_index < node->nsources) {
@@ -269,7 +266,6 @@ bool Board::resolve() {
         if (next) {
           if (!next->index) {
             callstack.push(next);
-            assert(next->location);
             node->in_subcall = true;
           } else if (next->on_stack) {
             node->lowlink = std::min(node->lowlink, next->index);
@@ -279,11 +275,10 @@ bool Board::resolve() {
           if (node->lowlink == node->index) {
             // subtree finished and node is root of an SCC
             Cell::Value value = Cell::Value_::UNKNOWN;
-            // std::cerr << "rbegin " << node->location << node->r.v() <<  " " << (*scc.rbegin())->location << " " << (*scc.rbegin())->r.v() << " " << (*scc.rbegin())->use_lower << std::endl;
+            // std::cerr << "rbegin " << *node <<  " " << **scc.rbegin() << " " << (*scc.rbegin())->use_lower << std::endl;
             // std::cerr << scc << std::endl;
             // for (auto it=scc.rbegin(); it!=scc.rend() && (it==scc.rbegin() || *(it-1)!=node) && !(*it)->use_lower; ++it) {
-            bool has_lower = false;
-            for (auto it=scc.rbegin(); it!=scc.rend() && (it==scc.rbegin() || *(it-1)!=node); ++it) {
+            for (auto it=scc_initial.rbegin(); it!=scc_initial.rend() && (*it)->index >= node->index; ++it) {
               int weight = 0;
               int undefined = 0;
               for (size_t i=0; i<(*it)->nsources; ++i) {
@@ -304,59 +299,51 @@ bool Board::resolve() {
               if (weight > undefined) value += Cell::Value_::ONE;
               else if (weight < -undefined) value += Cell::Value_::ZERO;
               else if (undefined) value = Cell::Value_::UNDEFINED;
-              has_lower |= (*it)->lower && !(*it)->use_lower;
             }
             // std::cerr << value << std::endl;
             if (!value) {
-              if (has_lower) {
-                // add edges from lower priority level (increase radius of effect)
-                for (auto it=scc.rbegin(); it!=scc.rend() && (it==scc.rbegin() || *(it-1)!=node); ++it) {
-                  (*it)->active = true;
-                }
-                // for (auto it=scc.rbegin(); *it!=node && !(*it)->use_lower; ++it) {
-                for (auto it=scc.rbegin(); *it!=node; ++it) {
-                  if ((*it)->lower && !(*it)->use_lower) {
-                    (*it)->sources[(*it)->nsources++] = (*it)->lower;
-                    (*it)->use_lower = true;
-                    callstack.push(*it);
-                    assert((*it)->location);
-                    // kill edges from same strongly connected component
-                    for (size_t i=0; i<(*it)->lower->nsources; ++i) {
-                      if ((*it)->lower->sources[i] &&
-                          (*it)->lower->sources[i]->antinode->higher &&
-                          (*it)->lower->sources[i]->antinode->higher->active) {
-                        (*it)->lower->sources[i] = nullptr;
-                      }
+              // add edges from lower priority level (increase radius of effect)
+              // back()->index strictly greater than node->index since we handle root separately
+              while (!scc_initial.empty() && scc_initial.back()->index >= node->index) {
+                Node *initial_node = scc_initial.back();
+                scc_initial.pop_back();
+                if (initial_node->lower && !initial_node->use_lower) {
+                  initial_node->sources[initial_node->nsources++] = initial_node->lower;
+                  initial_node->use_lower = true;
+                  if (initial_node != node) callstack.push(initial_node);
+                  keep_on_callstack = true;
+                  // kill edges from same strongly connected component
+                  for (size_t i=0; i<initial_node->lower->nsources; ++i) {
+                    if (initial_node->lower->sources[i] &&
+                        initial_node->lower->sources[i]->antinode->higher &&
+                        initial_node->lower->sources[i]->antinode->higher->on_stack &&
+                        initial_node->lower->sources[i]->antinode->higher->index >= node->index) {
+                      initial_node->lower->sources[i] = nullptr;
                     }
                   }
                 }
-                for (auto it=scc.rbegin(); it!=scc.rend() && (it==scc.rbegin() || *(it-1)!=node); ++it) {
-                  (*it)->active = false;
-                }
-                if (!node->use_lower) {
-                  node->sources[node->nsources++] = node->lower;
-                  node->use_lower = true;
-                }
-                keep_on_callstack = true;
-              } else {
+              }
+              if (!keep_on_callstack) {
                 // use previous values
-                for (auto it=scc.rbegin(); it!=scc.rend() && (it==scc.rbegin() || *(it-1)!=node); ++it) {
+                for (auto it=scc.rbegin(); it!=scc.rend() && (*it)->index >= node->index; ++it) {
                   // if (!node->anti) std::cerr << "last " << (*it)->location << (*it)->r.v() << " " << ((*it)->anti ? -(*it)->cell->previous_value : (*it)->cell->previous_value) << std::endl;
                   value += (*it)->anti ? -(*it)->cell->previous_value : (*it)->cell->previous_value;
                 }
                 // if (!node->anti) std::cerr << "last " << node->location << " for " << node->r.v() << " " << value << std::endl;
                 if (!value) value = Cell::Value_::UNDEFINED;
               }
+            } else {
+              // pop scc_initial
+              while (!scc_initial.empty() && scc_initial.back()->index >= node->index) {
+                scc_initial.pop_back();
+              }
             }
             if (value) {
-              while (scc.back() != node) {
+              while (!scc.empty() && scc.back()->index >= node->index) {
                 scc.back()->value = value;
                 scc.back()->on_stack = false;
                 scc.pop_back();
               }
-              scc.back()->value = value;
-              scc.back()->on_stack = false;
-              scc.pop_back();
             }
           }
           if (!keep_on_callstack) {
