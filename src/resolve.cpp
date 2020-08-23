@@ -1,75 +1,362 @@
+#include "resolve.h"
+
 #include <algorithm>
-#include <fstream>
+#include <array>
+#include <cassert>
+#include <deque>
+#include <functional>
 #include <iostream>
+#include <stack>
 #include <string>
-#include <sstream>
-#include <tuple>
 
-#include "simulate.h"
-using namespace puzzle;
+namespace puzzle {
 
-std::string get_grid(std::istream &is, int m) {
-  std::stringstream ss;
-  std::string line;
-  // ignore leading blank lines
-  while (is.peek() == '\n') is.get();
-  for (int i=0; i<m; ++i) {
-    getline(is, line);
-    // treat '_' as an alternative to ' '
-    std::replace(line.begin(), line.end(), '_', ' ');
-    ss << line << std::endl;
-  }
-  return ss.str();
+template<typename T>
+std::ostream& operator<<(std::ostream &os, const std::deque<T*> &st) {
+  os << "[";
+  for (auto x : st) os << *x << " ";
+  return os << "]";
 }
 
-int show(const std::string &line) {
-  std::cout << line << std::endl;
-  return 0;
+enum R_ {
+  // r^2 distances where cell side length is 2
+  R0, // same offset cell
+  R4, // adjacent cells
+  R5, // 1x1 next to offset cell
+  R8, // kitty corner
+  R9, // 1x1 next to offset cell lengthwise
+  R13, // 1x1 kitty corner to offset cell
+  R16, // distance 2
+  R17, // distance 2 sideways from offset cell
+  R20, // distance (2, 1)
+  MAXR, // number of elements of R
+};
+class R {
+  R_ r;
+public:
+  constexpr R() : r(R_::R0) {}
+  constexpr R(R_ r) : r(r) {}
+  constexpr R(size_t r) : r(static_cast<R_>(r)) {}
+  operator R_() const { return r; }
+  int v() const {
+    switch (*this) {
+    case R0: return 0;
+    case R4: return 4;
+    case R5: return 5;
+    case R8: return 8;
+    case R9: return 9;
+    case R13: return 13;
+    case R16: return 16;
+    case R17: return 17;
+    case R20: return 20;
+    case MAXR: default: return -1;
+    }
+  }
+  static R FromInt(uint8_t d) {
+    switch (d) {
+    case 0: return R0;
+    case 4: return R4;
+    case 5: return R5;
+    case 8: return R8;
+    case 9: return R9;
+    case 13: return R13;
+    case 16: return R16;
+    case 17: return R17;
+    case 20: return R20;
+    default: return MAXR;
+    }
+  }
+};
+
+constexpr int RANGE = 2; // max range of 2 cells in each dimension
+
+class Node {
+public:
+  // Helper class for cell resolution
+  // Identity
+  Location location;
+  bool anti = false;
+  R r;
+
+  // Node properties
+  // link to node for opposite value
+  Node *antinode = nullptr;
+  Cell *cell = nullptr;
+  Cell::Value value;
+  // Edges
+  // really only needs to be max size for single distance plus 1, but no harm in allocating extra
+  std::array<Node*, sqr(1+2*RANGE)> sources = {};
+  size_t nsources = 0;
+  Node *lower = nullptr; // pointer to increase in R (lower priority)
+  Node *higher = nullptr; // pointer to decrease in R (higher priority)
+  bool use_lower = false;
+
+  // strongly connected component
+  int index = 0;
+  int lowlink = 0;
+  bool on_stack = false;
+  size_t source_index = 0;
+  bool in_subcall = false;
+  bool active = false;
+
+  friend std::ostream& operator<<(std::ostream &os, const Node &node) {
+    return os << (node.anti ? '-' : '+') << node.r.v() << node.location << node.value;
+  }
+};
+
+bool Board::resolve() {
+  if (check_status() != Status::RUNNING) return false;
+  for (size_t y=0; y<m; ++y) {
+    for (size_t x=0; x<n; ++x) {
+      Cell &cell = cells[y][x];
+      cell.previous_value = cell.value;
+    }
+  }
+  for (const Input &input : inputs) {
+    Cell &input_cell = cells.at(input.location);
+    input_cell.previous_value = input.bits[step] ? Cell::Value_::ONE : Cell::Value_::ZERO;
+  }
+  // NB: resolve() does not call itself, so static variables are okay
+  static Grid<std::array<Node, MAXR>> grid_nodes(m, n);
+  grid_nodes.reset();
+  static Grid<std::array<Node, MAXR>> grid_antinodes(m, n);
+  grid_antinodes.reset();
+  // NB: Pointers into deques are safe.
+  static std::deque<Node*> nodes;
+  nodes.clear();
+  // Construct nodes
+  for (size_t y=0; y<m; ++y) {
+    for (size_t x=0; x<n; ++x) {
+      const Location location(y, x);
+      Cell &cell = cells.at(location);
+      if (!cell) continue;
+
+      for (size_t r=0; r<MAXR; ++r) {
+        Node *node = &grid_nodes.at(location)[r];
+        Node *antinode = &grid_antinodes.at(location)[r];
+        nodes.push_back(node);
+        nodes.push_back(antinode);
+        // set node properties
+        node->location = location;
+        antinode->location = location;
+        node->anti = false;
+        antinode->anti = true;
+        node->r = r;
+        antinode->r = r;
+        node->antinode = antinode;
+        antinode->antinode = node;
+        node->cell = &cell;
+        antinode->cell = &cell;
+        if (r > 0) {
+          node->higher = &grid_nodes.at(location)[r - 1];
+          antinode->higher = &grid_antinodes.at(location)[r - 1];
+          node->sources[node->nsources++] = node->higher;
+          antinode->sources[antinode->nsources++] = antinode->higher;
+        }
+        if (r + 1 < MAXR) {
+          node->lower = &grid_nodes.at(location)[r + 1];
+          antinode->lower = &grid_antinodes.at(location)[r + 1];
+        }
+      }
+    }
+  }
+
+  // find and add edges
+  for (size_t y=0; y<m; ++y) {
+    for (size_t x=0; x<n; ++x) {
+      const Location location(y, x);
+      Cell &cell = cells.at(location);
+      if (!cell) continue;
+      for (int dy=-RANGE; dy<=RANGE; ++dy) {
+        for (int dx=-RANGE; dx<=RANGE; ++dx) {
+          if (dy == 0 && dx == 0) continue;
+          const Location delta(dy, dx);
+          const Location neighbor_location = location + delta;
+          if (!cells.valid(neighbor_location)) continue;
+          Cell &neighbor = cells.at(neighbor_location);
+          if (!neighbor) continue;
+          // calculate R distance (double coordinates and account for offset)
+          Location dist_delta(2 * dy, 2 * dx);
+          if (cell.offset) dist_delta = dist_delta + Location(cell.direction);
+          if (neighbor.offset) dist_delta = dist_delta - Location(neighbor.direction);
+          const uint8_t dist = sqr(dist_delta.y) + sqr(dist_delta.x);
+          // opposite orientation in same alignment have no effect
+          if (cell.x != neighbor.x && cell.offset == neighbor.offset) continue;
+          R r = R::FromInt(dist);
+          // distance beyond simulated range of effect
+          if (r == MAXR) continue;
+          Node *node = &grid_nodes.at(location)[r];
+          Node *antinode = &grid_antinodes.at(location)[r];
+          Node *neighbor_node = &grid_nodes.at(neighbor_location)[r];
+          Node *neighbor_antinode = &grid_antinodes.at(neighbor_location)[r];
+          // compute whether cells are correlated or anticorrelated
+          bool anti;
+          if (cell.x == neighbor.x) anti = cell.x ^ (dist_delta.y == 0 || dist_delta.x == 0);
+          else anti = (dist_delta.y > dist_delta.x) ^ (-dist_delta.y > dist_delta.x) ^ (dist_delta.y * dist_delta.x < 0);
+          if (cell.is_diode() && cell.partner_delta * dist_delta > 0) {
+            // cell.s a diode and neighbor is closer to diode partner
+            if (cell.partner_delta != delta) continue;
+            // partner is the sink not the source
+            if (!cell.latched) continue;
+          }
+          if (neighbor.is_diode() && neighbor.partner_delta * dist_delta < 0) {
+            // neighbor is a diode and cell.s closer to diode partner
+            if (cell.partner_delta != delta) continue;
+          }
+          // only latched diodes cells can be affected
+          if (cell.latched && !(cell.is_diode() && cell.partner_delta == delta)) continue;
+          // add edges
+          node->sources[node->nsources++] = anti ? neighbor_antinode : neighbor_node;
+          antinode->sources[antinode->nsources++] = anti ? neighbor_node : neighbor_antinode;
+          // std::cerr << "source " << *node << " " << *node->sources[node->nsources-1] << std::endl;
+        }
+      }
+    }
+  }
+
+  // Tarjan's algorithm
+  static std::stack<Node*> callstack;
+  while (!callstack.empty()) callstack.pop();
+  static std::deque<Node*> scc;
+  scc.clear();
+  int index = 1;
+  for (Node *start : nodes) {
+    if (!start->index) {
+      callstack.push(start);
+      assert(start->location);
+      while (!callstack.empty()) {
+        Node *node = callstack.top();
+        if (node->in_subcall) {
+          // call to child was finished
+          node->lowlink = std::min(node->lowlink, node->sources[node->source_index - 1]->lowlink);
+          node->in_subcall = false;
+          // if source was same node at higher priority and was completed, we only need that
+          if (node->higher && node->higher->value) node->nsources = 1;
+        } else if (!node->index) {
+          // start
+          node->lowlink = node->index = index++;
+          scc.push_back(node);
+          assert(node->location);
+          node->on_stack = true;
+        }
+        Node *next = nullptr;
+        while (!next && node->source_index < node->nsources) {
+          next = node->sources[node->source_index++];
+        }
+        if (next) {
+          if (!next->index) {
+            callstack.push(next);
+            assert(next->location);
+            node->in_subcall = true;
+          } else if (next->on_stack) {
+            node->lowlink = std::min(node->lowlink, next->index);
+          }
+        } else {
+          bool keep_on_callstack = false;
+          if (node->lowlink == node->index) {
+            // subtree finished and node is root of an SCC
+            Cell::Value value = Cell::Value_::UNKNOWN;
+            // std::cerr << "rbegin " << node->location << node->r.v() <<  " " << (*scc.rbegin())->location << " " << (*scc.rbegin())->r.v() << " " << (*scc.rbegin())->use_lower << std::endl;
+            // std::cerr << scc << std::endl;
+            // for (auto it=scc.rbegin(); it!=scc.rend() && (it==scc.rbegin() || *(it-1)!=node) && !(*it)->use_lower; ++it) {
+            bool has_lower = false;
+            for (auto it=scc.rbegin(); it!=scc.rend() && (it==scc.rbegin() || *(it-1)!=node); ++it) {
+              int weight = 0;
+              int undefined = 0;
+              for (size_t i=0; i<(*it)->nsources; ++i) {
+                if ((*it)->sources[i] &&
+                    !(*it)->sources[i]->on_stack) {
+                  switch((*it)->sources[i]->value) {
+                  case Cell::Value_::ZERO:
+                    --weight; break;
+                  case Cell::Value_::ONE:
+                    ++weight; break;
+                  case Cell::Value_::UNKNOWN: // TODO: error for UNKNOWN? should not happen
+                  case Cell::Value_::UNDEFINED:
+                    ++undefined; break;
+                  }
+                }
+              }
+              // std::cerr << **it << " " << weight << " " << undefined << std::endl;
+              if (weight > undefined) value += Cell::Value_::ONE;
+              else if (weight < -undefined) value += Cell::Value_::ZERO;
+              else if (undefined) value = Cell::Value_::UNDEFINED;
+              has_lower |= (*it)->lower && !(*it)->use_lower;
+            }
+            // std::cerr << value << std::endl;
+            if (!value) {
+              if (has_lower) {
+                // add edges from lower priority level (increase radius of effect)
+                for (auto it=scc.rbegin(); it!=scc.rend() && (it==scc.rbegin() || *(it-1)!=node); ++it) {
+                  (*it)->active = true;
+                }
+                // for (auto it=scc.rbegin(); *it!=node && !(*it)->use_lower; ++it) {
+                for (auto it=scc.rbegin(); *it!=node; ++it) {
+                  if ((*it)->lower && !(*it)->use_lower) {
+                    (*it)->sources[(*it)->nsources++] = (*it)->lower;
+                    (*it)->use_lower = true;
+                    callstack.push(*it);
+                    assert((*it)->location);
+                    // kill edges from same strongly connected component
+                    for (size_t i=0; i<(*it)->lower->nsources; ++i) {
+                      if ((*it)->lower->sources[i] &&
+                          (*it)->lower->sources[i]->antinode->higher &&
+                          (*it)->lower->sources[i]->antinode->higher->active) {
+                        (*it)->lower->sources[i] = nullptr;
+                      }
+                    }
+                  }
+                }
+                for (auto it=scc.rbegin(); it!=scc.rend() && (it==scc.rbegin() || *(it-1)!=node); ++it) {
+                  (*it)->active = false;
+                }
+                if (!node->use_lower) {
+                  node->sources[node->nsources++] = node->lower;
+                  node->use_lower = true;
+                }
+                keep_on_callstack = true;
+              } else {
+                // use previous values
+                for (auto it=scc.rbegin(); it!=scc.rend() && (it==scc.rbegin() || *(it-1)!=node); ++it) {
+                  // if (!node->anti) std::cerr << "last " << (*it)->location << (*it)->r.v() << " " << ((*it)->anti ? -(*it)->cell->previous_value : (*it)->cell->previous_value) << std::endl;
+                  value += (*it)->anti ? -(*it)->cell->previous_value : (*it)->cell->previous_value;
+                }
+                // if (!node->anti) std::cerr << "last " << node->location << " for " << node->r.v() << " " << value << std::endl;
+                if (!value) value = Cell::Value_::UNDEFINED;
+              }
+            }
+            if (value) {
+              while (scc.back() != node) {
+                scc.back()->value = value;
+                scc.back()->on_stack = false;
+                scc.pop_back();
+              }
+              scc.back()->value = value;
+              scc.back()->on_stack = false;
+              scc.pop_back();
+            }
+          }
+          if (!keep_on_callstack) {
+            // this node is done
+            callstack.pop();
+          }
+        }
+      }
+    }
+  }
+
+  // populate new cell values
+  for (size_t y=0; y<m; ++y) {
+    for (size_t x=0; x<n; ++x) {
+      const Location location(y, x);
+      Cell &cell = cells.at(location);
+      // highest priority node has the value
+      const Node &node = grid_nodes.at(location)[0];
+      if (cell) cell.value = node.value;
+    }
+  }
+
+  return false;
 }
 
-int main(int argc, char *argv[]) {
-  if (argc != 3) {
-    std::cerr << "Args: level_file submission_file" << std::endl;
-    return 1;
-  }
-  std::ifstream level_file(argv[1]);
-  std::ifstream submission_file(argv[2]);
-  std::string line;
-  // Level
-  int m, n, b, ni, no;
-  level_file >> m >> n >> b >> ni >> no;
-  std::getline(level_file, line);
-  std::string level = get_grid(level_file, m);
-  Board board(m, n, b);
-  int y, x;
-  for (int k=0; k<ni; ++k) {
-    level_file >> y >> x;
-    if (board.add_input(y, x)) return show(board.get_error());
-  }
-  for (int k=0; k<no; ++k) {
-    level_file >> y >> x;
-    if (board.add_output(y, x)) return show(board.get_error());
-  }
-  // I/O
-  for (int k=0; k<ni; ++k) {
-    level_file >> line;
-    if (board.set_input(k, line)) return show(board.get_error());
-  }
-  level_file >> line;
-  if (board.set_output_colors(line)) return show(board.get_error());
-  // Submission
-  std::string cells = get_grid(submission_file, m);
-  if (board.set_cells(cells)) return show(board.get_error());
-  for (int k=0; k<b; ++k) {
-    std::string directions = get_grid(submission_file, m);
-    std::string operations = get_grid(submission_file, m);
-    if (board.set_instructions(k, directions, operations)) return show(board.get_error());
-  }
-  if (board.reset_and_validate(level)) return show(board.get_error());
-  constexpr int MAX_CYCLES = 999;
-  // constexpr int MAX_CYCLES = 2;
-  auto [passes, err] = board.run(MAX_CYCLES, true);
-  if (err) return show(board.get_error());
-  if (passes) std::cout << "Passed!" << std::endl;
-  else std::cout << "Failed: " << board.get_error() << std::endl;
-}
+} // namespace puzzle

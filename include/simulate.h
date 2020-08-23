@@ -1,3 +1,6 @@
+#ifndef SIMULATE_H_
+#define SIMULATE_H_
+
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -493,3 +496,4 @@ public:
 
 
 } // namespace puzzle
+#endif // SIMULATE_H_
