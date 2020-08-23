@@ -16,6 +16,9 @@
 namespace puzzle {
 
 
+constexpr int sqr(int x) { return x * x; }
+
+
 class Formatter {
   std::ostringstream ss;
 public:
@@ -121,7 +124,7 @@ struct Location {
     return (!valid && !oth.valid) || (valid == oth.valid && y == oth.y && x == oth.x);
   }
   bool operator!=(const Location &oth) const { return !(*this == oth); }
-  friend std::ostream& operator<<(std::ostream &os, const Location &location) { return os << "[" << location.y << ", " << location.x << "]"; }
+  friend std::ostream& operator<<(std::ostream &os, const Location &location) { return os << "[" << location.y << "," << location.x << "]"; }
 };
 
 
@@ -471,6 +474,7 @@ public:
   bool reset_and_validate(const std::string &grid_fixed);
   // resolve the board
   bool resolve();
+  bool resolve2();
   // step forward one cycle
   bool move();
   // run through verification and return true if finishes

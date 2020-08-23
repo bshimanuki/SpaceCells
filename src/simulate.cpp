@@ -20,9 +20,6 @@ const Error Error::OutOfRange("Out of range error");
 const Error Error::InvalidInput("Invalid input");
 
 
-static int sqr(int x) { return x * x; }
-
-
 Color::Color(char c) {
   switch (c) {
   // cells
@@ -721,7 +718,7 @@ bool Board::reset_and_validate(const std::string &grid_fixed) {
   return false;
 }
 
-bool Board::resolve() {
+bool Board::resolve2() {
   class Node;
   using Queue = std::queue<Node*>;
   enum R_ {
