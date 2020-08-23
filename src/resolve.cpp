@@ -85,17 +85,18 @@ public:
   Cell::Value value;
   // Edges
   // really only needs to be max size for single distance plus 1, but no harm in allocating extra
-  std::array<Node*, sqr(1+2*RANGE)> sources = {};
+  static constexpr int MAX_DEGREE = 9;
+  std::array<Node*, MAX_DEGREE> sources = {};
   size_t nsources = 0;
-  Node *lower = nullptr; // pointer to increase in R (lower priority)
+  size_t source_index = 0;
   Node *higher = nullptr; // pointer to decrease in R (higher priority)
+  Node *lower = nullptr; // pointer to increase in R (lower priority)
   bool use_lower = false;
 
   // strongly connected component
   int index = 0;
   int lowlink = 0;
   bool on_stack = false;
-  size_t source_index = 0;
   bool in_subcall = false;
   bool active = false;
 
@@ -118,9 +119,7 @@ bool Board::resolve() {
   }
   // NB: resolve() does not call itself, so static variables are okay
   static Grid<std::array<Node, MAXR>> grid_nodes(m, n);
-  grid_nodes.reset();
   static Grid<std::array<Node, MAXR>> grid_antinodes(m, n);
-  grid_antinodes.reset();
   // NB: Pointers into deques are safe.
   static std::deque<Node*> nodes;
   nodes.clear();
@@ -147,16 +146,40 @@ bool Board::resolve() {
         antinode->antinode = node;
         node->cell = &cell;
         antinode->cell = &cell;
+        node->value = Cell::Value_::UNKNOWN;
+        antinode->value = Cell::Value_::UNKNOWN;
+        node->nsources = 0;
+        antinode->nsources = 0;
+        node->source_index = 0;
+        antinode->source_index = 0;
         if (r > 0) {
           node->higher = &grid_nodes.at(location)[r - 1];
           antinode->higher = &grid_antinodes.at(location)[r - 1];
           node->sources[node->nsources++] = node->higher;
           antinode->sources[antinode->nsources++] = antinode->higher;
+        } else {
+          node->higher = nullptr;
+          antinode->higher = nullptr;
         }
         if (r + 1 < MAXR) {
           node->lower = &grid_nodes.at(location)[r + 1];
           antinode->lower = &grid_antinodes.at(location)[r + 1];
+        } else {
+          node->lower = nullptr;
+          antinode->lower = nullptr;
         }
+        node->use_lower = false;
+        antinode->use_lower = false;
+        node->index = 0;
+        antinode->index = 0;
+        node->lowlink = 0;
+        antinode->lowlink = 0;
+        node->on_stack = false;
+        antinode->on_stack = false;
+        node->in_subcall = false;
+        antinode->in_subcall = false;
+        node->active = false;
+        antinode->active = false;
       }
     }
   }

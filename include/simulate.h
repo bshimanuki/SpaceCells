@@ -1,6 +1,7 @@
 #ifndef SIMULATE_H_
 #define SIMULATE_H_
 
+#include <cstring>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -46,7 +47,7 @@ public:
   bool operator!=(const Error &oth) const { return !(error == oth.error); }
 
   // TODO: remove
-  Error& operator=(const Error &error) { this->error = error.error;  throw std::runtime_error(this->error); }
+  // Error& operator=(const Error &error) { this->error = error.error;  throw std::runtime_error(this->error); }
 
   static const Error OutOfRange;
   static const Error InvalidInput;
@@ -406,6 +407,7 @@ public:
     return const_cast<T*>(std::as_const(*this).partner(location));
   }
 
+  void memset(char c) { std::memset(data, c, size() * sizeof(*data)); }
   bool reset() { return reset(T()); }
   bool reset(const T &v) {
     for (size_t i=0; i<size(); ++i) data[i] = v;
