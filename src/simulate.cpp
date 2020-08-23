@@ -196,13 +196,6 @@ Cell::Value Cell::Value::operator-() const {
   }
 }
 
-Cell::Value operator+(const Cell::Value &a, const Cell::Value &b) {
-  if (a == b) return a;
-  if (a == Cell::Value_::UNKNOWN) return b;
-  if (b == Cell::Value_::UNKNOWN) return a;
-  return Cell::Value_::UNDEFINED;
-}
-
 Cell::Value::operator std::string() const {
   switch (*this) {
   case Value_::UNKNOWN: return "?";
@@ -383,25 +376,6 @@ Cell::operator Color() const {
   }
 }
 
-bool Cell::is_1x1() const {
-  return exists && !partner_delta;
-}
-bool Cell::is_grabbable() const {
-  return is_1x1();
-}
-bool Cell::is_latchable() const {
-  return is_1x1();
-}
-bool Cell::is_refreshable() const {
-  return is_1x1() && latched;
-}
-bool Cell::is_rotateable() const {
-  return is_1x1();
-}
-bool Cell::is_diode() const {
-  return direction && !offset;
-}
-
 Operation Operation::Operation_(char c) {
   switch (c) {
   case GRAB.c: return GRAB;
@@ -555,29 +529,29 @@ bool Board::set_cells(const std::string &grid_cells) {
       // specially set multi-square cells
       switch (c) {
       case '<':
-        if (x + 1 < n) std::tie(initial_cells[y][x+1], initial_cells[y][x]) = Cell::Diode(Direction_::LEFT);
+        if (x + 1 < n) std::tie(initial_cells.at(y, x+1), initial_cells.at(y, x)) = Cell::Diode(Direction_::LEFT);
         break;
       case 'v':
-        if (y > 0) std::tie(initial_cells[y-1][x], initial_cells[y][x]) = Cell::Diode(Direction_::DOWN);
+        if (y > 0) std::tie(initial_cells.at(y-1, x), initial_cells.at(y, x)) = Cell::Diode(Direction_::DOWN);
         break;
       case '>':
-        if (x > 0) std::tie(initial_cells[y][x-1], initial_cells[y][x]) = Cell::Diode(Direction_::RIGHT);
+        if (x > 0) std::tie(initial_cells.at(y, x-1), initial_cells.at(y, x)) = Cell::Diode(Direction_::RIGHT);
         break;
       case '^':
-        if (y + 1 < m) std::tie(initial_cells[y+1][x], initial_cells[y][x]) = Cell::Diode(Direction_::UP);
+        if (y + 1 < m) std::tie(initial_cells.at(y+1, x), initial_cells.at(y, x)) = Cell::Diode(Direction_::UP);
         break;
       }
       // set 1x1 cells
-      if (!initial_cells[y][x].exists) initial_cells[y][x] = Cell(c);
-      // if (!initial_cells[y][x].exists && c != ' ') return error = Error::InvalidInput;
+      if (!initial_cells.at(y, x).exists) initial_cells.at(y, x) = Cell(c);
+      // if (!initial_cells.at(y, x).exists && c != ' ') return error = Error::InvalidInput;
     }
   }
   // check for multi-square consistency
   for (size_t y=0; y<m; ++y) {
     for (size_t x=0; x<n; ++x) {
-      if (initial_cells[y][x].partner_delta) {
+      if (initial_cells.at(y, x).partner_delta) {
         const Cell* partner = initial_cells.partner(Location(y, x));
-        if (!partner || initial_cells[y][x].partner_delta != -partner->partner_delta) {
+        if (!partner || initial_cells.at(y, x).partner_delta != -partner->partner_delta) {
           return error = Error::InvalidInput;
         }
       }
@@ -624,24 +598,24 @@ bool Board::reset_and_validate(const std::string &grid_fixed) {
       case ' ':
         break;
       case '.':
-        if (initial_cells[y][x]) return error = Error::InvalidInput;
+        if (initial_cells.at(y, x)) return error = Error::InvalidInput;
         break;
       case '<':
-        if (x <= 0 || initial_cells[y][x] != initial_cells[y][x-1]) return error = Error::InvalidInput;
+        if (x <= 0 || initial_cells.at(y, x) != initial_cells.at(y, x-1)) return error = Error::InvalidInput;
         break;
       case 'v':
-        if (y + 1 >= m || initial_cells[y][x] != initial_cells[y+1][x]) return error = Error::InvalidInput;
+        if (y + 1 >= m || initial_cells.at(y, x) != initial_cells.at(y+1, x)) return error = Error::InvalidInput;
         break;
       case '>':
-        if (x + 1 >= n || initial_cells[y][x] != initial_cells[y][x+1]) return error = Error::InvalidInput;
+        if (x + 1 >= n || initial_cells.at(y, x) != initial_cells.at(y, x+1)) return error = Error::InvalidInput;
         break;
       case '^':
-        if (y <= 0 || initial_cells[y][x] != initial_cells[y-1][x]) return error = Error::InvalidInput;
+        if (y <= 0 || initial_cells.at(y, x) != initial_cells.at(y-1, x)) return error = Error::InvalidInput;
         break;
       default:
-        if (initial_cells[y][x] != line[x]) return error = Error::InvalidInput;
+        if (initial_cells.at(y, x) != line[x]) return error = Error::InvalidInput;
         Location location(y, x);
-        const Cell &cell = initial_cells[y][x];
+        const Cell &cell = initial_cells.at(y, x);
         const Cell *partner = initial_cells.partner(location);
         switch (cell) {
         case '<':
@@ -676,16 +650,16 @@ bool Board::reset_and_validate(const std::string &grid_fixed) {
       // set non trespassable
       switch (line[x]) {
       case ' ': break;
-      default: trespassable[y][x] = false; break;
+      default: trespassable.at(y, x) = false; break;
       }
       // validate instructions
-      if (!trespassable[y][x]) {
-        for (const auto &_directions : directions) if (_directions[y][x]) return error = Error::InvalidInput;
-        for (const auto &_operations : operations) if (_operations[y][x]) return error = Error::InvalidInput;
+      if (!trespassable.at(y, x)) {
+        for (const auto &_directions : directions) if (_directions.at(y, x)) return error = Error::InvalidInput;
+        for (const auto &_operations : operations) if (_operations.at(y, x)) return error = Error::InvalidInput;
       }
       // check bot start locations
       for (size_t k=0; k<nbots; ++k) {
-        if (operations[k][y][x].type == Operation::Type::START) {
+        if (operations[k].at(y, x).type == Operation::Type::START) {
           if (bots[k]) {
             error = Error("Bot has multiple START instructions");
             return true;

@@ -51,7 +51,7 @@ public:
     case MAXR: default: return -1;
     }
   }
-  static R FromInt(uint8_t d) {
+  static constexpr R FromInt(uint8_t d) {
     switch (d) {
     case 0: return R0;
     case 4: return R4;
@@ -74,29 +74,29 @@ public:
   // Helper class for cell resolution
   // Identity
   Location location;
-  bool anti = false;
+  bool anti;
   R r;
 
   // Node properties
   // link to node for opposite value
-  Node *antinode = nullptr;
-  Cell *cell = nullptr;
+  Node *antinode;
+  Cell *cell;
   Cell::Value value;
   // Edges
-  // really only needs to be max size for single distance plus 1, but no harm in allocating extra
+  // needs to be max size for single distance plus 1
   static constexpr int MAX_DEGREE = 9;
-  std::array<Node*, MAX_DEGREE> sources = {};
-  size_t nsources = 0;
-  size_t source_index = 0;
-  Node *higher = nullptr; // pointer to decrease in R (higher priority)
-  Node *lower = nullptr; // pointer to increase in R (lower priority)
-  bool use_lower = false;
+  std::array<Node*, MAX_DEGREE> sources;
+  size_t nsources;
+  size_t source_index;
+  Node *higher; // pointer to decrease in R (higher priority)
+  Node *lower; // pointer to increase in R (lower priority)
+  bool use_lower;
 
   // strongly connected component
-  int index = 0;
-  int lowlink = 0;
-  bool on_stack = false;
-  bool in_subcall = false;
+  int index;
+  int lowlink;
+  bool on_stack;
+  bool in_subcall;
 
   friend std::ostream& operator<<(std::ostream &os, const Node &node) {
     return os << (node.anti ? '-' : '+') << node.r.v() << node.location << node.value;
@@ -107,7 +107,7 @@ bool Board::resolve() {
   if (check_status() != Status::RUNNING) return false;
   for (size_t y=0; y<m; ++y) {
     for (size_t x=0; x<n; ++x) {
-      Cell &cell = cells[y][x];
+      Cell &cell = cells.at(y, x);
       cell.previous_value = cell.value;
     }
   }
@@ -227,7 +227,6 @@ bool Board::resolve() {
           // add edges
           node->sources[node->nsources++] = anti ? neighbor_antinode : neighbor_node;
           antinode->sources[antinode->nsources++] = anti ? neighbor_node : neighbor_antinode;
-          // std::cerr << "source " << *node << " " << *node->sources[node->nsources-1] << std::endl;
         }
       }
     }
@@ -275,9 +274,6 @@ bool Board::resolve() {
           if (node->lowlink == node->index) {
             // subtree finished and node is root of an SCC
             Cell::Value value = Cell::Value_::UNKNOWN;
-            // std::cerr << "rbegin " << *node <<  " " << **scc.rbegin() << " " << (*scc.rbegin())->use_lower << std::endl;
-            // std::cerr << scc << std::endl;
-            // for (auto it=scc.rbegin(); it!=scc.rend() && (it==scc.rbegin() || *(it-1)!=node) && !(*it)->use_lower; ++it) {
             for (auto it=scc_initial.rbegin(); it!=scc_initial.rend() && (*it)->index >= node->index; ++it) {
               int weight = 0;
               int undefined = 0;
@@ -295,12 +291,10 @@ bool Board::resolve() {
                   }
                 }
               }
-              // std::cerr << **it << " " << weight << " " << undefined << std::endl;
               if (weight > undefined) value += Cell::Value_::ONE;
               else if (weight < -undefined) value += Cell::Value_::ZERO;
               else if (undefined) value = Cell::Value_::UNDEFINED;
             }
-            // std::cerr << value << std::endl;
             if (!value) {
               // add edges from lower priority level (increase radius of effect)
               // back()->index strictly greater than node->index since we handle root separately
@@ -326,10 +320,8 @@ bool Board::resolve() {
               if (!keep_on_callstack) {
                 // use previous values
                 for (auto it=scc.rbegin(); it!=scc.rend() && (*it)->index >= node->index; ++it) {
-                  // if (!node->anti) std::cerr << "last " << (*it)->location << (*it)->r.v() << " " << ((*it)->anti ? -(*it)->cell->previous_value : (*it)->cell->previous_value) << std::endl;
                   value += (*it)->anti ? -(*it)->cell->previous_value : (*it)->cell->previous_value;
                 }
-                // if (!node->anti) std::cerr << "last " << node->location << " for " << node->r.v() << " " << value << std::endl;
                 if (!value) value = Cell::Value_::UNDEFINED;
               }
             } else {

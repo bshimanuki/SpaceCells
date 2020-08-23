@@ -166,7 +166,13 @@ public:
     friend std::ostream& operator<<(std::ostream &os, const Value &value) { return os << static_cast<std::string>(value); }
     Value operator-() const;
     Value& operator+=(const Value &rhs) { return *this = *this + rhs; }
-    friend Value operator+(const Value &lhs, const Value &rhs);
+    inline friend Value operator+(const Value &lhs, const Value &rhs) {
+      if (lhs == rhs) return lhs;
+      if (lhs == Cell::Value_::UNKNOWN) return rhs;
+      if (rhs == Cell::Value_::UNKNOWN) return lhs;
+      return Cell::Value_::UNDEFINED;
+    }
+
   };
 
   bool exists = false;
@@ -200,12 +206,13 @@ public:
   explicit operator Color() const;
 
   // State checkers
-  bool is_1x1() const;
-  bool is_grabbable() const;
-  bool is_latchable() const;
-  bool is_refreshable() const;
-  bool is_rotateable() const;
-  bool is_diode() const;
+  inline bool is_1x1() const { return exists && !partner_delta; }
+  inline bool is_grabbable() const { return is_1x1(); }
+  inline bool is_latchable() const { return is_1x1(); }
+  inline bool is_refreshable() const { return is_1x1() && latched; }
+  inline bool is_rotateable() const { return is_1x1(); }
+  inline bool is_diode() const { return direction && !offset; }
+
 
 private:
   static Cell _Cell(char c); // dispatcher
