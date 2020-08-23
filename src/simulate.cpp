@@ -949,17 +949,17 @@ bool Board::move() {
   return false;
 }
 
-std::pair<bool, bool> Board::run(size_t max_cycles, bool print_board) {
+std::pair<bool, bool> Board::run(size_t max_cycles, std::ostream *os) {
   // make sure it starts resolved
   if (resolve()) {
     return {false, invalid};
   }
-  if (print_board) std::cout << "Cycle 0:" << std::endl << get_resolved_board();
+  if (os) *os << "Cycle 0:" << std::endl << get_resolved_board();
   for (size_t cycle=0; cycle<max_cycles; ++cycle) {
     if (move()) {
       return {false, invalid};
     }
-    if (print_board) std::cout << "Cycle " << (cycle + 1) << ":" << std::endl << get_resolved_board();
+    if (os) *os << "Cycle " << (cycle + 1) << ":" << std::endl << get_resolved_board();
     switch (check_status()) {
     case Status::INVALID:
       return {false, false};

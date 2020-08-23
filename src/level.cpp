@@ -28,7 +28,7 @@ bool show(std::ostream *os, const std::string &line) {
   return false;
 }
 
-bool verify(std::istream &is_level, std::istream &is_submission, std::ostream *os) {
+bool verify(std::istream &is_level, std::istream &is_submission, std::ostream *os, bool print_board) {
   std::string line;
   // Level
   int m, n, b, ni, no;
@@ -63,7 +63,7 @@ bool verify(std::istream &is_level, std::istream &is_submission, std::ostream *o
   if (board.reset_and_validate(level)) return show(os, board.get_error());
   constexpr int MAX_CYCLES = 999;
   // constexpr int MAX_CYCLES = 2;
-  auto [passes, err] = board.run(MAX_CYCLES, true);
+  auto [passes, err] = board.run(MAX_CYCLES, print_board ? os : nullptr);
   if (err) return show(os, board.get_error());
   if (os) {
     if (passes) *os << "Passed!" << std::endl;

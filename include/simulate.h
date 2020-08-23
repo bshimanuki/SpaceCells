@@ -480,7 +480,7 @@ public:
   // step forward one cycle
   bool move();
   // run through verification and return true if finishes
-  std::pair<bool, bool> run(size_t max_cycles, bool print_board=false);
+  std::pair<bool, bool> run(size_t max_cycles, std::ostream *os=nullptr);
 
   // Output
   // check status

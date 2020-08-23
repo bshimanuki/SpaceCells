@@ -16,5 +16,6 @@ int main(int argc, char *argv[]) {
   }
   std::ifstream level_file(argv[1]);
   std::ifstream submission_file(argv[2]);
-  verify(level_file, submission_file, &std::cout);
+  // verify(level_file, submission_file, &std::cout);
+  verify(level_file, submission_file, &std::cout, false);
 }
