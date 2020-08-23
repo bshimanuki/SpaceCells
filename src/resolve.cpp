@@ -2,11 +2,11 @@
 
 #include <algorithm>
 #include <array>
-#include <deque>
 #include <functional>
 #include <iostream>
 #include <stack>
 #include <string>
+#include <vector>
 
 namespace puzzle {
 
@@ -105,6 +105,7 @@ public:
 
 bool Board::resolve() {
   if (check_status() != Status::RUNNING) return false;
+  const size_t max_nodes = 2 * m * n * MAXR;
   for (size_t y=0; y<m; ++y) {
     for (size_t x=0; x<n; ++x) {
       Cell &cell = cells.at(y, x);
@@ -119,7 +120,8 @@ bool Board::resolve() {
   static Grid<std::array<Node, MAXR>> grid_nodes(m, n);
   static Grid<std::array<Node, MAXR>> grid_antinodes(m, n);
   // NB: Pointers into deques are safe.
-  static std::deque<Node*> nodes;
+  static std::vector<Node*> nodes;
+  nodes.reserve(max_nodes);
   nodes.clear();
   // Construct nodes
   for (size_t y=0; y<m; ++y) {
@@ -233,18 +235,21 @@ bool Board::resolve() {
   }
 
   // Tarjan's algorithm
-  static std::stack<Node*> callstack;
-  while (!callstack.empty()) callstack.pop();
-  static std::deque<Node*> scc;
+  static std::vector<Node*> callstack;
+  callstack.reserve(max_nodes);
+  callstack.clear();
+  static std::vector<Node*> scc;
+  scc.reserve(max_nodes);
   scc.clear();
-  static std::deque<Node*> scc_initial;
+  static std::vector<Node*> scc_initial;
+  scc_initial.reserve(max_nodes);
   scc_initial.clear();
   int index = 1;
   for (Node *start : nodes) {
     if (!start->index) {
-      callstack.push(start);
+      callstack.push_back(start);
       while (!callstack.empty()) {
-        Node *node = callstack.top();
+        Node *node = callstack.back();
         if (node->in_subcall) {
           // call to child was finished
           node->lowlink = std::min(node->lowlink, node->sources[node->source_index - 1]->lowlink);
@@ -264,7 +269,7 @@ bool Board::resolve() {
         }
         if (next) {
           if (!next->index) {
-            callstack.push(next);
+            callstack.push_back(next);
             node->in_subcall = true;
           } else if (next->on_stack) {
             node->lowlink = std::min(node->lowlink, next->index);
@@ -304,7 +309,7 @@ bool Board::resolve() {
                 if (initial_node->lower && !initial_node->use_lower) {
                   initial_node->sources[initial_node->nsources++] = initial_node->lower;
                   initial_node->use_lower = true;
-                  if (initial_node != node) callstack.push(initial_node);
+                  if (initial_node != node) callstack.push_back(initial_node);
                   keep_on_callstack = true;
                   // kill edges from same strongly connected component
                   for (size_t i=0; i<initial_node->lower->nsources; ++i) {
@@ -340,7 +345,7 @@ bool Board::resolve() {
           }
           if (!keep_on_callstack) {
             // this node is done
-            callstack.pop();
+            callstack.pop_back();
           }
         }
       }
