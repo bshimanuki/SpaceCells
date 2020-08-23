@@ -208,7 +208,7 @@ bool Board::resolve() {
           // add edges
           node->sources[node->nsources++] = anti ? neighbor_antinode : neighbor_node;
           antinode->sources[antinode->nsources++] = anti ? neighbor_node : neighbor_antinode;
-          std::cerr << "source " << *node << " " << *node->sources[node->nsources-1] << std::endl;
+          // std::cerr << "source " << *node << " " << *node->sources[node->nsources-1] << std::endl;
         }
       }
     }
@@ -256,8 +256,8 @@ bool Board::resolve() {
           if (node->lowlink == node->index) {
             // subtree finished and node is root of an SCC
             Cell::Value value = Cell::Value_::UNKNOWN;
-            std::cerr << "rbegin " << node->location << node->r.v() <<  " " << (*scc.rbegin())->location << " " << (*scc.rbegin())->r.v() << " " << (*scc.rbegin())->use_lower << std::endl;
-            std::cerr << scc << std::endl;
+            // std::cerr << "rbegin " << node->location << node->r.v() <<  " " << (*scc.rbegin())->location << " " << (*scc.rbegin())->r.v() << " " << (*scc.rbegin())->use_lower << std::endl;
+            // std::cerr << scc << std::endl;
             // for (auto it=scc.rbegin(); it!=scc.rend() && (it==scc.rbegin() || *(it-1)!=node) && !(*it)->use_lower; ++it) {
             bool has_lower = false;
             for (auto it=scc.rbegin(); it!=scc.rend() && (it==scc.rbegin() || *(it-1)!=node); ++it) {
@@ -277,13 +277,13 @@ bool Board::resolve() {
                   }
                 }
               }
-              std::cerr << **it << " " << weight << " " << undefined << std::endl;
+              // std::cerr << **it << " " << weight << " " << undefined << std::endl;
               if (weight > undefined) value += Cell::Value_::ONE;
               else if (weight < -undefined) value += Cell::Value_::ZERO;
               else if (undefined) value = Cell::Value_::UNDEFINED;
               has_lower |= (*it)->lower && !(*it)->use_lower;
             }
-            std::cerr << value << std::endl;
+            // std::cerr << value << std::endl;
             if (!value) {
               if (has_lower) {
                 // add edges from lower priority level (increase radius of effect)
@@ -318,10 +318,10 @@ bool Board::resolve() {
               } else {
                 // use previous values
                 for (auto it=scc.rbegin(); it!=scc.rend() && (it==scc.rbegin() || *(it-1)!=node); ++it) {
-                  if (!node->anti) std::cerr << "last " << (*it)->location << (*it)->r.v() << " " << ((*it)->anti ? -(*it)->cell->previous_value : (*it)->cell->previous_value) << std::endl;
+                  // if (!node->anti) std::cerr << "last " << (*it)->location << (*it)->r.v() << " " << ((*it)->anti ? -(*it)->cell->previous_value : (*it)->cell->previous_value) << std::endl;
                   value += (*it)->anti ? -(*it)->cell->previous_value : (*it)->cell->previous_value;
                 }
-                if (!node->anti) std::cerr << "last " << node->location << " for " << node->r.v() << " " << value << std::endl;
+                // if (!node->anti) std::cerr << "last " << node->location << " for " << node->r.v() << " " << value << std::endl;
                 if (!value) value = Cell::Value_::UNDEFINED;
               }
             }

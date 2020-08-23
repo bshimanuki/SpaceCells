@@ -1260,23 +1260,14 @@ bool Board::move() {
       break;
     case Operation::Type::LATCH:
     case Operation::Type::REFRESH:
-      // toggles happen between movement and resolution
-      break;
     case Operation::Type::POWER:
-      if (operation.value < outputs.size()) {
-        outputs[operation.value].toggle_power = true;
-      }
-      break;
     case Operation::Type::NEXT:
+      // toggles happen between movement and resolution
       break;
     case Operation::Type::NONE:
     default:
       break;
     }
-  }
-  for (auto &output : outputs) {
-    output.power ^= output.toggle_power;
-    output.toggle_power = false;
   }
   // set cell movement
   for (size_t k=0; k<nbots; ++k) {
@@ -1394,12 +1385,21 @@ bool Board::move() {
         cell.refreshing = true;
       }
       break;
+    case Operation::Type::POWER:
+      if (operation.value < outputs.size()) {
+        outputs[operation.value].toggle_power = true;
+      }
+      break;
     case Operation::Type::NEXT:
       next = true;
       break;
     default:
       break;
     }
+  }
+  for (auto &output : outputs) {
+    output.power ^= output.toggle_power;
+    output.toggle_power = false;
   }
   // resolve
   if (resolve()) return true;
