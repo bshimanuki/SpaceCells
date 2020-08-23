@@ -477,7 +477,6 @@ public:
   bool reset_and_validate(const std::string &grid_fixed);
   // resolve the board
   bool resolve();
-  bool resolve2();
   // step forward one cycle
   bool move();
   // run through verification and return true if finishes
