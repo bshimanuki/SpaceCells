@@ -25,7 +25,7 @@ EMSCRIPTEN_BINDINGS(board_binding) {
     .function("get_resolved_board", &Board::get_resolved_board)
     .function("get_bots", &Board::get_bots)
     ;
-  function("LoadBoard", static_cast<std::pair<Board,bool>(*)(const std::string&, const std::string&)>(&load));
+  function("LoadBoard", static_cast<Board(*)(const std::string&, const std::string&)>(&load));
 
   class_<Bot>("Bot")
     .constructor<>()
@@ -47,4 +47,11 @@ EMSCRIPTEN_BINDINGS(board_binding) {
   class_<Direction>("Direction")
     .constructor<>()
     ;
+
+  class_<std::pair<bool, bool>>("PairValidErr")
+    .property("valid", &std::pair<bool, bool>::first)
+    .property("err", &std::pair<bool, bool>::second)
+    ;
+
+  register_vector<Bot>("vector<Bot>");
 }

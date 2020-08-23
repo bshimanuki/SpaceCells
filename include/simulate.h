@@ -105,7 +105,6 @@ public:
   Direction(char c);
   constexpr operator Direction_() const { return v; }
   explicit operator bool() const { return v != Direction_::NONE; }
-  explicit operator struct Location() const;
   operator std::string() const;
   friend std::ostream& operator<<(std::ostream &os, const Direction &direction) {
     return os << static_cast<std::string>(direction);
@@ -119,7 +118,7 @@ struct Location {
   int x = 0;
   constexpr Location() {}
   constexpr Location(int y, int x) : valid(true), y(y), x(x) {}
-  constexpr Location(const Direction &direction) { *this = direction; }
+  Location(const Direction &direction);
   explicit operator bool() const { return valid; }
   Location operator-() const { return *this ? Location(-y, -x) : Location(); }
   Location operator+(const Location &oth) const { return *this && oth ? Location(y + oth.y, x + oth.x) : Location(); }
@@ -449,6 +448,7 @@ public:
 class Board {
   // setup
   const size_t m, n, nbots;
+  Grid<char> level;
   Grid<Cell> initial_cells;
   Grid<bool> trespassable;
   std::vector<Grid<Direction>> directions; // bot -> grid
@@ -475,16 +475,19 @@ public:
   bool set_input(size_t k, const std::string &bits);
   // set output color sequence
   bool set_output_colors(const std::string &colors);
+  // set level grid
+  bool set_level(const std::string &grid_fixed);
   // set initial cell layout
   bool set_cells(const std::string &grid_cells);
   // set instructions for bot k
   bool set_instructions(
       size_t k, const std::string &grid_directions, const std::string &grid_operations);
+  void invalidate() { invalid = true; }
 
   // Runtime
   // check if setup is valid
   // ' ' for any, '.' for nothing, < v > ^ for equal to another, x+/\-| for cell
-  bool reset_and_validate(const std::string &grid_fixed);
+  bool reset_and_validate();
   // resolve the board
   bool resolve();
   // step forward one cycle

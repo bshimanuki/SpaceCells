@@ -152,13 +152,13 @@ Direction::Direction(char c) {
   }
 }
 
-Direction::operator Location() const  {
-  switch (*this) {
-  case Direction_::LEFT: return Location(0, -1);
-  case Direction_::DOWN: return Location(1, 0);
-  case Direction_::RIGHT: return Location(0, 1);
-  case Direction_::UP: return Location(-1, 0);
-  case Direction_::NONE: default: return Location();
+Location::Location(const Direction &direction) {
+  switch (direction) {
+  case Direction_::LEFT: *this = Location(0, -1); return;
+  case Direction_::DOWN: *this = Location(1, 0); return;
+  case Direction_::RIGHT: *this = Location(0, 1); return;
+  case Direction_::UP: *this = Location(-1, 0); return;
+  case Direction_::NONE: default: *this = Location(); return;
   }
 }
 
@@ -465,6 +465,7 @@ Operation::operator char() const {
 
 Board::Board(size_t m, size_t n, size_t nbots) :
     m(m), n(n), nbots(nbots),
+    level(m, n),
     initial_cells(m, n),
     trespassable(m, n),
     directions(nbots, {m, n}),
@@ -511,6 +512,22 @@ bool Board::set_output_colors(const std::string &colors) {
   }
   output_colors.resize(colors.size());
   std::copy(colors.begin(), colors.end(), output_colors.begin());
+  return false;
+}
+
+bool Board::set_level(const std::string &grid_fixed) {
+  std::stringstream ss(grid_fixed);
+  std::string line;
+  for (size_t y=0; y<m; ++y) {
+    std::getline(ss, line);
+    if (line.size() != n) {
+      error = Error::InvalidInput;
+      return true;
+    }
+    for (size_t x=0; x<n; ++x) {
+      level.at(y, x) = line[x];
+    }
+  }
   return false;
 }
 
@@ -573,9 +590,7 @@ bool Board::set_instructions(size_t k, const std::string &grid_directions, const
   return invalid;
 }
 
-bool Board::reset_and_validate(const std::string &grid_fixed) {
-  std::stringstream ss(grid_fixed);
-  std::string line;
+bool Board::reset_and_validate() {
   for (auto &bot : bots) bot = Bot();
   trespassable.reset(true);
   for (auto &input : inputs) {
@@ -587,15 +602,11 @@ bool Board::reset_and_validate(const std::string &grid_fixed) {
   }
   // check grids
   for (size_t y=0; y<m; ++y) {
-    std::getline(ss, line);
-    if (line.size() != n) {
-      error = Error::InvalidInput;
-      return true;
-    }
     // validate cells
     for (size_t x=0; x<n; ++x) {
-      switch (line[x]) {
+      switch (level.at(y, x)) {
       case ' ':
+      case '_':
         break;
       case '.':
         if (initial_cells.at(y, x)) return error = Error::InvalidInput;
@@ -613,7 +624,7 @@ bool Board::reset_and_validate(const std::string &grid_fixed) {
         if (y <= 0 || initial_cells.at(y, x) != initial_cells.at(y-1, x)) return error = Error::InvalidInput;
         break;
       default:
-        if (initial_cells.at(y, x) != line[x]) return error = Error::InvalidInput;
+        if (initial_cells.at(y, x) != level.at(y, x)) return error = Error::InvalidInput;
         Location location(y, x);
         const Cell &cell = initial_cells.at(y, x);
         const Cell *partner = initial_cells.partner(location);
@@ -648,8 +659,8 @@ bool Board::reset_and_validate(const std::string &grid_fixed) {
         break;
       }
       // set non trespassable
-      switch (line[x]) {
-      case ' ': break;
+      switch (level.at(y, x)) {
+      case ' ': case '_': break;
       default: trespassable.at(y, x) = false; break;
       }
       // validate instructions
