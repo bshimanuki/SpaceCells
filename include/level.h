@@ -1,5 +1,5 @@
 #ifndef LEVEL_H_
-#define LEVLE_H_
+#define LEVEL_H_
 
 #include <algorithm>
 #include <iostream>
