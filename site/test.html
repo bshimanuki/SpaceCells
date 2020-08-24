@@ -8,9 +8,11 @@
         console.log("loaded");
       }
       var board;
+      var level;
+      var submission;
       function compute() {
-        var level = document.getElementById("level").value;
-        var submission = document.getElementById("submission").value;
+        level = document.getElementById("level").value;
+        submission = document.getElementById("submission").value;
         board = Module.LoadBoard(level, submission);
         console.log(board.check_status());
         board.run(100);

@@ -3,10 +3,10 @@
 #include "level.h"
 #include "simulate.h"
 
-using namespace puzzle;
 using namespace emscripten;
+using namespace puzzle;
 
-EMSCRIPTEN_BINDINGS(board_binding) {
+EMSCRIPTEN_BINDINGS(puzzle_bindings) {
   class_<Board>("Board")
     .constructor<size_t, size_t, size_t>()
     .function("add_input", &Board::add_input)

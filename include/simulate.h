@@ -311,6 +311,12 @@ struct Bot {
   Bot() {}
   Bot(const Location &location) : location(location) {}
   explicit operator bool() const { return (bool) location; }
+  bool operator==(const Bot &bot) const {
+    return location == bot.location &&
+      moving == bot.moving &&
+      holding == bot.holding &&
+      rotating == bot.rotating;
+  }
 };
 
 
