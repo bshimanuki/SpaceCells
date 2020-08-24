@@ -48,6 +48,12 @@ EMSCRIPTEN_BINDINGS(board_binding) {
     .constructor<>()
     ;
 
+  enum_<Status>("Status")
+    .value("INVALID", Status::INVALID)
+    .value("RUNNING", Status::RUNNING)
+    .value("DONE", Status::DONE)
+    ;
+
   class_<std::pair<bool, bool>>("PairValidErr")
     .property("valid", &std::pair<bool, bool>::first)
     .property("err", &std::pair<bool, bool>::second)

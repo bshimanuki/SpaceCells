@@ -1,0 +1,25 @@
+<html>
+  <head>
+  </head>
+  <body>
+    <script src="/embindings.js"></script>
+    <script>
+      Module.onRuntimeInitialized = _ => {
+        console.log("loaded");
+      }
+      var board;
+      function compute() {
+        var level = document.getElementById("level").value;
+        var submission = document.getElementById("submission").value;
+        board = Module.LoadBoard(level, submission);
+        console.log(board.check_status());
+        board.run(100);
+        console.log(board.check_status());
+      }
+    </script>
+
+    <textarea name="level" id="level" rows=20 cols=40></textarea>
+    <textarea name="submission" id="submission" rows=20 cols=40></textarea>
+    <input type="button" value="Validate" onclick="compute();" />
+  </body>
+</html>
