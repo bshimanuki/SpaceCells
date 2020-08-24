@@ -2,8 +2,13 @@
   <head>
   </head>
   <body>
-    <script src="/embindings.js"></script>
+    <script src="./embindings.js"></script>
     <script>
+      var levels = {
+        "not": "../examples/not.lvl",
+        "xor": "../examples/xor.lvl",
+        "rainbow": "../examples/rainbow.lvl",
+      };
       Module.onRuntimeInitialized = _ => {
         console.log("loaded");
       }
@@ -11,16 +16,41 @@
       var level;
       var submission;
       function compute() {
-        level = document.getElementById("level").value;
+        // level = document.getElementById("level").value;
         submission = document.getElementById("submission").value;
         board = Module.LoadBoard(level, submission);
         console.log(board.check_status());
         board.run(100);
         console.log(board.check_status());
       }
+      function getFileFromServer(url, doneCallback) {
+        var xhr = new XMLHttpRequest();
+        xhr.onreadystatechange = function() {
+          if (xhr.readyState === 4) {
+            doneCallback(xhr.status == 200 ? xhr.responseText : null);
+          }
+        }
+        xhr.open("GET", url, true);
+        xhr.send();
+      }
+      function pickLevel() {
+        var path = levels[document.getElementById("level_select").value];
+        getFileFromServer(path, function(text) {
+          if (text !== null) level = text;
+        });
+      }
     </script>
 
-    <textarea name="level" id="level" rows=20 cols=40></textarea>
+    <label for="level_select">Choose level:</label>
+    <select name="level_select" id="level_select">
+      <option value="not">not</option>
+      <option value="xor">xor</option>
+      <option value="rainbow">rainbow</option>
+    </select>
+    <input type="button" value="pickLevel" onclick="pickLevel();" />
+    <br/>
+
+    <!-- <textarea name="level" id="level" rows=20 cols=40></textarea> -->
     <textarea name="submission" id="submission" rows=20 cols=40></textarea>
     <input type="button" value="Validate" onclick="compute();" />
   </body>
