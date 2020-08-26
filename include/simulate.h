@@ -85,7 +85,10 @@ public:
   Color(Color_ v) : v(v) {}
   Color(char c);
   operator Color_() const { return v; }
-  friend std::ostream& operator<<(std::ostream &os, const Color &color);
+  explicit operator char() const;
+  friend std::ostream& operator<<(std::ostream &os, const Color &color) {
+    return os << static_cast<char>(color);
+  }
   friend Color operator+(const Color &lhs, const Color &rhs);
 };
 
@@ -105,9 +108,9 @@ public:
   Direction(char c);
   constexpr operator Direction_() const { return v; }
   explicit operator bool() const { return v != Direction_::NONE; }
-  operator std::string() const;
+  explicit operator char() const;
   friend std::ostream& operator<<(std::ostream &os, const Direction &direction) {
-    return os << static_cast<std::string>(direction);
+    return os << static_cast<char>(direction);
   }
 };
 
@@ -162,8 +165,8 @@ public:
     explicit Value(char c);
     operator Value_() const { return v; }
     explicit operator bool() const { return v != Value_::UNKNOWN; }
-    operator std::string() const;
-    friend std::ostream& operator<<(std::ostream &os, const Value &value) { return os << static_cast<std::string>(value); }
+    explicit operator char() const;
+    friend std::ostream& operator<<(std::ostream &os, const Value &value) { return os << static_cast<char>(value); }
     Value operator-() const;
     Value& operator+=(const Value &rhs) { return *this = *this + rhs; }
     inline friend Value operator+(const Value &lhs, const Value &rhs) {
@@ -471,6 +474,16 @@ class Board {
   size_t step = 0; // step index for I/O
   // resolve memory allocation
 public:
+  size_t get_m() const { return m; }
+  size_t get_n() const { return n; }
+  const std::vector<Bot>& get_bots() const { return bots; }
+  const std::vector<Input>& get_inputs() const { return inputs; }
+  const std::vector<Output>& get_outputs() const { return outputs; }
+  const std::vector<Color>& get_output_colors() const { return output_colors; }
+  const Grid<bool>& get_trespassable() const { return trespassable; }
+  size_t get_step() const { return step; }
+  const Grid<Cell>& get_cells() const { return cells; }
+
   // Setup
   Board(size_t m, size_t n, size_t nbots);
   // add input cell square
@@ -511,7 +524,6 @@ public:
   // return the most recent board
   std::string get_unresolved_board() const;
   std::string get_resolved_board() const;
-  std::vector<Bot> get_bots() const;
 };
 
 

@@ -24,7 +24,7 @@ BOOST_PYTHON_MODULE(python_bindings)
     .def("get_error", &Board::get_error)
     .def("get_unresolved_board", &Board::get_unresolved_board)
     .def("get_resolved_board", &Board::get_resolved_board)
-    .def("get_bots", &Board::get_bots)
+    .def("get_bots", &Board::get_bots, return_value_policy<reference_existing_object>())
     ;
   def("LoadBoard", static_cast<Board(*)(const std::string&, const std::string&)>(&load));
 

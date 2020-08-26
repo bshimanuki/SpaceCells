@@ -43,20 +43,20 @@ Color::Color(char c) {
   }
 }
 
-std::ostream& operator<<(std::ostream &os, const Color &color) {
-  switch (color) {
-  case Color_::BLACK: return os << "K";
-  case Color_::BROWN: return os << "N";
-  case Color_::RED: return os << "R";
-  case Color_::ORANGE: return os << "O";
-  case Color_::YELLOW: return os << "Y";
-  case Color_::GREEN: return os << "G";
-  case Color_::BLUE: return os << "B";
-  case Color_::PURPLE: return os << "P";
-  case Color_::WHITE: return os << "W";
-  case Color_::CYAN: return os << "C";
-  case Color_::REDORANGE: return os << "E";
-  case Color_::INVALID: default: return os << "#";
+Color::operator char() const {
+  switch (*this) {
+  case Color_::BLACK: return 'K';
+  case Color_::BROWN: return 'N';
+  case Color_::RED: return 'R';
+  case Color_::ORANGE: return 'O';
+  case Color_::YELLOW: return 'Y';
+  case Color_::GREEN: return 'G';
+  case Color_::BLUE: return 'B';
+  case Color_::PURPLE: return 'P';
+  case Color_::WHITE: return 'W';
+  case Color_::CYAN: return 'C';
+  case Color_::REDORANGE: return 'E';
+  case Color_::INVALID: default: return '#';
   }
 }
 
@@ -162,19 +162,19 @@ Location::Location(const Direction &direction) {
   }
 }
 
-Direction::operator std::string() const {
+Direction::operator char() const {
   switch (*this) {
   case Direction_::LEFT:
-    return "<";
+    return '<';
   case Direction_::DOWN:
-    return "v";
+    return 'v';
   case Direction_::RIGHT:
-    return ">";
+    return '>';
   case Direction_::UP:
-    return "^";
+    return '^';
   case Direction_::NONE:
   default:
-    return " ";
+    return ' ';
   }
 }
 
@@ -196,12 +196,12 @@ Cell::Value Cell::Value::operator-() const {
   }
 }
 
-Cell::Value::operator std::string() const {
+Cell::Value::operator char() const {
   switch (*this) {
-  case Value_::UNKNOWN: return "?";
-  case Value_::ZERO: return "0";
-  case Value_::ONE: return "1";
-  case Value_::UNDEFINED: default: return "x";
+  case Value_::UNKNOWN: return '?';
+  case Value_::ZERO: return '0';
+  case Value_::ONE: return '1';
+  case Value_::UNDEFINED: default: return 'x';
   }
 }
 
@@ -988,10 +988,6 @@ std::string Board::get_resolved_board() const {
     ss << std::endl;
   }
   return ss.str();
-}
-
-std::vector<Bot> Board::get_bots() const {
-  return bots;
 }
 
 

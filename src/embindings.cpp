@@ -9,6 +9,14 @@ using namespace puzzle;
 EMSCRIPTEN_BINDINGS(puzzle_bindings) {
   class_<Board>("Board")
     .constructor<size_t, size_t, size_t>()
+    .property("m", &Board::get_m)
+    .property("n", &Board::get_n)
+    .function("get_inputs", &Board::get_inputs)
+    .function("get_outputs", &Board::get_outputs)
+    .function("get_output_colors", &Board::get_output_colors)
+    .function("get_trespassable", &Board::get_trespassable)
+    .property("step", &Board::get_step)
+    .function("get_cells", &Board::get_cells)
     .function("add_input", &Board::add_input)
     .function("add_output", &Board::add_output)
     .function("set_input", &Board::set_input)
@@ -23,7 +31,6 @@ EMSCRIPTEN_BINDINGS(puzzle_bindings) {
     .function("get_error", &Board::get_error)
     .function("get_unresolved_board", &Board::get_unresolved_board)
     .function("get_resolved_board", &Board::get_resolved_board)
-    .function("get_bots", &Board::get_bots)
     ;
   function("LoadBoard", static_cast<Board(*)(const std::string&, const std::string&)>(&load));
 
@@ -33,6 +40,11 @@ EMSCRIPTEN_BINDINGS(puzzle_bindings) {
     .property("moving", &Bot::moving)
     .property("holding", &Bot::holding)
     .property("rotating", &Bot::rotating)
+    ;
+
+  class_<Color>("Color")
+    .constructor<char>()
+    .property("as_char", &Color::operator char)
     ;
 
   class_<Location>("Location")
@@ -45,7 +57,8 @@ EMSCRIPTEN_BINDINGS(puzzle_bindings) {
     ;
 
   class_<Direction>("Direction")
-    .constructor<>()
+    .constructor<char>()
+    .property("as_char", &Direction::operator char)
     ;
 
   enum_<Status>("Status")
@@ -54,10 +67,58 @@ EMSCRIPTEN_BINDINGS(puzzle_bindings) {
     .value("DONE", Status::DONE)
     ;
 
+  class_<Input>("Input")
+    .property("location", &Input::location)
+    .function("get_bit", +[](const Input &input, size_t k){ return input.bits[k]; })
+    ;
+
+  class_<Output>("Output")
+    .property("location", &Output::location)
+    .property("power", &Output::power)
+    ;
+
+  class_<Cell>("Cell")
+    .constructor<>()
+    .constructor<char>()
+    .property("exists", &Cell::exists)
+    .property("x", &Cell::x)
+    .property("latched", &Cell::latched)
+    .property("offset", &Cell::offset)
+    .property("direction", &Cell::direction)
+    .property("partner_delta", &Cell::partner_delta)
+    .property("value", +[](const Cell &cell){ return static_cast<char>(cell.value); })
+    .property("previous_value", +[](const Cell &cell){ return static_cast<char>(cell.previous_value); })
+    .property("moving", &Cell::moving)
+    .property("held", &Cell::held)
+    .property("rotating", &Cell::rotating)
+    .property("refreshing", &Cell::refreshing)
+    .function("resolved", &Cell::resolved)
+    .function("unresolved", &Cell::operator char)
+    .property("color", &Cell::operator Color)
+    ;
+
+  class_<Operation>("Operation")
+    .constructor<char>()
+    .property("exists", &Operation::operator bool)
+    .property("direction", &Operation::direction)
+    .property("as_char", &Operation::operator char)
+    ;
+
   class_<std::pair<bool, bool>>("PairValidErr")
     .property("valid", &std::pair<bool, bool>::first)
     .property("err", &std::pair<bool, bool>::second)
     ;
 
+  class_<Grid<Cell>>("Grid<Cell>")
+    .function("at", static_cast<Cell&(Grid<Cell>::*)(size_t, size_t)>(&Grid<Cell>::at))
+    ;
+
+  class_<Grid<bool>>("Grid<bool>")
+    .function("at", static_cast<bool&(Grid<bool>::*)(size_t, size_t)>(&Grid<bool>::at))
+    ;
+
   register_vector<Bot>("vector<Bot>");
+  register_vector<Input>("vector<Input>");
+  register_vector<Output>("vector<Output>");
+  register_vector<Color>("vector<Color>");
 }
