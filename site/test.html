@@ -8,6 +8,8 @@
         "not": "../examples/not.lvl",
         "xor": "../examples/xor.lvl",
         "rainbow": "../examples/rainbow.lvl",
+        "median": "../examples/median.lvl",
+        "adder": "../examples/adder.lvl",
       };
       Module.onRuntimeInitialized = _ => {
         console.log("loaded");
@@ -20,8 +22,8 @@
         submission = document.getElementById("submission").value;
         board = Module.LoadBoard(level, submission);
         console.log(board.check_status());
-        board.run(100);
-        console.log(board.check_status());
+        <!-- board.run(100); -->
+        <!-- console.log(board.check_status()); -->
       }
       function getFileFromServer(url, doneCallback) {
         var xhr = new XMLHttpRequest();
@@ -46,6 +48,8 @@
       <option value="not">not</option>
       <option value="xor">xor</option>
       <option value="rainbow">rainbow</option>
+      <option value="median">median</option>
+      <option value="adder">adder</option>
     </select>
     <input type="button" value="pickLevel" onclick="pickLevel();" />
     <br/>

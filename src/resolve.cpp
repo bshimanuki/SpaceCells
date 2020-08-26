@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cassert>
 #include <functional>
 #include <iostream>
 #include <stack>
@@ -24,6 +25,7 @@ enum R_ {
   R5, // 1x1 next to offset cell
   R8, // kitty corner
   R9, // 1x1 next to offset cell lengthwise
+  R10, // adjacent offset cells in opposite directions
   R13, // 1x1 kitty corner to offset cell
   R16, // distance 2
   R17, // distance 2 sideways from offset cell
@@ -44,6 +46,7 @@ public:
     case R5: return 5;
     case R8: return 8;
     case R9: return 9;
+    case R10: return 10;
     case R13: return 13;
     case R16: return 16;
     case R17: return 17;
@@ -58,6 +61,7 @@ public:
     case 5: return R5;
     case 8: return R8;
     case 9: return R9;
+    case 10: return R10;
     case 13: return R13;
     case 16: return R16;
     case 17: return R17;
@@ -214,13 +218,13 @@ bool Board::resolve() {
           bool anti;
           if (cell.x == neighbor.x) anti = cell.x ^ (dist_delta.y == 0 || dist_delta.x == 0);
           else anti = (dist_delta.y > dist_delta.x) ^ (-dist_delta.y > dist_delta.x) ^ (dist_delta.y * dist_delta.x < 0);
-          if (cell.is_diode() && cell.partner_delta * dist_delta > 0) {
+          if (cell.is_diode() && cell.partner_delta * dist_delta > 1) {
             // cell.s a diode and neighbor is closer to diode partner
             if (cell.partner_delta != delta) continue;
             // partner is the sink not the source
             if (!cell.latched) continue;
           }
-          if (neighbor.is_diode() && neighbor.partner_delta * dist_delta < 0) {
+          if (neighbor.is_diode() && neighbor.partner_delta * dist_delta < -1) {
             // neighbor is a diode and cell.s closer to diode partner
             if (cell.partner_delta != delta) continue;
           }
@@ -268,7 +272,10 @@ bool Board::resolve() {
           next = node->sources[node->source_index++];
         }
         if (next) {
-          if (!next->index) {
+          if (next == node->higher && node->higher->value) {
+            // if source was same node at higher priority and was completed, we only need that
+            node->nsources = 1;
+          } else if (!next->index) {
             callstack.push_back(next);
             node->in_subcall = true;
           } else if (next->on_stack) {
