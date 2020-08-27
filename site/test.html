@@ -1,31 +1,35 @@
 <html>
   <head>
     <style>
-      .board-row: {
+      * {
+        font-family: Verdana;
+      }
+      .board {
+        display: flex;
+        flex-direction: column;
+        font-family: monospace;
+        border: 1px solid #000;
+      }
+      .board-row {
+        display: flex;
+      }
+      .square {
+        height: 50px;
+        width: 50px;
+        border: 1px solid #000;
         display: flex;
         flex-direction: column;
       }
-      .board-row: {
-        flex: 1
-        display: inline-flex;
-        flex-direction: row;
-      }
-      .square {
-        height: 200px;
-        width: 200px;
-        border: 1px solid #000;
-        display: inline-flex;
-        flex-direction: column;
-      }
-      .token-row: {
+      .token-row {
         flex: 1;
-        display: inline-flex;
+        display: flex;
         flex-direction: row;
       }
       .token {
         flex: 1;
-        display: inline-flex;
+        margin: auto;
         text-align: center;
+        font-size: 15pt;
       }
       .bot1 {
         color: red;
@@ -107,10 +111,10 @@
             m: m,
             n: n,
             squares: Array(m).fill(Array(n).fill({
-              unresolved: "x",
-              resolved: "/",
-              bot1_direction: "<",
-              bot1_operation: "g",
+              unresolved: null,
+              resolved: null,
+              bot1_direction: null,
+              bot1_operation: null,
               bot2_direction: null,
               bot2_operation: null,
             })),
@@ -139,7 +143,7 @@
           return (
             <div className="game">
               <div className="game-board">
-                <Board m="5" n="5"/>
+                <Board m="10" n="14"/>
               </div>
               <div className="game-info">
                 <div>{/* status */}</div>
@@ -157,19 +161,22 @@
       );
     </script>
 
-    <label for="level_select">Choose level:</label>
-    <select name="level_select" id="level_select" onchange="pickLevel()">
-      <option value="not">not</option>
-      <option value="xor">xor</option>
-      <option value="rainbow">rainbow</option>
-      <option value="median">median</option>
-      <option value="adder">adder</option>
-    </select>
-    <br/>
-
-    <!-- <textarea name="level" id="level" rows=20 cols=40></textarea> -->
-    <textarea name="submission" id="submission" rows=20 cols=40></textarea>
-    <input type="button" value="Validate" onclick="compute();" />
-    <div id="game"></div>
+    <div style="display:flex;">
+      <div style="margin:1vw; display:flex; flex-direction:column;">
+        <div>
+          <label for="level_select">Choose level:</label>
+          <select name="level_select" id="level_select" onchange="pickLevel()">
+            <option value="not">not</option>
+            <option value="xor">xor</option>
+            <option value="rainbow">rainbow</option>
+            <option value="median">median</option>
+            <option value="adder">adder</option>
+          </select>
+        </div>
+        <textarea name="submission" id="submission" rows=20 cols=40></textarea>
+        <input type="button" value="Validate" onclick="compute();" />
+      </div>
+      <div style="margin:1vw;" id="game"></div>
+    </div>
   </body>
 </html>
