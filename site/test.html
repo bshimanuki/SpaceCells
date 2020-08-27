@@ -1,9 +1,46 @@
 <html>
   <head>
+    <style>
+      .board-row: {
+        display: flex;
+        flex-direction: column;
+      }
+      .board-row: {
+        flex: 1
+        display: inline-flex;
+        flex-direction: row;
+      }
+      .square {
+        height: 200px;
+        width: 200px;
+        border: 1px solid #000;
+        display: inline-flex;
+        flex-direction: column;
+      }
+      .token-row: {
+        flex: 1;
+        display: inline-flex;
+        flex-direction: row;
+      }
+      .token {
+        flex: 1;
+        display: inline-flex;
+        text-align: center;
+      }
+      .bot1 {
+        color: red;
+      }
+      .bot2 {
+        color: blue;
+      }
+    </style>
   </head>
   <body>
+    <script src="https://unpkg.com/react@16/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@16/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
     <script src="./embindings.js"></script>
-    <script>
+    <script type="text/babel">
       var levels = {
         "not": "../examples/not.lvl",
         "xor": "../examples/xor.lvl",
@@ -22,8 +59,8 @@
         submission = document.getElementById("submission").value;
         board = Module.LoadBoard(level, submission);
         console.log(board.check_status());
-        <!-- board.run(100); -->
-        <!-- console.log(board.check_status()); -->
+        // board.run(100);
+        // console.log(board.check_status());
       }
       function getFileFromServer(url, doneCallback) {
         var xhr = new XMLHttpRequest();
@@ -41,21 +78,98 @@
           if (text !== null) level = text;
         });
       }
+
+      class Square extends React.Component {
+        render() {
+          return (
+            <div className="square">
+              <div className="token-row">
+                <div className="token unresolved">{this.props.unresolved}</div>
+                <div className="token bot1 direction">{this.props.bot1_direction}</div>
+                <div className="token bot2 direction">{this.props.bot2_direction}</div>
+              </div>
+              <div className="token-row">
+                <div className="token resolved">{this.props.resolved}</div>
+                <div className="token bot1 operation">{this.props.bot1_operation}</div>
+                <div className="token bot2 operation">{this.props.bot2_operation}</div>
+              </div>
+            </div>
+          );
+        }
+      }
+
+      class Board extends React.Component {
+        constructor(props) {
+          super(props);
+          let m = Number(this.props.m);
+          let n = Number(this.props.n);
+          this.state = {
+            m: m,
+            n: n,
+            squares: Array(m).fill(Array(n).fill({
+              unresolved: "x",
+              resolved: "/",
+              bot1_direction: "<",
+              bot1_operation: "g",
+              bot2_direction: null,
+              bot2_operation: null,
+            })),
+          };
+        }
+
+        renderSquare(props, y, x) {
+          return (<Square key={y,x} {...props}/>);
+        }
+
+        render() {
+          return (
+            <div className="board">
+              {this.state.squares.map((row, y) =>
+                <div key={y} className="board-row">
+                  {row.map((col, x) => this.renderSquare(col, y, x))}
+                </div>
+              )}
+            </div>
+          );
+        }
+      }
+
+      class Game extends React.Component {
+        render() {
+          return (
+            <div className="game">
+              <div className="game-board">
+                <Board m="5" n="5"/>
+              </div>
+              <div className="game-info">
+                <div>{/* status */}</div>
+                <ol>{/* TODO */}</ol>
+              </div>
+            </div>
+          );
+        }
+      }
+
+
+      ReactDOM.render(
+        <Game />,
+        document.getElementById('game')
+      );
     </script>
 
     <label for="level_select">Choose level:</label>
-    <select name="level_select" id="level_select">
+    <select name="level_select" id="level_select" onchange="pickLevel()">
       <option value="not">not</option>
       <option value="xor">xor</option>
       <option value="rainbow">rainbow</option>
       <option value="median">median</option>
       <option value="adder">adder</option>
     </select>
-    <input type="button" value="pickLevel" onclick="pickLevel();" />
     <br/>
 
     <!-- <textarea name="level" id="level" rows=20 cols=40></textarea> -->
     <textarea name="submission" id="submission" rows=20 cols=40></textarea>
     <input type="button" value="Validate" onclick="compute();" />
+    <div id="game"></div>
   </body>
 </html>
