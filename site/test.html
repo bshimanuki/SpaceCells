@@ -31,11 +31,14 @@
         text-align: center;
         font-size: 15pt;
       }
-      .bot1 {
+      .bot0 {
         color: red;
       }
-      .bot2 {
+      .bot1 {
         color: blue;
+      }
+      .operation-type {
+        padding: 1ex;
       }
     </style>
   </head>
@@ -89,13 +92,13 @@
             <div className="square">
               <div className="token-row">
                 <div className="token unresolved">{this.props.unresolved}</div>
-                <div className="token bot1 direction">{this.props.bot1_direction}</div>
-                <div className="token bot2 direction">{this.props.bot2_direction}</div>
+                <div className="token bot0 direction">{this.props.directions[0]}</div>
+                <div className="token bot1 direction">{this.props.directions[1]}</div>
               </div>
               <div className="token-row">
                 <div className="token resolved">{this.props.resolved}</div>
-                <div className="token bot1 operation">{this.props.bot1_operation}</div>
-                <div className="token bot2 operation">{this.props.bot2_operation}</div>
+                <div className="token bot0 operation">{this.props.operations[0]}</div>
+                <div className="token bot1 operation">{this.props.operations[1]}</div>
               </div>
             </div>
           );
@@ -103,24 +106,6 @@
       }
 
       class Board extends React.Component {
-        constructor(props) {
-          super(props);
-          let m = Number(this.props.m);
-          let n = Number(this.props.n);
-          this.state = {
-            m: m,
-            n: n,
-            squares: Array(m).fill(Array(n).fill({
-              unresolved: null,
-              resolved: null,
-              bot1_direction: null,
-              bot1_operation: null,
-              bot2_direction: null,
-              bot2_operation: null,
-            })),
-          };
-        }
-
         renderSquare(props, y, x) {
           return (<Square key={y,x} {...props}/>);
         }
@@ -128,9 +113,9 @@
         render() {
           return (
             <div className="board">
-              {this.state.squares.map((row, y) =>
+              {this.props.squares.slice(0, this.props.m).map((row, y) =>
                 <div key={y} className="board-row">
-                  {row.map((col, x) => this.renderSquare(col, y, x))}
+                  {row.slice(0, this.props.n).map((col, x) => this.renderSquare(col, y, x))}
                 </div>
               )}
             </div>
@@ -139,11 +124,55 @@
       }
 
       class Game extends React.Component {
+        constructor(props) {
+          super(props);
+          this.colors = ["RED", "BLUE"];
+          this.state = {
+            squares: Array(this.props.m).fill(Array(this.props.n).fill({
+              unresolved: null,
+              resolved: null,
+              directions: [null, null],
+              operations: [null, null],
+            })),
+            bot: 0,
+            // selection on board
+            board_selection_bot: null,
+            board_selection_y: null,
+            board_selection_x: null,
+            board_selection_type: null, // cell, direction, operation
+            // selection on creation
+            creation_selection_bot: 0,
+            creation_selection_type: null, // "x", "GRAB / DROP", etc
+            creation_selection_value: null, // "x", "GRAB", etc
+            creation_selection_options: null, // JSX
+          };
+        }
+
         render() {
           return (
-            <div className="game">
+            <div style={{display:"flex", flexDirection:"column"}} className="game">
               <div className="game-board">
-                <Board m="10" n="14"/>
+                <Board m={this.props.m} n={this.props.n} squares={this.state.squares}/>
+              </div>
+              <div style={{display:"flex", flexDirection:"row"}}>
+                <div style={{flex:4, display:"flex", flexDirection:"row", flexWrap: "wrap"}}>
+                  <Operation type="GRAB / DROP" options={{GRAB: "g", DROP: "d", SWAP: "w"}} handler={this.symbolHandler}/>
+                  <Operation type="SYNC" value="s"/>
+                </div>
+                <div style={{flex:1, display:"flex", flexDirection:"column"}}>
+                  {[0, 1].map(bot =>
+                    <div key={`radio-bot-${bot}`}>
+                      <input type="radio" id={`radio-bot-${bot}`} value={bot} name="color"
+                          checked={this.state.creation_selection_bot === bot}
+                          onChange={event => { this.setState({creation_selection_bot: Number(event.target.value)}); }}
+                      />
+                      <label htmlFor={`radio-bot-${bot}`}>{this.colors[bot]}</label>
+                    </div>
+                  )}
+                </div>
+                <div style={{flex:1, display:"flex", flexDirection:"column"}}>
+                  {this.state.creation_selection_options}
+                </div>
               </div>
               <div className="game-info">
                 <div>{/* status */}</div>
@@ -152,11 +181,49 @@
             </div>
           );
         }
+
+        symbolHandler(symbolGroup) {
+          this.state.creation_selection_type = symbolGroup.type;
+          this.state.creation_selection_value = symbolGroup.value;
+          this.state.creation_selection_options = symbolGroup.getOptions();
+        }
       }
 
+      class Operation extends React.Component {
+        constructor(props) {
+          super(props);
+          // props: type, value, options
+          this.state = {};
+          this.state.value = this.props.value;
+          if (this.props.options !== undefined) {
+            this.state.selected = Object.keys(this.props.options)[0];
+            this.state.value = this.props.options[this.state.selected];
+          }
+        }
+        render() {
+          return (
+            <div className="operation-type">{this.props.type}</div>
+          );
+        }
+        getOptions() {
+          return (
+            <div className="operation-options" onChange={this.onChangeValue}>
+              {Object.keys(this.options).map(option => {
+                <div key={`radio-option-${option}`}>
+                  <input type="radio" id={`radio-${option}`} value={option} name={`radio-for-${this.type}`}
+                      checked={this.selected === option}
+                      onChange={event => { this.setState({selected: event.target.value}); this.props.handler(this); }}
+                  />
+                  <label htmlFor={`radio-${option}`}>{option}</label>
+                </div>
+              })}
+            </div>
+          );
+        };
+      }
 
       ReactDOM.render(
-        <Game />,
+        <Game m={10} n={14}/>,
         document.getElementById('game')
       );
     </script>
