@@ -4,6 +4,9 @@
       * {
         font-family: Verdana;
       }
+      .spacer {
+        flex: 1;
+      }
       .board {
         display: flex;
         flex-direction: column;
@@ -37,7 +40,7 @@
       .bot1 {
         color: blue;
       }
-      .operation-type {
+      .symbol-type {
         padding: 1ex;
       }
     </style>
@@ -127,6 +130,7 @@
         constructor(props) {
           super(props);
           this.colors = ["RED", "BLUE"];
+          this.symbolHandler = this.symbolHandler.bind(this);
           this.state = {
             squares: Array(this.props.m).fill(Array(this.props.n).fill({
               unresolved: null,
@@ -142,26 +146,35 @@
             board_selection_type: null, // cell, direction, operation
             // selection on creation
             creation_selection_bot: 0,
-            creation_selection_type: null, // "x", "GRAB / DROP", etc
-            creation_selection_value: null, // "x", "GRAB", etc
-            creation_selection_options: null, // JSX
+            symbolGroup: null,
+            // creation_selection_type: null, // "x", "GRAB / DROP", etc
+            // creation_selection_value: null, // "x", "GRAB", etc
+            // creation_selection_options: null, // JSX
           };
         }
 
         render() {
           return (
-            <div style={{display:"flex", flexDirection:"column"}} className="game">
-              <div className="game-board">
+            <div style={{display:"flex", flexDirection:"column", width:"min-content"}} className="game">
+              <div style={{display:"flex"}} className="game-board">
                 <Board m={this.props.m} n={this.props.n} squares={this.state.squares}/>
               </div>
               <div style={{display:"flex", flexDirection:"row"}}>
                 <div style={{flex:4, display:"flex", flexDirection:"row", flexWrap: "wrap"}}>
-                  <Operation type="GRAB / DROP" options={{GRAB: "g", DROP: "d", SWAP: "w"}} handler={this.symbolHandler}/>
-                  <Operation type="SYNC" value="s"/>
+                  <Symbol type="operation" subtype="START" value="S" handler={this.symbolHandler}/>
+                  <Symbol type="operation" subtype="NEXT" value="n" handler={this.symbolHandler}/>
+                  <Symbol type="operation" subtype="GRAB/DROP" options={{GRAB: "g", DROP: "d", SWAP: "w"}} handler={this.symbolHandler}/>
+                  <Symbol type="operation" subtype="LATCH/UNLATCH" options={{LATCH: "l", UNLATCH: "u", "TOGGLE LATCH": "t"}} handler={this.symbolHandler}/>
+                  <Symbol type="operation" subtype="REFRESH" value="*" handler={this.symbolHandler}/>
+                  <Symbol type="operation" subtype="SYNC" value="s" handler={this.symbolHandler}/>
+                  <Symbol type="operation" subtype="ROTATE" value="r" handler={this.symbolHandler}/>
+                  <Symbol type="operation" subtype="BRANCH(|/)" options={{"<": "<", "v": "v", ">": ">", "^": "^"}} handler={this.symbolHandler}/>
+                  <Symbol type="operation" subtype="BRANCH(-\)" options={{"<": "[", "v": "W", ">": "]", "^": "M"}} handler={this.symbolHandler}/>
+                  <Symbol type="operation" subtype="POWER" options={{"TOGGLE POWER 1": "p", "TOGGLE POWER 2": "P"}} handler={this.symbolHandler}/>
                 </div>
                 <div style={{flex:1, display:"flex", flexDirection:"column"}}>
                   {[0, 1].map(bot =>
-                    <div key={`radio-bot-${bot}`}>
+                    <div key={`radio-bot-${bot}`} className={`bot${bot}`}>
                       <input type="radio" id={`radio-bot-${bot}`} value={bot} name="color"
                           checked={this.state.creation_selection_bot === bot}
                           onChange={event => { this.setState({creation_selection_bot: Number(event.target.value)}); }}
@@ -171,7 +184,7 @@
                   )}
                 </div>
                 <div style={{flex:1, display:"flex", flexDirection:"column"}}>
-                  {this.state.creation_selection_options}
+                  {this.state.symbolGroup !== null && this.state.symbolGroup.getOptions !== undefined ? this.state.symbolGroup.getOptions() : null}
                 </div>
               </div>
               <div className="game-info">
@@ -183,40 +196,45 @@
         }
 
         symbolHandler(symbolGroup) {
-          this.state.creation_selection_type = symbolGroup.type;
-          this.state.creation_selection_value = symbolGroup.value;
-          this.state.creation_selection_options = symbolGroup.getOptions();
+          this.setState({symbolGroup: symbolGroup});
         }
       }
 
-      class Operation extends React.Component {
+      class Symbol extends React.Component {
         constructor(props) {
           super(props);
-          // props: type, value, options
+          // props: type, subtype, value, options
           this.state = {};
           this.state.value = this.props.value;
           if (this.props.options !== undefined) {
             this.state.selected = Object.keys(this.props.options)[0];
-            this.state.value = this.props.options[this.state.selected];
+            value: this.props.options[this.state.selected];
           }
+        }
+        setSelected(option, callback) {
+          this.setState({
+            selected: option,
+            value: this.props.options[option],
+          },
+          callback);
         }
         render() {
           return (
-            <div className="operation-type">{this.props.type}</div>
+            <div className="symbol-type" onClick={() => {this.props.handler(this);}}>{this.props.subtype}</div>
           );
         }
         getOptions() {
           return (
-            <div className="operation-options" onChange={this.onChangeValue}>
-              {Object.keys(this.options).map(option => {
-                <div key={`radio-option-${option}`}>
-                  <input type="radio" id={`radio-${option}`} value={option} name={`radio-for-${this.type}`}
-                      checked={this.selected === option}
-                      onChange={event => { this.setState({selected: event.target.value}); this.props.handler(this); }}
+            <div className="symbol-options" onChange={this.onChangeValue}>
+              {Object.keys(this.props.options || []).map(option =>
+                <div style={{display:"flex", alignItems:"center"}} key={`radio-option-${option}`}>
+                  <input type="radio" id={`radio-${option}`} value={option} name={`radio-for-${this.subtype}`}
+                      checked={this.state.selected === option}
+                         onChange={event => { this.setSelected(event.target.value, () => {this.props.handler(this);}); }}
                   />
                   <label htmlFor={`radio-${option}`}>{option}</label>
                 </div>
-              })}
+              )}
             </div>
           );
         };
