@@ -230,32 +230,32 @@
                     <Toggle handler={this.botHandler} selected={this.state.bot} name="bot" options={["Red", "Blue"]} colors={["red", "blue"]}/>
                   </div>
                   <div style={{display:"flex", flexDirection:"row", flexWrap: "wrap"}}>
-                    {this.renderSymbolGroup({type: "unresolved", subtype: "x", value: "x"})}
-                    {this.renderSymbolGroup({type: "unresolved", subtype: "+", value: "+"})}
-                    {this.renderSymbolGroup({type: "unresolved", subtype: "/", value: "/"})}
-                    {this.renderSymbolGroup({type: "unresolved", subtype: "\\", value: "\\"})}
-                    {this.renderSymbolGroup({type: "unresolved", subtype: "-", value: "-"})}
-                    {this.renderSymbolGroup({type: "unresolved", subtype: "|", value: "|"})}
-                    {this.renderSymbolGroup({type: "unresolved", subtype: "][", value: "][", multi:"horizontal"})}
-                    {this.renderSymbolGroup({type: "unresolved", subtype: "W\nM", value: "WM", multi:"vertical"})}
-                    {this.renderSymbolGroup({type: "unresolved", subtype: "<x", value: "<x", multi:"horizontal"})}
-                    {this.renderSymbolGroup({type: "unresolved", subtype: "^\nx", value: "^x", multi:"vertical"})}
-                    {this.renderSymbolGroup({type: "unresolved", subtype: "x>", value: "x>", multi:"horizontal"})}
-                    {this.renderSymbolGroup({type: "unresolved", subtype: "x\nv", value: "xv", multi:"vertical"})}
-                    {this.renderSymbolGroup({type: "direction", subtype: "<", value: "<"})}
-                    {this.renderSymbolGroup({type: "direction", subtype: "v", value: "v"})}
-                    {this.renderSymbolGroup({type: "direction", subtype: ">", value: ">"})}
-                    {this.renderSymbolGroup({type: "direction", subtype: "^", value: "^"})}
-                    {this.renderSymbolGroup({type: "operation", subtype: "START", value: "S"})}
-                    {this.renderSymbolGroup({type: "operation", subtype: "NEXT", value: "n"})}
-                    {this.renderSymbolGroup({type: "operation", subtype: "GRAB/DROP", options: {GRAB: "g", DROP: "d", SWAP: "w"}})}
-                    {this.renderSymbolGroup({type: "operation", subtype: "LATCH/UNLATCH", options: {LATCH: "l", UNLATCH: "u", "TOGGLE LATCH": "t"}})}
-                    {this.renderSymbolGroup({type: "operation", subtype: "REFRESH", value: "*"})}
-                    {this.renderSymbolGroup({type: "operation", subtype: "SYNC", value: "s"})}
-                    {this.renderSymbolGroup({type: "operation", subtype: "ROTATE", value: "r"})}
-                    {this.renderSymbolGroup({type: "operation", subtype: "BRANCH(|/)", options: {"<": "<", "v": "v", ">": ">", "^": "^"}})}
-                    {this.renderSymbolGroup({type: "operation", subtype: "BRANCH(-\)", options: {"<": "[", "v": "W", ">": "]", "^": "M"}})}
-                    {this.renderSymbolGroup({type: "operation", subtype: "POWER", options: {"TOGGLE POWER 1": "p", "TOGGLE POWER 2": "P"}})}
+                    {this.renderSymbolGroup({active: this.state.symbolType === "unresolved", type: "unresolved", subtype: "x", value: "x"})}
+                    {this.renderSymbolGroup({active: this.state.symbolType === "unresolved", type: "unresolved", subtype: "+", value: "+"})}
+                    {this.renderSymbolGroup({active: this.state.symbolType === "unresolved", type: "unresolved", subtype: "/", value: "/"})}
+                    {this.renderSymbolGroup({active: this.state.symbolType === "unresolved", type: "unresolved", subtype: "\\", value: "\\"})}
+                    {this.renderSymbolGroup({active: this.state.symbolType === "unresolved", type: "unresolved", subtype: "-", value: "-"})}
+                    {this.renderSymbolGroup({active: this.state.symbolType === "unresolved", type: "unresolved", subtype: "|", value: "|"})}
+                    {this.renderSymbolGroup({active: this.state.symbolType === "unresolved", type: "unresolved", subtype: "][", value: "][", multi:"horizontal"})}
+                    {this.renderSymbolGroup({active: this.state.symbolType === "unresolved", type: "unresolved", subtype: "W\nM", value: "WM", multi:"vertical"})}
+                    {this.renderSymbolGroup({active: this.state.symbolType === "unresolved", type: "unresolved", subtype: "<x", value: "<x", multi:"horizontal"})}
+                    {this.renderSymbolGroup({active: this.state.symbolType === "unresolved", type: "unresolved", subtype: "^\nx", value: "^x", multi:"vertical"})}
+                    {this.renderSymbolGroup({active: this.state.symbolType === "unresolved", type: "unresolved", subtype: "x>", value: "x>", multi:"horizontal"})}
+                    {this.renderSymbolGroup({active: this.state.symbolType === "unresolved", type: "unresolved", subtype: "x\nv", value: "xv", multi:"vertical"})}
+                    {this.renderSymbolGroup({active: this.state.symbolType === "instruction", type: "direction", subtype: "<", value: "<"})}
+                    {this.renderSymbolGroup({active: this.state.symbolType === "instruction", type: "direction", subtype: "v", value: "v"})}
+                    {this.renderSymbolGroup({active: this.state.symbolType === "instruction", type: "direction", subtype: ">", value: ">"})}
+                    {this.renderSymbolGroup({active: this.state.symbolType === "instruction", type: "direction", subtype: "^", value: "^"})}
+                    {this.renderSymbolGroup({active: this.state.symbolType === "instruction", type: "operation", subtype: "START", value: "S"})}
+                    {this.renderSymbolGroup({active: this.state.symbolType === "instruction", type: "operation", subtype: "NEXT", value: "n"})}
+                    {this.renderSymbolGroup({active: this.state.symbolType === "instruction", type: "operation", subtype: "GRAB/DROP", options: {GRAB: "g", DROP: "d", SWAP: "w"}})}
+                    {this.renderSymbolGroup({active: this.state.symbolType === "instruction", type: "operation", subtype: "LATCH/UNLATCH", options: {LATCH: "l", UNLATCH: "u", "TOGGLE LATCH": "t"}})}
+                    {this.renderSymbolGroup({active: this.state.symbolType === "instruction", type: "operation", subtype: "REFRESH", value: "*"})}
+                    {this.renderSymbolGroup({active: this.state.symbolType === "instruction", type: "operation", subtype: "SYNC", value: "s"})}
+                    {this.renderSymbolGroup({active: this.state.symbolType === "instruction", type: "operation", subtype: "ROTATE", value: "r"})}
+                    {this.renderSymbolGroup({active: this.state.symbolType === "instruction", type: "operation", subtype: "BRANCH(|/)", options: {"<": "<", "v": "v", ">": ">", "^": "^"}})}
+                    {this.renderSymbolGroup({active: this.state.symbolType === "instruction", type: "operation", subtype: "BRANCH(-\)", options: {"<": "[", "v": "W", ">": "]", "^": "M"}})}
+                    {this.renderSymbolGroup({active: this.state.symbolType === "instruction", type: "operation", subtype: "POWER", options: {"TOGGLE POWER 1": "p", "TOGGLE POWER 2": "P"}})}
                   </div>
                 </div>
                 <div style={{flex:2, display:"flex", flexDirection:"column"}}>
@@ -273,7 +273,13 @@
         }
 
         botHandler(value) { this.setState({bot: value}); }
-        symbolTypeHandler(value) { this.setState({symbolType: value}); }
+        symbolTypeHandler(value) {
+          this.setState((state, props) => {
+            if (!state.selectedOnBoard && state.symbolType !== value) {
+              return {symbolType: value, selectedSymbolGroup: null, selectedSymbolGroupState: null};
+            }
+          });
+        }
 
         boardHandler(y, x, symbolGroup, className) {
           if (symbolGroup && symbolGroup.state) {
@@ -352,13 +358,13 @@
           return (
             <div className="toggle">
               {Object.keys(this.props.options).map(option =>
-                <React.Fragment>
-                  <input key={`radio-input-${option}`} type="radio" id={`radio-${option}`} value={option} name={this.props.name}
+                <React.Fragment key={`radio-${option}`}>
+                  <input type="radio" id={`radio-${option}`} value={option} name={this.props.name}
                       // == to equate "1" with 1
                       checked={this.props.selected == option}
                       onChange={this.handle}
                   />
-                  <label key={`radio-label-${option}`} htmlFor={`radio-${option}`} className={(this.props.colors||{})[option]}>{this.props.options[option]}</label>
+                  <label htmlFor={`radio-${option}`} className={(this.props.colors||{})[option]}>{this.props.options[option]}</label>
                 </React.Fragment>
               )}
             </div>
@@ -380,6 +386,7 @@
           }
         }
         render() {
+          if (!this.props.active) return null;
           return (
             <div className={`symbolgroup ${this.props.selected === this ? "selected" : ""}`} style={{whiteSpace:"pre-line", alignItems:"bottom"}} onClick={this.pushThis}>{this.props.subtype}</div>
           );
