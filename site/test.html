@@ -154,6 +154,7 @@
           this.symbolHandler = this.symbolHandler.bind(this);
           this.boardHandler = this.boardHandler.bind(this);
           this.changeSymbolOption = this.changeSymbolOption.bind(this);
+          this.trash = this.trash.bind(this);
           this.state = {
             squares: Array.from({length: this.props.m}, e => Array.from({length: this.props.n}, e => ({
               unresolved: null,
@@ -214,6 +215,12 @@
                 </div>
                 <div style={{flex:2, display:"flex", flexDirection:"column"}}>
                   <SymbolOptions changeOption={this.changeSymbolOption} {...this.state.selectedSymbolGroupState}/>
+                  {this.state.selectedSymbolGroup && this.state.selectedOnBoard &&
+                    <React.Fragment>
+                      <div style={{flex:1}}></div>
+                      <div onClick={this.trash}>TRASH</div>
+                    </React.Fragment>
+                  }
                 </div>
               </div>
             </div>
@@ -231,7 +238,7 @@
         setBotEvent = event => { this.setState({bot: Number(event.target.value)}); };
 
         boardHandler(y, x, symbolGroup, className) {
-          if (symbolGroup) {
+          if (symbolGroup && symbolGroup.state) {
             if (className.split(/\s+/).includes("resolved")) {
               this.setState({selectedSymbolGroup: null, selectedSymbolGroupState: null, selectedOnBoard: true});
             } else {
@@ -240,14 +247,14 @@
           } else if (this.state.selectedOnBoard) {
             this.setState({selectedSymbolGroup: null, selectedSymbolGroupState: null, selectedOnBoard: true});
           } else {
-            if (this.state.selectedSymbolGroup) {
+            if (this.state.selectedSymbolGroup && this.state.selectedSymbolGroup.state) {
               // js doesn't have references...
               if (this.state.selectedSymbolGroup.props.type === "unresolved") {
                 var current = this.state.squares[y][x][this.state.selectedSymbolGroup.props.type];
               } else {
                 var current = this.state.squares[y][x][this.state.selectedSymbolGroup.props.type][this.state.bot];
               }
-              if (!current) {
+              if (!current || !current.state) {
                 var symbolClone = {props: {...this.state.selectedSymbolGroup.props}, state: {...this.state.selectedSymbolGroup.state}};
                 symbolClone.state.count = symbolClone.state.count + 1;
                 symbolClone.setState = (func, callback) => {symbolClone.state = Object.assign(symbolClone.state, func(symbolClone.state, symbolClone.props)); callback()};
@@ -261,6 +268,13 @@
                 this.setState(new_state);
               }
             }
+          }
+        }
+
+        trash() {
+          if (this.state.selectedSymbolGroup && this.state.selectedOnBoard) {
+            this.state.selectedSymbolGroup.state = false;
+            this.setState({selectedSymbolGroup: null, selectedSymbolGroupState: null, selectedOnBoard: false});
           }
         }
 
