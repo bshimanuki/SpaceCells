@@ -33,6 +33,13 @@
         text-align: center;
         font-size: 15pt;
       }
+      .token.selected {
+        text-shadow:
+          -1px -1px 0 cyan,
+          1px -1px 0 cyan,
+          -1px  1px 0 cyan,
+          1px  1px 0 cyan;
+      }
       .bot0 {
         color: crimson;
       }
@@ -135,7 +142,7 @@
       class Token extends React.Component {
         render() {
           return (
-            <div onClick={() => {this.props.handler(this.props.y, this.props.x, this.props.symbolGroup, this.props.className);}} className={`token ${this.props.className}`}>
+            <div onClick={() => {this.props.handler(this.props.y, this.props.x, this.props.symbolGroup, this.props.className);}} className={`token ${this.props.className} ${this.props.selectedSymbolGroup === this.props.symbolGroup ? "selected" : ""}`}>
               {(((this.props.symbolGroup || {}).state || {}).value || {})[this.props.index]}
             </div>
           );
@@ -169,7 +176,7 @@
 
       class Board extends React.Component {
         renderSquare(props, y, x) {
-          return (<Square key={y,x} handler={this.props.handler} y={y} x={x} {...props}/>);
+          return (<Square key={y,x} handler={this.props.handler} selectedSymbolGroup={this.props.selectedSymbolGroup} y={y} x={x} {...props}/>);
         }
 
         render() {
@@ -211,9 +218,9 @@
           };
         }
 
-        renderSymbolGroup(props) {
+        renderSymbolGroup(type, props) {
           return (
-            <SymbolGroup handler={this.symbolHandler} selected={this.state.selectedSymbolGroup} {...props}/>
+            <SymbolGroup active={this.state.symbolType===type} handler={this.symbolHandler} selected={this.state.selectedSymbolGroup} {...props}/>
           );
         }
 
@@ -221,51 +228,51 @@
           return (
             <div style={{display:"flex", flexDirection:"column", width:"min-content"}} className="game">
               <div style={{display:"flex"}} className="game-board">
-                <Board handler={this.boardHandler} m={this.props.m} n={this.props.n} squares={this.state.squares}/>
+                <Board handler={this.boardHandler} selectedSymbolGroup={this.state.selectedSymbolGroup} m={this.props.m} n={this.props.n} squares={this.state.squares}/>
               </div>
-              <div style={{display:"flex", flexDirection:"row"}}>
-                <div style={{flex:4, display:"flex", flexDirection:"column"}}>
-                  <div style={{display:"flex", flexDirection:"row"}}>
-                    <Toggle handler={this.symbolTypeHandler} selected={this.state.symbolType} name="symbol-type" options={{unresolved:"Cells", instruction:"Instructions"}}/>
-                    <Toggle handler={this.botHandler} selected={this.state.bot} name="bot" options={["Red", "Blue"]} colors={["red", "blue"]}/>
-                  </div>
-                  <div style={{display:"flex", flexDirection:"row", flexWrap: "wrap"}}>
-                    {this.renderSymbolGroup({active: this.state.symbolType === "unresolved", type: "unresolved", subtype: "x", value: "x"})}
-                    {this.renderSymbolGroup({active: this.state.symbolType === "unresolved", type: "unresolved", subtype: "+", value: "+"})}
-                    {this.renderSymbolGroup({active: this.state.symbolType === "unresolved", type: "unresolved", subtype: "/", value: "/"})}
-                    {this.renderSymbolGroup({active: this.state.symbolType === "unresolved", type: "unresolved", subtype: "\\", value: "\\"})}
-                    {this.renderSymbolGroup({active: this.state.symbolType === "unresolved", type: "unresolved", subtype: "-", value: "-"})}
-                    {this.renderSymbolGroup({active: this.state.symbolType === "unresolved", type: "unresolved", subtype: "|", value: "|"})}
-                    {this.renderSymbolGroup({active: this.state.symbolType === "unresolved", type: "unresolved", subtype: "][", value: "][", multi:"horizontal"})}
-                    {this.renderSymbolGroup({active: this.state.symbolType === "unresolved", type: "unresolved", subtype: "W\nM", value: "WM", multi:"vertical"})}
-                    {this.renderSymbolGroup({active: this.state.symbolType === "unresolved", type: "unresolved", subtype: "<x", value: "<x", multi:"horizontal"})}
-                    {this.renderSymbolGroup({active: this.state.symbolType === "unresolved", type: "unresolved", subtype: "^\nx", value: "^x", multi:"vertical"})}
-                    {this.renderSymbolGroup({active: this.state.symbolType === "unresolved", type: "unresolved", subtype: "x>", value: "x>", multi:"horizontal"})}
-                    {this.renderSymbolGroup({active: this.state.symbolType === "unresolved", type: "unresolved", subtype: "x\nv", value: "xv", multi:"vertical"})}
-                    {this.renderSymbolGroup({active: this.state.symbolType === "instruction", type: "direction", subtype: "<", value: "<"})}
-                    {this.renderSymbolGroup({active: this.state.symbolType === "instruction", type: "direction", subtype: "v", value: "v"})}
-                    {this.renderSymbolGroup({active: this.state.symbolType === "instruction", type: "direction", subtype: ">", value: ">"})}
-                    {this.renderSymbolGroup({active: this.state.symbolType === "instruction", type: "direction", subtype: "^", value: "^"})}
-                    {this.renderSymbolGroup({active: this.state.symbolType === "instruction", type: "operation", subtype: "START", value: "S"})}
-                    {this.renderSymbolGroup({active: this.state.symbolType === "instruction", type: "operation", subtype: "NEXT", value: "n"})}
-                    {this.renderSymbolGroup({active: this.state.symbolType === "instruction", type: "operation", subtype: "GRAB/DROP", options: {GRAB: "g", DROP: "d", SWAP: "w"}})}
-                    {this.renderSymbolGroup({active: this.state.symbolType === "instruction", type: "operation", subtype: "LATCH/UNLATCH", options: {LATCH: "l", UNLATCH: "u", "TOGGLE LATCH": "t"}})}
-                    {this.renderSymbolGroup({active: this.state.symbolType === "instruction", type: "operation", subtype: "REFRESH", value: "*"})}
-                    {this.renderSymbolGroup({active: this.state.symbolType === "instruction", type: "operation", subtype: "SYNC", value: "s"})}
-                    {this.renderSymbolGroup({active: this.state.symbolType === "instruction", type: "operation", subtype: "ROTATE", value: "r"})}
-                    {this.renderSymbolGroup({active: this.state.symbolType === "instruction", type: "operation", subtype: "BRANCH(|/)", options: {"<": "<", "v": "v", ">": ">", "^": "^"}})}
-                    {this.renderSymbolGroup({active: this.state.symbolType === "instruction", type: "operation", subtype: "BRANCH(-\)", options: {"<": "[", "v": "W", ">": "]", "^": "M"}})}
-                    {this.renderSymbolGroup({active: this.state.symbolType === "instruction", type: "operation", subtype: "POWER", options: {"TOGGLE POWER 1": "p", "TOGGLE POWER 2": "P"}})}
-                  </div>
-                </div>
-                <div style={{flex:2, display:"flex", flexDirection:"column"}}>
-                  <SymbolOptions changeOption={this.changeSymbolOption} {...this.state.selectedSymbolGroupState}/>
+              <div style={{display:"flex", flexDirection:"column"}}>
+                <div style={{display:"flex", flexDirection:"row", alignItems:"center"}}>
+                  <Toggle handler={this.symbolTypeHandler} selected={this.state.symbolType} name="symbol-type" options={{unresolved:"Cells", instruction:"Instructions"}}/>
+                  <Toggle handler={this.botHandler} selected={this.state.bot} name="bot" options={["Red", "Blue"]} colors={["red", "blue"]}/>
                   {this.state.selectedSymbolGroup && this.state.selectedOnBoard &&
                     <React.Fragment>
                       <div style={{flex:1}}></div>
                       <div onClick={this.trash}>TRASH</div>
                     </React.Fragment>
                   }
+                </div>
+                <div style={{display:"flex", flexDirection:"row"}}>
+                  <div style={{flex:3, display:"flex", flexDirection:"row", flexWrap: "wrap"}}>
+                    {this.renderSymbolGroup("unresolved", {type: "unresolved", subtype: "x", value: "x"})}
+                    {this.renderSymbolGroup("unresolved", {type: "unresolved", subtype: "+", value: "+"})}
+                    {this.renderSymbolGroup("unresolved", {type: "unresolved", subtype: "/", value: "/"})}
+                    {this.renderSymbolGroup("unresolved", {type: "unresolved", subtype: "\\", value: "\\"})}
+                    {this.renderSymbolGroup("unresolved", {type: "unresolved", subtype: "-", value: "-"})}
+                    {this.renderSymbolGroup("unresolved", {type: "unresolved", subtype: "|", value: "|"})}
+                    {this.renderSymbolGroup("unresolved", {type: "unresolved", subtype: "][", value: "][", multi:"horizontal"})}
+                    {this.renderSymbolGroup("unresolved", {type: "unresolved", subtype: "W\nM", value: "WM", multi:"vertical"})}
+                    {this.renderSymbolGroup("unresolved", {type: "unresolved", subtype: "<x", value: "<x", multi:"horizontal"})}
+                    {this.renderSymbolGroup("unresolved", {type: "unresolved", subtype: "^\nx", value: "^x", multi:"vertical"})}
+                    {this.renderSymbolGroup("unresolved", {type: "unresolved", subtype: "x>", value: "x>", multi:"horizontal"})}
+                    {this.renderSymbolGroup("unresolved", {type: "unresolved", subtype: "x\nv", value: "xv", multi:"vertical"})}
+                    {this.renderSymbolGroup("instruction", {type: "direction", subtype: "<", value: "<"})}
+                    {this.renderSymbolGroup("instruction", {type: "direction", subtype: "v", value: "v"})}
+                    {this.renderSymbolGroup("instruction", {type: "direction", subtype: ">", value: ">"})}
+                    {this.renderSymbolGroup("instruction", {type: "direction", subtype: "^", value: "^"})}
+                    {this.renderSymbolGroup("instruction", {type: "operation", subtype: "START", value: "S"})}
+                    {this.renderSymbolGroup("instruction", {type: "operation", subtype: "NEXT", value: "n"})}
+                    {this.renderSymbolGroup("instruction", {type: "operation", subtype: "GRAB/DROP", options: {GRAB: "g", DROP: "d", SWAP: "w"}})}
+                    {this.renderSymbolGroup("instruction", {type: "operation", subtype: "LATCH/UNLATCH", options: {LATCH: "l", UNLATCH: "u", "TOGGLE LATCH": "t"}})}
+                    {this.renderSymbolGroup("instruction", {type: "operation", subtype: "REFRESH", value: "*"})}
+                    {this.renderSymbolGroup("instruction", {type: "operation", subtype: "SYNC", value: "s"})}
+                    {this.renderSymbolGroup("instruction", {type: "operation", subtype: "ROTATE", value: "r"})}
+                    {this.renderSymbolGroup("instruction", {type: "operation", subtype: "BRANCH(|/)", options: {"<": "<", "v": "v", ">": ">", "^": "^"}})}
+                    {this.renderSymbolGroup("instruction", {type: "operation", subtype: "BRANCH(-\)", options: {"<": "[", "v": "W", ">": "]", "^": "M"}})}
+                    {this.renderSymbolGroup("instruction", {type: "operation", subtype: "POWER", options: {"TOGGLE POWER 1": "p", "TOGGLE POWER 2": "P"}})}
+                  </div>
+                  <div style={{flex:1, display:"flex", flexDirection:"column"}}>
+                    <SymbolOptions changeOption={this.changeSymbolOption} {...this.state.selectedSymbolGroupState}/>
+                  </div>
                 </div>
               </div>
             </div>
@@ -275,8 +282,12 @@
         botHandler(value) { this.setState({bot: value}); }
         symbolTypeHandler(value) {
           this.setState((state, props) => {
-            if (!state.selectedOnBoard && state.symbolType !== value) {
-              return {symbolType: value, selectedSymbolGroup: null, selectedSymbolGroupState: null};
+            if (state.symbolType !== value) {
+              if (state.selectedOnBoard) {
+                return {symbolType: value};
+              } else {
+                return {symbolType: value, selectedSymbolGroup: null, selectedSymbolGroupState: null};
+              }
             }
           });
         }
