@@ -156,9 +156,11 @@
 
       class Token extends React.Component {
         render() {
+          var c = (((this.props.symbolGroup || {}).state || {}).value || {})[this.props.index];
+          if (!this.props.stopped || !c) c = this.props.cellValue && String.fromCharCode(this.props.cellValue);
           return (
             <div onClick={() => {this.props.handler(this.props.y, this.props.x, this.props.symbolGroup, this.props.className);}} className={`token ${this.props.className} ${this.props.selectedSymbolGroup === this.props.symbolGroup ? "selected" : ""}`}>
-              {(((this.props.symbolGroup || {}).state || {}).value || {})[this.props.index]}
+              {c}
             </div>
           );
         }
@@ -167,7 +169,7 @@
       class Square extends React.Component {
         renderToken(props) {
           return (
-            <Token handler={this.props.handler} selectedSymbolGroup={this.props.selectedSymbolGroup} y={this.props.y} x={this.props.x} index={0} {...props}/>
+            <Token handler={this.props.handler} selectedSymbolGroup={this.props.selectedSymbolGroup} y={this.props.y} x={this.props.x} index={0} stopped={this.props.stopped} {...props}/>
           );
         }
 
@@ -175,12 +177,12 @@
           return (
             <div className="square">
               <div className="token-row">
-                {this.renderToken({className:"unresolved", symbolGroup:this.props.unresolved, index:this.props.unresolved_index})}
+                {this.renderToken({className:"unresolved", cellValue:(this.props.cell && this.props.cell.unresolved()), symbolGroup:this.props.unresolved, index:this.props.unresolved_index})}
                 {this.renderToken({className:"bot0 direction", symbolGroup:this.props.direction[0]})}
                 {this.renderToken({className:"bot1 direction", symbolGroup:this.props.direction[1]})}
               </div>
               <div className="token-row">
-                {this.renderToken({className:"resolved", symbolGroup:this.props.resolved})}
+                {this.renderToken({className:"resolved", cellValue:(this.props.cell && this.props.cell.resolved())})}
                 {this.renderToken({className:"bot0 operation", symbolGroup:this.props.operation[0]})}
                 {this.renderToken({className:"bot1 operation", symbolGroup:this.props.operation[1]})}
               </div>
@@ -190,8 +192,8 @@
       }
 
       class Board extends React.Component {
-        renderSquare(props, y, x) {
-          return (<Square key={y,x} handler={this.props.handler} selectedSymbolGroup={this.props.selectedSymbolGroup} y={y} x={x} {...props}/>);
+        renderSquare(props, cell, y, x) {
+          return (<Square key={y,x} handler={this.props.handler} selectedSymbolGroup={this.props.selectedSymbolGroup} y={y} x={x} stopped={this.props.stopped} cell={cell} {...props}/>);
         }
 
         render() {
@@ -199,7 +201,7 @@
             <div className="board">
               {this.props.squares.slice(0, this.props.m).map((row, y) =>
                 <div key={y} className="board-row">
-                  {row.slice(0, this.props.n).map((square, x) => this.renderSquare(square, y, x))}
+                  {row.slice(0, this.props.n).map((square, x) => this.renderSquare(square, (this.props.cells[y] || {})[x], y, x))}
                 </div>
               )}
             </div>
@@ -246,7 +248,7 @@
           var operation0 = join(square => [square.operation[0], 0])
           var direction1 = join(square => [square.direction[1], 0])
           var operation1 = join(square => [square.operation[1], 0])
-          return [unresolved, direction0, operation0, direction1, operation1].join("\n");
+          return [unresolved, direction0, operation0, direction1, operation1].join("\n\n");
         }
 
         renderSymbolGroup(type, props) {
@@ -259,7 +261,7 @@
           return (
             <div style={{display:"flex", flexDirection:"column", width:"min-content"}} className="game">
               <div style={{display:"flex"}} className="game-board">
-                <Board handler={this.boardHandler} selectedSymbolGroup={this.state.selectedSymbolGroup} m={this.props.m} n={this.props.n} squares={this.state.squares}/>
+                <Board handler={this.boardHandler} selectedSymbolGroup={this.state.selectedSymbolGroup} stopped={this.state.simState==="stop"} m={this.props.m} n={this.props.n} squares={this.state.squares} cells={this.state.cells}/>
               </div>
               <div style={{display:"flex", flexDirection:"column"}}>
                 <div style={{display:"flex", flexDirection:"row", alignItems:"center"}}>
@@ -397,13 +399,14 @@
             return cells.at(y, x);
           }));
           cells.delete();
+          if (new_state.board.check_status() === Module.Status.INVALID) console.log(new_state.board.get_error());
           this.setState(new_state);
         }
 
         trash() {
           if (this.state.selectedSymbolGroup && this.state.selectedOnBoard) {
             this.state.selectedSymbolGroup.state = false;
-            this.setState({selectedSymbolGroup: null, selectedSymbolGroupState: null, selectedOnBoard: false});
+            this.setState({selectedSymbolGroup: null, selectedSymbolGroupState: null, selectedOnBoard: false}, this.resetCells);
           }
         }
 
