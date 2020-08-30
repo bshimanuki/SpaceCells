@@ -218,6 +218,19 @@
           };
         }
 
+        getSubmission() {
+          var join = func => this.state.squares.slice(0, this.props.m).map(row => row.slice(0, this.props.n).map(square => {
+            let [symbolGroup, index] = func(square);
+            return (((symbolGroup || {}).state || {}).value || {})[index] || " ";
+          }).join("")).join("\n");
+          var unresolved = join(square => [square.unresolved, square.unresolved_index])
+          var direction0 = join(square => [square.direction[0], 0])
+          var operation0 = join(square => [square.operation[0], 0])
+          var direction1 = join(square => [square.direction[1], 0])
+          var operation1 = join(square => [square.operation[1], 0])
+          return [unresolved, direction0, operation0, direction1, operation1].join("\n");
+        }
+
         renderSymbolGroup(type, props) {
           return (
             <SymbolGroup active={this.state.symbolType===type} handler={this.symbolHandler} selected={this.state.selectedSymbolGroup} {...props}/>
