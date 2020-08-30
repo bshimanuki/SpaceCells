@@ -55,6 +55,16 @@
       .symbolgroup.selected {
         background: yellow;
       }
+      .trash {
+        font-size: 30px;
+      }
+      .trash:hover {
+        text-shadow:
+          -1px -1px 0 red,
+          1px -1px 0 red,
+          -1px  1px 0 red,
+          1px  1px 0 red;
+      }
       .toggle {
         display: flex;
         flex-direction: row;
@@ -201,6 +211,7 @@
           this.changeSymbolOption = this.changeSymbolOption.bind(this);
           this.symbolTypeHandler = this.symbolTypeHandler.bind(this);
           this.botHandler = this.botHandler.bind(this);
+          this.simHandler = this.simHandler.bind(this);
           this.trash = this.trash.bind(this);
           this.state = {
             squares: Array.from({length: this.props.m}, e => Array.from({length: this.props.n}, e => ({
@@ -212,6 +223,7 @@
             }))),
             bot: 0,
             symbolType: "unresolved",
+            simState: "stop",
             selectedSymbolGroup: null,
             selectedSymbolGroupState: null,
             selectedOnBoard: false,
@@ -221,7 +233,7 @@
         getSubmission() {
           var join = func => this.state.squares.slice(0, this.props.m).map(row => row.slice(0, this.props.n).map(square => {
             let [symbolGroup, index] = func(square);
-            return (((symbolGroup || {}).state || {}).value || {})[index] || " ";
+            return (((symbolGroup || {}).state || {}).value || {})[index] || "_";
           }).join("")).join("\n");
           var unresolved = join(square => [square.unresolved, square.unresolved_index])
           var direction0 = join(square => [square.direction[0], 0])
@@ -247,10 +259,11 @@
                 <div style={{display:"flex", flexDirection:"row", alignItems:"center"}}>
                   <Toggle handler={this.symbolTypeHandler} selected={this.state.symbolType} name="symbol-type" options={{unresolved:"Cells", instruction:"Instructions"}}/>
                   <Toggle handler={this.botHandler} selected={this.state.bot} name="bot" options={["Red", "Blue"]} colors={["red", "blue"]}/>
+                  <Toggle handler={this.simHandler} selected={this.state.simState} name="sim" options={{stop:"⏹", pause:"⏸", step:"⧐", play:"▶", fast:"⏩"}}/>
                   {this.state.selectedSymbolGroup && this.state.selectedOnBoard &&
                     <React.Fragment>
                       <div style={{flex:1}}></div>
-                      <div onClick={this.trash}>TRASH</div>
+                      <div className="trash" onClick={this.trash}>🗑</div>
                     </React.Fragment>
                   }
                 </div>
@@ -304,8 +317,15 @@
             }
           });
         }
+        simHandler(value) {
+          this.setState((state, props) => {
+            if (state.simState === value) return null;
+            return {simState: value, selectedSymbolGroup: null, selectedSymbolGroupState: null};
+          });
+        }
 
         boardHandler(y, x, symbolGroup, className) {
+          if (this.state.simState !== "stop") return;
           if (symbolGroup && symbolGroup.state) {
             if (className.split(/\s+/).includes("resolved")) {
               this.setState({selectedSymbolGroup: null, selectedSymbolGroupState: null, selectedOnBoard: true});
@@ -365,6 +385,7 @@
         }
 
         symbolHandler(symbolGroup) {
+          if (this.state.simState !== "stop") return;
           this.setState({selectedSymbolGroup: symbolGroup, selectedSymbolGroupState: Object.assign({}, symbolGroup.props, symbolGroup.state), selectedOnBoard: false});
         }
 
