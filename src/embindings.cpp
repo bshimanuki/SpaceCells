@@ -34,12 +34,11 @@ EMSCRIPTEN_BINDINGS(puzzle_bindings) {
     ;
   function("LoadBoard", static_cast<Board(*)(const std::string&, const std::string&)>(&load));
 
-  class_<Bot>("Bot")
-    .constructor<>()
-    .property("location", &Bot::location)
-    .property("moving", &Bot::moving)
-    .property("holding", &Bot::holding)
-    .property("rotating", &Bot::rotating)
+  value_object<Bot>("Bot")
+    .field("location", &Bot::location)
+    .field("moving", &Bot::moving)
+    .field("holding", &Bot::holding)
+    .field("rotating", &Bot::rotating)
     ;
 
   class_<Color>("Color")
@@ -47,13 +46,10 @@ EMSCRIPTEN_BINDINGS(puzzle_bindings) {
     .property("as_char", &Color::operator char)
     ;
 
-  class_<Location>("Location")
-    .constructor<>()
-    .constructor<int, int>()
-    .constructor<Direction>()
-    .property("valid", &Location::valid)
-    .property("y", &Location::y)
-    .property("x", &Location::x)
+  value_object<Location>("Location")
+    .field("valid", &Location::valid)
+    .field("y", &Location::y)
+    .field("x", &Location::x)
     ;
 
   class_<Direction>("Direction")
@@ -104,9 +100,9 @@ EMSCRIPTEN_BINDINGS(puzzle_bindings) {
     .property("as_char", &Operation::operator char)
     ;
 
-  class_<std::pair<bool, bool>>("PairValidErr")
-    .property("valid", &std::pair<bool, bool>::first)
-    .property("err", &std::pair<bool, bool>::second)
+  value_array<std::pair<bool, bool>>("PairValidErr")
+    .element(&std::pair<bool, bool>::first)
+    .element(&std::pair<bool, bool>::second)
     ;
 
   class_<Grid<Cell>>("Grid<Cell>")

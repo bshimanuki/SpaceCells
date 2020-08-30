@@ -5,7 +5,7 @@ PYTHON_VERSION = 3.6m
 LBOOST_PYTHON = -lboost_python-py36
 
 OPT_LVL += -O3
-OPT_LVL += -g
+# OPT_LVL += -g
 
 CCFLAGS = -std=c++1z -Wall -Werror
 CCFLAGS += $(OPT_LVL)
