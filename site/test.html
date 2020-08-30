@@ -40,11 +40,21 @@
           -1px  1px 0 cyan,
           1px  1px 0 cyan;
       }
-      .bot0 {
+      .bot0-token {
         color: crimson;
       }
-      .bot1 {
+      .bot1-token {
         color: royalblue;
+      }
+      .bot0 {
+        box-shadow: inset 3px 3px 5px crimson, inset -3px -3px 5px crimson;
+      }
+      .bot1 {
+        box-shadow: inset 3px 3px 5px royalblue, inset -3px -3px 5px royalblue;
+      }
+      .bot0.bot1 {
+        /* mix crimson and royalblue */
+        box-shadow: inset 5px 5px 5px #8e3e8e, inset -5px -5px 5px  #8e3e8e;
       }
       .symbolgroup {
         margin: 1ex;
@@ -177,16 +187,16 @@
 
         render() {
           return (
-            <div className="square">
+            <div className={`square ${this.props.bot0 ? "bot0" : ""} ${this.props.bot1 ? "bot1" : ""}`}>
               <div className="token-row">
                 {this.renderToken({className:"unresolved", cellValue:(this.props.cell && this.props.cell.unresolved()), symbolGroup:this.props.unresolved, index:this.props.unresolved_index})}
-                {this.renderToken({className:"bot0 direction", symbolGroup:this.props.direction[0]})}
-                {this.renderToken({className:"bot1 direction", symbolGroup:this.props.direction[1]})}
+                {this.renderToken({className:"bot0-token direction", symbolGroup:this.props.direction[0]})}
+                {this.renderToken({className:"bot1-token direction", symbolGroup:this.props.direction[1]})}
               </div>
               <div className="token-row">
                 {this.renderToken({className:"resolved", cellValue:(this.props.cell && this.props.cell.resolved())})}
-                {this.renderToken({className:"bot0 operation", symbolGroup:this.props.operation[0]})}
-                {this.renderToken({className:"bot1 operation", symbolGroup:this.props.operation[1]})}
+                {this.renderToken({className:"bot0-token operation", symbolGroup:this.props.operation[0]})}
+                {this.renderToken({className:"bot1-token operation", symbolGroup:this.props.operation[1]})}
               </div>
             </div>
           );
@@ -194,8 +204,15 @@
       }
 
       class Board extends React.Component {
-        renderSquare(props, cell, y, x) {
-          return (<Square key={y,x} handler={this.props.handler} selectedSymbolGroup={this.props.selectedSymbolGroup} y={y} x={x} stopped={this.props.stopped} cell={cell} {...props}/>);
+        renderSquare(props) {
+          return (<Square
+            key={props.y,props.x}
+            handler={this.props.handler}
+            validBoard={this.props.validBoard}
+            selectedSymbolGroup={this.props.selectedSymbolGroup}
+            stopped={this.props.stopped}
+            {...props}
+          />);
         }
 
         render() {
@@ -203,7 +220,16 @@
             <div className="board">
               {this.props.squares.slice(0, this.props.m).map((row, y) =>
                 <div key={y} className="board-row">
-                  {row.slice(0, this.props.n).map((square, x) => this.renderSquare(square, (this.props.cells[y] || {})[x], y, x))}
+                  {row.slice(0, this.props.n).map((square, x) => this.renderSquare(Object.assign(
+                  {
+                    y: y,
+                    x: x,
+                    cell: ((this.props.cells || {})[y] || {})[x],
+                    trespassable: ((this.props.trespassable || {})[y] || {})[x],
+                    bot0: ((this.props.bots[0] || {}).location || {}).valid && this.props.bots[0].location.y === y && this.props.bots[0].location.x === x,
+                    bot1: ((this.props.bots[1] || {}).location || {}).valid && this.props.bots[1].location.y === y && this.props.bots[1].location.x === x,
+                  },
+                  square)))}
                 </div>
               )}
             </div>
@@ -231,15 +257,21 @@
               direction: [null, null],
               operation: [null, null],
             }))),
-            cells: Array.from({length: this.props.m}, e => Array(this.props.n).fill(null)),
-            bot: 0,
-            symbolType: "unresolved",
+            // backend
+            board: null, // Emscripten pointer
+            cells: [], // 2D array of Emscripten pointers
+            trespassable: [], // 2D array of bools
+            bots: [null, null], // converted to javascript objects
+            validBoard: false, // set from reset_and_validate()
+            // simulation
             simState: "stop",
             simTimeout: null,
+            // selection
+            symbolType: "unresolved",
+            bot: 0,
             selectedSymbolGroup: null,
             selectedSymbolGroupState: null,
             selectedOnBoard: false,
-            board: null,
           };
         }
 
@@ -266,7 +298,18 @@
           return (
             <div style={{display:"flex", flexDirection:"column", width:"min-content"}} className="game">
               <div style={{display:"flex"}} className="game-board">
-                <Board handler={this.boardHandler} selectedSymbolGroup={this.state.selectedSymbolGroup} stopped={this.state.simState==="stop"} m={this.props.m} n={this.props.n} squares={this.state.squares} cells={this.state.cells}/>
+                <Board
+                  handler={this.boardHandler}
+                  selectedSymbolGroup={this.state.selectedSymbolGroup}
+                  validBoard={this.state.validBoard}
+                  stopped={this.state.simState==="stop"}
+                  m={this.props.m}
+                  n={this.props.n}
+                  squares={this.state.squares}
+                  cells={this.state.cells}
+                  trespassable={this.state.trespassable}
+                  bots={this.state.bots}
+                />
               </div>
               <div style={{display:"flex", flexDirection:"column"}}>
                 <div style={{display:"flex", flexDirection:"row", alignItems:"center"}}>
@@ -355,7 +398,13 @@
             }
             return newState;
           },
-          () => { if(needsToResetBoard) { this.state.board.reset_and_validate(); this.resetCells(); } });
+          () => {
+            if(needsToResetBoard) {
+              this.setState(
+                (state, props) => ({validBoard: !this.state.board.reset_and_validate()}),
+                this.resetCells);
+            }
+          });
         }
 
         boardHandler(y, x, symbolGroup, className) {
@@ -413,26 +462,36 @@
 
         resetBoard() {
           this.setState((state, props) => {
+            var newState = {};
             if (state.board) state.board.delete();
             var submission = this.makeSubmission(state.squares, props.m, props.n);
-            var board = Module.LoadBoard(level, submission);
-            return {board: board};
+            newState.board = Module.LoadBoard(level, submission);
+            var trespassable = newState.board.get_trespassable();
+            newState.trespassable = Array.from({length: newState.board.m}).map((row, y) => Array.from({length: newState.board.n}).map((cell, x) => {
+              return trespassable.at(y, x);
+            }));
+            trespassable.delete();
+            return newState;
           },
           this.resetCells);
         }
 
         resetCells() {
           this.setState((state, props) => {
+            var newState = {};
             state.cells.forEach(row => row.forEach(cell => {
               if (cell) cell.delete();
             }));
             var cells = state.board.get_cells();
-            var new_cells = Array.from({length: state.board.m}).map((row, y) => Array.from({length: state.board.n}).map((cell, x) => {
+            newState.cells = Array.from({length: state.board.m}).map((row, y) => Array.from({length: state.board.n}).map((cell, x) => {
               return cells.at(y, x);
             }));
             cells.delete();
+            var bots = state.board.get_bots();
+            newState.bots = Array.from({length: bots.size()}).map((bot, k) => bots.get(k));
+            bots.delete();
             if (state.board.check_status() === Module.Status.INVALID) console.log(state.board.get_error());
-            return {cells: new_cells};
+            return newState;
           });
         }
 

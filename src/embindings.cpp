@@ -11,6 +11,7 @@ EMSCRIPTEN_BINDINGS(puzzle_bindings) {
     .constructor<size_t, size_t, size_t>()
     .property("m", &Board::get_m)
     .property("n", &Board::get_n)
+    .function("get_bots", &Board::get_bots)
     .function("get_inputs", &Board::get_inputs)
     .function("get_outputs", &Board::get_outputs)
     .function("get_output_colors", &Board::get_output_colors)
