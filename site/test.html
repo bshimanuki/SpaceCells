@@ -119,18 +119,23 @@
         "adder": "../examples/adder.lvl",
       };
       Module.onRuntimeInitialized = _ => {
+        pickLevel();
+        ReactDOM.render(
+          <Game m={10} n={14}/>,
+          document.getElementById('game')
+        );
         console.log("loaded");
       }
-      var board;
       var level;
-      var submission;
+      var board_debug;
+      var submission_debug;
       function compute() {
         // level = document.getElementById("level").value;
-        submission = document.getElementById("submission").value;
-        board = Module.LoadBoard(level, submission);
-        console.log(board.check_status());
-        // board.run(100);
-        // console.log(board.check_status());
+        submission_debug = document.getElementById("submission").value;
+        board_debug = Module.LoadBoard(level, submission_debug);
+        console.log(board_debug.check_status());
+        // board_debug.run(100);
+        // console.log(board_debug.check_status());
       }
       function getFileFromServer(url, doneCallback) {
         var xhr = new XMLHttpRequest();
@@ -205,7 +210,6 @@
       class Game extends React.Component {
         constructor(props) {
           super(props);
-          this.colors = ["RED", "BLUE"];
           this.symbolHandler = this.symbolHandler.bind(this);
           this.boardHandler = this.boardHandler.bind(this);
           this.changeSymbolOption = this.changeSymbolOption.bind(this);
@@ -221,17 +225,19 @@
               direction: [null, null],
               operation: [null, null],
             }))),
+            cells: Array.from({length: this.props.m}, e => Array(this.props.n).fill(null)),
             bot: 0,
             symbolType: "unresolved",
             simState: "stop",
             selectedSymbolGroup: null,
             selectedSymbolGroupState: null,
             selectedOnBoard: false,
+            board: null,
           };
         }
 
-        getSubmission() {
-          var join = func => this.state.squares.slice(0, this.props.m).map(row => row.slice(0, this.props.n).map(square => {
+        makeSubmission(squares, m, n) {
+          var join = func => squares.slice(0, m).map(row => row.slice(0, n).map(square => {
             let [symbolGroup, index] = func(square);
             return (((symbolGroup || {}).state || {}).value || {})[index] || "_";
           }).join("")).join("\n");
@@ -356,7 +362,7 @@
                 var symbolClone = {props: {...this.state.selectedSymbolGroup.props}, state: {...this.state.selectedSymbolGroup.state}};
                 symbolClone.state.count = symbolClone.state.count + 1;
                 symbolClone.setState = (func, callback) => {symbolClone.state = Object.assign(symbolClone.state, func(symbolClone.state, symbolClone.props)); callback()};
-                var new_state = {squares: [...this.state.squares]}
+                var new_state = {squares: this.state.squares.map(row => row.map(square => ({...square})))};
                 if (this.state.selectedSymbolGroup.props.type === "unresolved") {
                   new_state.squares[y][x].unresolved = symbolClone;
                   new_state.squares[y][x].unresolved_index = 0;
@@ -371,10 +377,27 @@
                   new_state.squares[y][x][this.state.selectedSymbolGroup.props.type][this.state.bot] = symbolClone;
                 }
                 new_state.selectedSymbolGroupState = Object.assign({}, symbolClone.props, symbolClone.state);
-                this.setState(new_state);
+                this.setState(new_state, this.resetCells);
               }
             }
           }
+        }
+
+        resetCells() {
+          if (this.state.board) this.state.board.delete();
+          this.state.cells.forEach(row => row.forEach(cell => {
+            if (cell) cell.delete();
+          }));
+          var submission = this.makeSubmission(this.state.squares, this.props.m, this.props.n);
+          var new_state = {
+            board: Module.LoadBoard(level, submission),
+          };
+          var cells = new_state.board.get_cells();
+          new_state.cells = Array.from({length: new_state.board.m}).map((row, y) => Array.from({length: new_state.board.n}).map((cell, x) => {
+            return cells.at(y, x);
+          }));
+          cells.delete();
+          this.setState(new_state);
         }
 
         trash() {
@@ -464,11 +487,6 @@
           );
         }
       }
-
-      ReactDOM.render(
-        <Game m={10} n={14}/>,
-        document.getElementById('game')
-      );
     </script>
 
     <div style="display:flex;">
