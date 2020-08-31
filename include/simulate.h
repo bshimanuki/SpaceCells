@@ -49,8 +49,10 @@ public:
   // TODO: remove
   // Error& operator=(const Error &error) { this->error = error.error;  throw std::runtime_error(this->error); }
 
-  static const Error OutOfRange;
+  static const Error BoardSizeMismatch;
   static const Error InvalidInput;
+  static const Error InvalidLevelFormat;
+  static const Error OutOfRange;
 };
 
 
@@ -481,6 +483,7 @@ public:
   const std::vector<Output>& get_outputs() const { return outputs; }
   const std::vector<Color>& get_output_colors() const { return output_colors; }
   const Grid<bool>& get_trespassable() const { return trespassable; }
+  const Grid<char>& get_level() const { return level; }
   size_t get_step() const { return step; }
   const Grid<Cell>& get_cells() const { return cells; }
 
@@ -499,9 +502,10 @@ public:
   // set initial cell layout
   bool set_cells(const std::string &grid_cells);
   // set instructions for bot k
-  bool set_instructions(
-      size_t k, const std::string &grid_directions, const std::string &grid_operations);
+  bool set_instructions(size_t k, const std::string &grid_directions, const std::string &grid_operations);
   void invalidate() { invalid = true; }
+  // check and set level properties
+  bool validate_level();
 
   // Runtime
   // check if setup is valid

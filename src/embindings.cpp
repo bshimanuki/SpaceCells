@@ -16,6 +16,7 @@ EMSCRIPTEN_BINDINGS(puzzle_bindings) {
     .function("get_outputs", &Board::get_outputs)
     .function("get_output_colors", &Board::get_output_colors)
     .function("get_trespassable", &Board::get_trespassable)
+    .function("get_level", &Board::get_level)
     .property("step", &Board::get_step)
     .function("get_cells", &Board::get_cells)
     .function("add_input", &Board::add_input)
@@ -112,6 +113,10 @@ EMSCRIPTEN_BINDINGS(puzzle_bindings) {
 
   class_<Grid<bool>>("Grid<bool>")
     .function("at", static_cast<bool&(Grid<bool>::*)(size_t, size_t)>(&Grid<bool>::at))
+    ;
+
+  class_<Grid<char>>("Grid<char>")
+    .function("at", static_cast<char&(Grid<char>::*)(size_t, size_t)>(&Grid<char>::at))
     ;
 
   register_vector<Bot>("vector<Bot>");

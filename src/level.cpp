@@ -86,17 +86,23 @@ Board load(std::istream &is_level, std::istream &is_submission, std::ostream *os
   }
   is_level >> line;
   if (board.set_output_colors(line)) {
-      show(os, board.get_error());
-      board.invalidate();
-      return board;
-    }
+    show(os, board.get_error());
+    board.invalidate();
+    return board;
+  }
+  // Validate level
+  if (board.validate_level()) {
+    show(os, board.get_error());
+    board.invalidate();
+    return board;
+  }
   // Submission
   std::string cells = get_grid(is_submission, m);
   if (board.set_cells(cells)) {
-      show(os, board.get_error());
-      board.invalidate();
-      return board;
-    }
+    show(os, board.get_error());
+    board.invalidate();
+    return board;
+  }
   for (int k=0; k<b; ++k) {
     std::string directions = get_grid(is_submission, m);
     std::string operations = get_grid(is_submission, m);
@@ -106,6 +112,7 @@ Board load(std::istream &is_level, std::istream &is_submission, std::ostream *os
       return board;
     }
   }
+  // Validate submission
   if (board.reset_and_validate()) {
     show(os, board.get_error());
     board.invalidate();

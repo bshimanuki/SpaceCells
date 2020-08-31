@@ -16,8 +16,10 @@
 namespace puzzle {
 
 
-const Error Error::OutOfRange("Out of range error");
+const Error Error::BoardSizeMismatch("Board size mismatch");
 const Error Error::InvalidInput("Invalid input");
+const Error Error::InvalidLevelFormat("Invalid level format");
+const Error Error::OutOfRange("Out of range error");
 
 
 Color::Color(char c) {
@@ -497,7 +499,7 @@ bool Board::set_input(size_t k, const std::string &bits) {
     return true;
   }
   if (std::any_of(bits.begin(), bits.end(), [](char b){ return (b & '0') != '0'; })) {
-    error = Error::InvalidInput;
+    error = Error::InvalidLevelFormat;
     return true;
   }
   inputs[k].bits.resize(bits.size());
@@ -507,7 +509,7 @@ bool Board::set_input(size_t k, const std::string &bits) {
 
 bool Board::set_output_colors(const std::string &colors) {
   if (std::any_of(colors.begin(), colors.end(), [](char c){ return Color(c) == Color(Color_::INVALID); })) {
-    error = Error::InvalidInput;
+    error = Error::InvalidLevelFormat;
     return true;
   }
   output_colors.resize(colors.size());
@@ -521,7 +523,7 @@ bool Board::set_level(const std::string &grid_fixed) {
   for (size_t y=0; y<m; ++y) {
     std::getline(ss, line);
     if (line.size() != n) {
-      error = Error::InvalidInput;
+      error = Error::BoardSizeMismatch;
       return true;
     }
     for (size_t x=0; x<n; ++x) {
@@ -538,7 +540,7 @@ bool Board::set_cells(const std::string &grid_cells) {
   for (size_t y=0; y<m; ++y) {
     std::getline(ss, line);
     if (line.size() != n) {
-      error = Error::InvalidInput;
+      error = Error::BoardSizeMismatch;
       return true;
     }
     for (size_t x=0; x<n; ++x) {
@@ -574,7 +576,7 @@ bool Board::set_cells(const std::string &grid_cells) {
       }
     }
   }
-  if (ss.peek() != EOF) return error = Error::InvalidInput;
+  if (ss.peek() != EOF) return error = Error::BoardSizeMismatch;
   return false;
 }
 
@@ -586,12 +588,11 @@ bool Board::set_instructions(size_t k, const std::string &grid_directions, const
   bool invalid = false;
   invalid |= directions[k].reset(grid_directions);
   invalid |= operations[k].reset(grid_operations);
-  if (invalid) error = Error::InvalidInput;
+  if (invalid) error = Error::BoardSizeMismatch;
   return invalid;
 }
 
-bool Board::reset_and_validate() {
-  for (auto &bot : bots) bot = Bot();
+bool Board::validate_level() {
   trespassable.reset(true);
   for (auto &input : inputs) {
     trespassable.at(input.location) = false;
@@ -600,6 +601,21 @@ bool Board::reset_and_validate() {
     trespassable.at(output.location) = false;
     output.power = true;
   }
+  // set non trespassable
+  for (size_t y=0; y<m; ++y) {
+    for (size_t x=0; x<n; ++x) {
+      switch (level.at(y, x)) {
+      case ' ': case '_': break;
+      default: trespassable.at(y, x) = false; break;
+      }
+    }
+  }
+  return false;
+}
+
+bool Board::reset_and_validate() {
+  if (validate_level()) return error = Error::InvalidLevelFormat;
+  for (auto &bot : bots) bot = Bot();
   // check grids
   for (size_t y=0; y<m; ++y) {
     // validate cells
@@ -658,11 +674,6 @@ bool Board::reset_and_validate() {
         }
         break;
       }
-      // set non trespassable
-      switch (level.at(y, x)) {
-      case ' ': case '_': break;
-      default: trespassable.at(y, x) = false; break;
-      }
       // validate instructions
       if (!trespassable.at(y, x)) {
         for (const auto &_directions : directions) if (_directions.at(y, x)) return error = Error::InvalidInput;
@@ -689,7 +700,7 @@ bool Board::reset_and_validate() {
   }
   // check I/O sequence sizes
   for (const Input &input : inputs) {
-    if (input.bits.size() != output_colors.size()) return error = Error::InvalidInput;
+    if (input.bits.size() != output_colors.size()) return error = Error::InvalidLevelFormat;
   }
   // reset state
   cells = initial_cells;
