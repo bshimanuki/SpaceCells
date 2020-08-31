@@ -70,6 +70,10 @@
       }
       .trash {
         font-size: 30px;
+        margin: 0 0 0 2ex;
+      }
+      .trash.inactive {
+        visibility: hidden;
       }
       .trash:hover {
         text-shadow:
@@ -459,8 +463,8 @@
                 <textarea name="submission" id="submission" value={this.state.submission} rows={20} onChange={this.setSubmission}/>
                 <input type="button" value="Load" onClick={this.setBoardHandler}/>
               </div>
-              <div style={{display:"flex", flexDirection:"column", width:"min-content"}} className="game">
-                <div style={{display:"flex"}} className="game-board">
+              <div style={{display:"flex", flexDirection:"column", alignItems:"center", width:"min-content"}} className="game">
+                <div style={{display:"flex", width:"min-content"}} className="game-board">
                   <Board
                     handler={this.boardHandler}
                     selectedSymbolGroup={this.state.selectedSymbolGroup}
@@ -482,13 +486,9 @@
                   <div style={{display:"flex", flexDirection:"row", alignItems:"center"}}>
                     <Toggle handler={this.symbolTypeHandler} selected={this.state.symbolType} name="symbol-type" options={{unresolved:"Cells", instruction:"Instructions"}}/>
                     <Toggle handler={this.botHandler} selected={this.state.bot} name="bot" options={["Red", "Blue"]} colors={["red", "blue"]}/>
-                    <Toggle handler={this.simHandler} selected={this.state.simState} name="sim" options={{stop:"⏹", pause:"⏸", step:"⧐", play:"▶", fast:"⏩"}}/>
-                    {this.state.selectedSymbolGroup && this.state.selectedOnBoard &&
-                      <React.Fragment>
-                        <div style={{flex:1}}></div>
-                        <div className="trash" onClick={this.trash}>🗑</div>
-                      </React.Fragment>
-                    }
+                    <Toggle handler={this.simHandler} selected={this.state.simState} name="sim" options={{stop:"⏹", pause:"⏸", step:"⧐", play:"▶", fast:"⏩", nonstop:"⏭"}}/>
+                    <div style={{flex:1}}></div>
+                    <div className={`trash ${this.state.selectedSymbolGroup && this.state.selectedOnBoard ? "active" : "inactive"}`} onClick={this.trash}>🗑</div>
                   </div>
                   <div style={{display:"flex", flexDirection:"row"}}>
                     <div style={{flex:3, display:"flex", flexDirection:"row", flexWrap: "wrap"}}>
@@ -527,6 +527,7 @@
           const INITIAL_DELAY = 200; // ms
           const PLAY_INTERVAL = 1000; // ms
           const FAST_INTERVAL = 100; // ms
+          const NONSTOP_INTERVAL = 0; // ms
           var needsToResetBoard = false;
           this.setState((state, props) => {
             if (state.simState === value) return null;
@@ -543,6 +544,7 @@
             if (value === "step") newState.simTimeout = setTimeout(() => { this.move(); this.simHandler("pause"); }, INITIAL_DELAY);
             else if (value === "play") newState.simTimeout = makeRepeat(PLAY_INTERVAL);
             else if (value === "fast") newState.simTimeout = makeRepeat(FAST_INTERVAL);
+            else if (value === "nonstop") newState.simTimeout = makeRepeat(NONSTOP_INTERVAL);
             else if (value === "stop") {
               needsToResetBoard = true;
             }
@@ -711,17 +713,39 @@
             var path = levels[value];
             getFileFromServer(path, (text) => {
               if (text) {
-                this.setState({
+                if (this.state.simState !== "stop") this.simHandler("stop");
+                var submission = this.makeSubmission(this.state.squares, this.props.m, this.props.n);
+                var board = Module.LoadBoard(text, submission);
+                var inputs = board.get_inputs();
+                var input_locations = Array.from({length: inputs.size()}).map((_, i) => {
+                  let pointer = inputs.get(i);
+                  let location = pointer.location;
+                  pointer.delete();
+                  return location;
+                });
+                inputs.delete();
+                board.delete();
+                input_locations = input_locations.filter(location => !(((this.state.squares[location.y] || {})[location.x] || {}).unresolved || {}).state);
+                var newState = {
                   levelName: value,
                   levelData: text,
-                },
-                this.resetBoard);
+                }
+                if (input_locations.length) {
+                  let [symbolGroup] = this.makeSymbol("unresolved", "x");
+                  newState.squares = this.state.squares.map(row => row.map(square => ({...square})));
+                  for (let location of input_locations) {
+                    ((newState.squares[location.y] || {})[location.x] || {}).unresolved = symbolGroup;
+                    ((newState.squares[location.y] || {})[location.x] || {}).unresolved_index = 0;
+                  }
+                }
+                this.setState(newState, this.resetBoard);
               }
             });
           }
         }
 
         setBoardHandler(event) {
+          if (this.state.simState !== "stop") this.simHandler("stop");
           this.loadSubmission(this.state.submission);
         }
 
