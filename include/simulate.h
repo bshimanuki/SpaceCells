@@ -474,6 +474,7 @@ class Board {
   Grid<Cell> cells;
   bool invalid = false;
   size_t step = 0; // step index for I/O
+  size_t cycle = 0; // cycle count
   // resolve memory allocation
 public:
   size_t get_m() const { return m; }
@@ -485,6 +486,7 @@ public:
   const Grid<bool>& get_trespassable() const { return trespassable; }
   const Grid<char>& get_level() const { return level; }
   size_t get_step() const { return step; }
+  size_t get_cycle() const { return cycle; }
   const Grid<Cell>& get_cells() const { return cells; }
 
   // Setup

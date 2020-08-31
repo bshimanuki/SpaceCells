@@ -78,7 +78,7 @@
           -1px  1px 0 red,
           1px  1px 0 red;
       }
-      .untrespassable {
+      .untrespassable:not(.input):not(.output) {
         background: gray;
       }
       .toggle {
@@ -190,6 +190,8 @@
           if (this.props.bot0) classNames.push("bot0");
           if (this.props.bot1) classNames.push("bot1");
           if (this.props.trespassable !== undefined) classNames.push(this.props.trespassable ? "trespassable" : "untrespassable");
+          if (this.props.input) classNames.push("input");
+          if (this.props.output) classNames.push("output");
           classNames.push();
           return (
             <div className={classNames.join(" ")}>
@@ -222,6 +224,7 @@
         }
 
         render() {
+          var match_location = (object, y, x) => { let location = (object || {}).location || {}; return location.valid && location.y === y && location.x === x; }
           return (
             <div className="board">
               {this.props.squares.slice(0, this.props.m).map((row, y) =>
@@ -232,8 +235,11 @@
                     x: x,
                     cell: ((this.props.cells || {})[y] || {})[x],
                     trespassable: ((this.props.trespassable || {})[y] || {})[x],
-                    bot0: ((this.props.bots[0] || {}).location || {}).valid && this.props.bots[0].location.y === y && this.props.bots[0].location.x === x,
-                    bot1: ((this.props.bots[1] || {}).location || {}).valid && this.props.bots[1].location.y === y && this.props.bots[1].location.x === x,
+                    bot0: match_location(this.props.bots[0], y, x),
+                    bot1: match_location(this.props.bots[1], y, x),
+                    input: this.props.inputs.some(input => match_location(input, y, x)),
+                    output: this.props.outputs.some(output => match_location(output, y, x)),
+                    levelChar: ((this.props.levelGrid || {})[y] || {})[x],
                   },
                   square)))}
                 </div>
@@ -276,10 +282,11 @@
             trespassable: [], // 2D array of bools
             bots: [null, null], // converted to javascript objects
             level_grid: [], // array of chars
-            inputs: [],
-            outputs: [],
-            outputColors: [],
+            inputs: [], // converted to javascript objects
+            outputs: [], // converted to javascript objects
+            outputColors: [], // array of chars
             step: 0,
+            cycle: 0,
             validBoard: false, // set from reset_and_validate()
             // simulation
             simState: "stop",
@@ -350,6 +357,7 @@
         ];
 
         loadSubmission(submission) {
+          var success = false;
           this.setState((state, props) => {
             var newState = {squares: state.squares.map(row => row.map(square => {
               let d = {};
@@ -419,22 +427,23 @@
               console.log("Could not parse input");
               return null;
             }
+            success = true;
             return newState;
           },
-          this.resetBoard);
+          () => { success && this.resetBoard(); });
         }
 
         render() {
           return (
-            <div style={{display:"flex"}}>
-              <div style={{margin:"1vw", display:"flex", flexDirection:"column"}}>
+            <div style={{display:"flex", justifyContent:"center"}}>
+              <div style={{margin:"0 1vw", display:"flex", flexDirection:"column", width:"20vw"}}>
                 <div>
                   <label htmlFor="level_select">Choose level:</label>
                   <select name="level_select" id="level_select" value={this.state.levelName} onChange={this.setLevelHandler}>
                     {Object.keys(levels).map(levelName => <option key={levelName} value={levelName}>{levelName}</option>)}
                   </select>
                 </div>
-                <textarea name="submission" id="submission" value={this.state.submission} rows={20} cols={40} onChange={this.setSubmission}/>
+                <textarea name="submission" id="submission" value={this.state.submission} rows={20} onChange={this.setSubmission}/>
                 <input type="button" value="Load" onClick={this.setBoardHandler}/>
               </div>
               <div style={{display:"flex", flexDirection:"column", width:"min-content"}} className="game">
@@ -450,6 +459,9 @@
                     squares={this.state.squares}
                     cells={this.state.cells}
                     trespassable={this.state.trespassable}
+                    inputs={this.state.inputs}
+                    outputs={this.state.outputs}
+                    levelGrid={this.state.levelGrid}
                     bots={this.state.bots}
                   />
                 </div>
@@ -476,6 +488,11 @@
                     </div>
                   </div>
                 </div>
+              </div>
+              <div style={{margin:"0 1vw", display:"flex", flexDirection:"column", width:"20vw"}} className="stats">
+                Completed steps: {this.state.step}
+                <br/>
+                Cycles: {this.state.cycle}
               </div>
             </div>
           );
@@ -596,6 +613,30 @@
               return boardLevel.at(y, x);
             }));
             boardLevel.delete();
+            var inputs = newState.board.get_inputs();
+            newState.inputs = Array.from({length: inputs.size()}).map((_, i) => {
+              let pointer = inputs.get(i);
+              let input = { location: pointer.location, bits: Array.from({length: pointer.size()}).map((_, k) => pointer.get_bit(k))};
+              pointer.delete();
+              return input;
+            });
+            inputs.delete();
+            var outputs = newState.board.get_outputs();
+            newState.outputs = Array.from({length: outputs.size()}).map((_, i) => {
+              let pointer = outputs.get(i);
+              let output = { location: pointer.location, power: pointer.power };
+              pointer.delete();
+              return output;
+            });
+            outputs.delete();
+            var outputColors = newState.board.get_output_colors();
+            newState.outputColors = Array.from({length: outputColors.size()}).map((_, i) => {
+              let pointer = outputColors.get(i);
+              let color = String.fromCharCode(pointer.as_char);
+              pointer.delete();
+              return color;
+            });
+            outputColors.delete();
             return newState;
           },
           this.resetCells);
@@ -604,6 +645,8 @@
         resetCells() {
           this.setState((state, props) => {
             var newState = {};
+            newState.step = state.board.step;
+            newState.cycle = state.board.cycle;
             state.cells.forEach(row => row.forEach(cell => {
               if (cell) cell.delete();
             }));
@@ -622,6 +665,7 @@
 
         move() {
           this.state.board.move();
+          this.setState((state, props) => ({step: state.board.step, cycle: state.board.cycle}));
           this.resetCells();
         }
 

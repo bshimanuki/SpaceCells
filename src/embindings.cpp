@@ -18,6 +18,7 @@ EMSCRIPTEN_BINDINGS(puzzle_bindings) {
     .function("get_trespassable", &Board::get_trespassable)
     .function("get_level", &Board::get_level)
     .property("step", &Board::get_step)
+    .property("cycle", &Board::get_cycle)
     .function("get_cells", &Board::get_cells)
     .function("add_input", &Board::add_input)
     .function("add_output", &Board::add_output)
@@ -67,7 +68,8 @@ EMSCRIPTEN_BINDINGS(puzzle_bindings) {
 
   class_<Input>("Input")
     .property("location", &Input::location)
-    .function("get_bit", +[](const Input &input, size_t k){ return input.bits[k]; })
+    .function("get_bit", +[](const Input &input, size_t k){ return static_cast<bool>(input.bits[k]); })
+    .function("size", +[](const Input &input){ return input.bits.size(); })
     ;
 
   class_<Output>("Output")

@@ -705,6 +705,7 @@ bool Board::reset_and_validate() {
   // reset state
   cells = initial_cells;
   step = 0;
+  cycle = 0;
   for (const Input &input : inputs) {
     Cell &input_cell = cells.at(input.location);
     if (input_cell != 'x' && input_cell != '+') return error = Error::InvalidInput;
@@ -942,6 +943,7 @@ bool Board::move() {
     }
     ++step;
   }
+  ++cycle;
   return false;
 }
 
