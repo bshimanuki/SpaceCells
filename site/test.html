@@ -407,9 +407,9 @@
           {type: "unresolved", subtype: "][", value: "][", multi:"horizontal"},
           {type: "unresolved", subtype: "W\nM", value: "WM", multi:"vertical"},
           {type: "unresolved", subtype: "<x", value: "<x", multi:"horizontal"},
-          {type: "unresolved", subtype: "^\nx", value: "^x", multi:"vertical"},
-          {type: "unresolved", subtype: "x>", value: "x>", multi:"horizontal"},
           {type: "unresolved", subtype: "x\nv", value: "xv", multi:"vertical"},
+          {type: "unresolved", subtype: "x>", value: "x>", multi:"horizontal"},
+          {type: "unresolved", subtype: "^\nx", value: "^x", multi:"vertical"},
         ];
         symbolTypesDirection = [
           {type: "direction", subtype: "<", value: "<"},
@@ -420,7 +420,7 @@
         symbolTypesOperation = [
           {type: "operation", subtype: "START", value: "S"},
           {type: "operation", subtype: "NEXT", value: "n"},
-          {type: "operation", subtype: "GRAB/DROP", options: {GRAB: "g", DROP: "d", SWAP: "w"}},
+          {type: "operation", subtype: "GRAB/DROP", options: {GRAB: "g", DROP: "d", "GRAB/DROP": "w"}},
           {type: "operation", subtype: "LATCH/UNLATCH", options: {LATCH: "l", UNLATCH: "u", "TOGGLE LATCH": "t"}},
           {type: "operation", subtype: "REFRESH", value: "*"},
           {type: "operation", subtype: "SYNC", value: "s"},
