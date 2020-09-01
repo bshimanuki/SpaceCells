@@ -2,8 +2,8 @@
 
 ## Access Instructions
 ```
-git clone https://github.com/bshimanuki/qca
-cd qca
+git clone https://gitlab.com/teammate/70-auto-puzzle-spoilers
+cd 70-auto-puzzle-spoilers
 git checkout packaged-binaries
 python3 -m http.server 8000
 ```
