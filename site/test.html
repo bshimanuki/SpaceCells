@@ -174,9 +174,13 @@
         xhr.send();
       }
 
-      function match_location(object, y, x) {
+      function matchLocation(object, y, x) {
         let location = (object || {}).location || {};
         return location.valid && location.y === y && location.x === x;
+      }
+
+      function cellAllowed(c) {
+        return ' _'.includes(c);
       }
 
       class Token extends React.PureComponent {
@@ -250,10 +254,10 @@
                     x: x,
                     cell: ((this.props.cells || {})[y] || {})[x],
                     trespassable: ((this.props.trespassable || {})[y] || {})[x],
-                    bot0: match_location(this.props.bots[0], y, x),
-                    bot1: match_location(this.props.bots[1], y, x),
-                    input: this.props.inputs.some(input => match_location(input, y, x)),
-                    output: this.props.outputs.some(output => match_location(output, y, x)),
+                    bot0: matchLocation(this.props.bots[0], y, x),
+                    bot1: matchLocation(this.props.bots[1], y, x),
+                    input: this.props.inputs.some(input => matchLocation(input, y, x)),
+                    output: this.props.outputs.some(output => matchLocation(output, y, x)),
                     levelChar: ((this.props.levelGrid || {})[y] || {})[x],
                   },
                   square)))}
@@ -280,23 +284,18 @@
           this.setBoardHandler = this.setBoardHandler.bind(this);
           this.loadSubmission = this.loadSubmission.bind(this);
           this.setSubmission = this.setSubmission.bind(this);
+          this.makeEmptySquare = this.makeEmptySquare.bind(this);
           this.state = {
             levelName: Object.keys(levels)[0],
             levelData: null,
-            squares: Array.from({length: this.props.m}, e => Array.from({length: this.props.n}, e => ({
-              unresolved: null,
-              unresolved_index: null,
-              resolved: null,
-              direction: [null, null],
-              operation: [null, null],
-            }))),
+            squares: Array.from({length: this.props.m}, e => Array.from({length: this.props.n}, this.makeEmptySquare)),
             submission: "",
             // backend
             board: null, // Emscripten pointer
             cells: [], // 2D array of Emscripten pointers
             trespassable: [], // 2D array of bools
             bots: [null, null], // converted to javascript objects
-            level_grid: [], // array of chars
+            levelGrid: [], // array of chars
             inputs: [], // converted to javascript objects
             outputs: [], // converted to javascript objects
             outputColors: [], // array of chars
@@ -370,6 +369,16 @@
           {type: "operation", subtype: "BRANCH(-\)", options: {"<": "[", "v": "W", ">": "]", "^": "M"}},
           {type: "operation", subtype: "POWER", options: {"TOGGLE POWER 1": "p", "TOGGLE POWER 2": "P"}},
         ];
+
+        makeEmptySquare() {
+          return {
+            unresolved: null,
+            unresolved_index: null,
+            resolved: null,
+            direction: [null, null],
+            operation: [null, null],
+          }
+        }
 
         makeSymbol(type, c) {
           if ("._ ".includes(c)) return [null];
@@ -562,7 +571,10 @@
         boardHandler(y, x, symbolGroup, className) {
           if (this.state.simState !== "stop") return;
           if (symbolGroup && symbolGroup.state) {
-            if (className.split(/\s+/).includes("resolved")) {
+            if (this.state.inputs.some(square => matchLocation(square, y, x))) {
+              // inputs are fixed
+              return;
+            } else if (className.split(/\s+/).includes("resolved")) {
               this.setState({selectedSymbolGroup: null, selectedSymbolGroupState: null, selectedOnBoard: true});
             } else {
               this.setState({selectedSymbolGroup: symbolGroup, selectedSymbolGroupState: Object.assign({}, symbolGroup.props, symbolGroup.state), selectedOnBoard: true});
@@ -592,10 +604,12 @@
               }
               for (let loc of locs) {
                 let [_y, _x] = loc;
-                if (this.state.inputs.some(square => match_location(square, _y, _x))
-                  || this.state.outputs.some(square => match_location(square, _y, _x))) {
+                if (this.state.inputs.some(square => matchLocation(square, _y, _x))) {
+                  // inputs are fixed
+                  return;
+                } else if (this.state.outputs.some(square => matchLocation(square, _y, _x))) {
                   let value = this.state.selectedSymbolGroup.state.value;
-                  // inputs and outputs can only be unlatched 1x1 cells
+                  // outputs can only be unlatched 1x1 cells
                   if (value !== "x" && value !== "+") return;
                 } else if (!((this.state.trespassable || {})[_y] || {})[_x]) return;
               }
@@ -636,8 +650,8 @@
             }));
             trespassable.delete();
             var boardLevel = newState.board.get_level();
-            newState.level_grid = Array.from({length: newState.board.m}).map((row, y) => Array.from({length: newState.board.n}).map((cell, x) => {
-              return boardLevel.at(y, x);
+            newState.levelGrid = Array.from({length: newState.board.m}).map((row, y) => Array.from({length: newState.board.n}).map((cell, x) => {
+              return String.fromCharCode(boardLevel.at(y, x));
             }));
             boardLevel.delete();
             var inputs = newState.board.get_inputs();
@@ -717,26 +731,28 @@
                 var submission = this.makeSubmission(this.state.squares, this.props.m, this.props.n);
                 var board = Module.LoadBoard(text, submission);
                 var inputs = board.get_inputs();
-                var input_locations = Array.from({length: inputs.size()}).map((_, i) => {
+                var inputLocations = Array.from({length: inputs.size()}).map((_, i) => {
                   let pointer = inputs.get(i);
                   let location = pointer.location;
                   pointer.delete();
                   return location;
                 });
                 inputs.delete();
-                board.delete();
-                input_locations = input_locations.filter(location => !(((this.state.squares[location.y] || {})[location.x] || {}).unresolved || {}).state);
                 var newState = {
                   levelName: value,
                   levelData: text,
                 }
-                if (input_locations.length) {
-                  let [symbolGroup] = this.makeSymbol("unresolved", "x");
-                  newState.squares = this.state.squares.map(row => row.map(square => ({...square})));
-                  for (let location of input_locations) {
-                    ((newState.squares[location.y] || {})[location.x] || {}).unresolved = symbolGroup;
-                    ((newState.squares[location.y] || {})[location.x] || {}).unresolved_index = 0;
-                  }
+                let levelGrid = board.get_level();
+                newState.squares = this.state.squares.map((row, y) => row.map((square, x) => {
+                  if (y < board.m && x < board.n && !cellAllowed(String.fromCharCode(levelGrid.at(y, x)))) return this.makeEmptySquare();
+                  return {...square};
+                }));
+                levelGrid.delete();
+                board.delete();
+                let [xSymbolGroup] = this.makeSymbol("unresolved", "x");
+                for (let location of inputLocations) {
+                  ((newState.squares[location.y] || {})[location.x] || {}).unresolved = xSymbolGroup;
+                  ((newState.squares[location.y] || {})[location.x] || {}).unresolved_index = 0;
                 }
                 this.setState(newState, this.resetBoard);
               }
