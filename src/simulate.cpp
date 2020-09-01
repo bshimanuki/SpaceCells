@@ -770,7 +770,7 @@ bool Board::move() {
       break;
     case Operation::Type::ROTATE:
       bot.rotating ^= true;
-      if (cell.is_rotateable()) {
+      if (bot.rotating && cell.is_rotateable()) {
         cell.rotating = true;
       }
       break;
@@ -957,10 +957,11 @@ std::pair<bool, bool> Board::run(size_t max_cycles, std::ostream *os) {
   }
   if (os) *os << "Cycle 0:" << std::endl << get_resolved_board();
   for (size_t cycle=0; cycle<max_cycles; ++cycle) {
-    if (move()) {
+    bool error = move();
+    if (os) *os << "Cycle " << (cycle + 1) << ":" << std::endl << get_resolved_board();
+    if (error) {
       return {false, invalid};
     }
-    if (os) *os << "Cycle " << (cycle + 1) << ":" << std::endl << get_resolved_board();
     switch (check_status()) {
     case Status::INVALID:
       return {false, false};
