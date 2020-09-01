@@ -3,9 +3,10 @@
     <style>
       * {
         font-family: Verdana;
+        box-sizing: border-box;
       }
       textarea {
-        font-family: monospace;
+        font-family: monospace, sans-serif;
       }
       .spacer {
         flex: 1;
@@ -13,7 +14,7 @@
       .board {
         display: flex;
         flex-direction: column;
-        font-family: monospace;
+        font-family: monospace, sans-serif;
         border: 1px solid #000;
       }
       .board-row {
@@ -61,12 +62,17 @@
       }
       .symbolgroup {
         margin: 1ex;
-        padding: 1ex;
+        padding: 4px 8px;
         border: 1px solid #000;
         border-radius: 5px;
+        font-family: monospace, sans-serif;
       }
       .symbolgroup.selected {
         background: yellow;
+      }
+      .symbol-options * {
+        font-family: monospace, sans-serif;
+        align-items: center;
       }
       .trash {
         font-size: 30px;
@@ -89,8 +95,13 @@
         background: cornsilk;
       }
       .output {
-        border-style: dashed;
         background: cornsilk;
+        border-style: dashed;
+        border-width: medium;
+        border-color: gray;
+      }
+      .output.powered {
+        border-color: gold;
       }
       .toggle {
         display: flex;
@@ -129,6 +140,49 @@
       }
       .toggle label:last-of-type {
         border-radius: 0 5px 5px 0;
+      }
+      .colon-list {
+        display: table;
+        width: min-content;
+      }
+      .colon-list > * {
+        display: table-row;
+      }
+      .colon-list > * > * {
+        display: table-cell;
+        white-space: nowrap;
+      }
+      .colon-list > * > *:first-child::after {
+        content: ": ";
+        white-space: pre;
+      }
+      .colors * {
+        font-family: monospace, sans-serif;
+      }
+      .colors .past {
+        opacity: 50%;
+      }
+      .colors .present {
+        font-weight: bold;
+      }
+      .colors .future {
+      }
+      [color=K] { color: black; }
+      [color=N] { color: brown; }
+      [color=R] { color: red; }
+      [color=O] { color: darkorange; }
+      [color=Y] { color: gold; }
+      [color=G] { color: green; }
+      [color=B] { color: blue; }
+      [color=P] { color: purple; }
+      [color=W] { color: white; }
+      [color=C] { color: cyan; }
+      [color=E] { color: orangered; }
+      .cycles-value,.steps-value {
+        font-weight: bold;
+      }
+      .error-value {
+        font-weight: bold;
       }
     </style>
   </head>
@@ -212,6 +266,7 @@
           if (this.props.trespassable !== undefined) classNames.push(this.props.trespassable ? "trespassable" : "untrespassable");
           if (this.props.input) classNames.push("input");
           if (this.props.output) classNames.push("output");
+          if (this.props.powered) classNames.push("powered");
           classNames.push();
           return (
             <div className={classNames.join(" ")}>
@@ -258,6 +313,7 @@
                     bot1: matchLocation(this.props.bots[1], y, x),
                     input: this.props.inputs.some(input => matchLocation(input, y, x)),
                     output: this.props.outputs.some(output => matchLocation(output, y, x)),
+                    powered: this.props.outputs.filter(output => output.power).some(output => matchLocation(output, y, x)),
                     levelChar: ((this.props.levelGrid || {})[y] || {})[x],
                   },
                   square)))}
@@ -299,9 +355,11 @@
             inputs: [], // converted to javascript objects
             outputs: [], // converted to javascript objects
             outputColors: [], // array of chars
+            lastColor: null, // last output color as char
             step: 0,
             cycle: 0,
             error: "", // if any errors
+            errorReason: null,
             status: null, // from check_status()
             validBoard: false, // set from reset_and_validate()
             // simulation
@@ -502,7 +560,7 @@
                     <div className={`trash ${this.state.selectedSymbolGroup && this.state.selectedOnBoard ? "active" : "inactive"}`} onClick={this.trash}>🗑</div>
                   </div>
                   <div style={{display:"flex", flexDirection:"row"}}>
-                    <div style={{flex:3, display:"flex", flexDirection:"row", flexWrap: "wrap"}}>
+                    <div style={{flex:3, display:"flex", flexDirection:"row", flexWrap:"wrap", alignItems:"flex-start"}}>
                       {this.symbolTypesUnresolved.map(props => this.renderSymbolGroup("unresolved", props))}
                       {this.symbolTypesDirection.map(props => this.renderSymbolGroup("instruction", props))}
                       {this.symbolTypesOperation.map(props => this.renderSymbolGroup("instruction", props))}
@@ -514,14 +572,43 @@
                 </div>
               </div>
               <div style={{margin:"0 1vw", display:"flex", flexDirection:"column", width:"20vw"}} className="stats">
-                Completed steps: {this.state.step}
+                <div className="colon-list">
+                  {this.state.inputs.map((input, i) =>
+                    <div key={i} className="input-colors">
+                      <span className="input-name">Input{this.state.inputs.length > 1 ? ` ${i+1}` : ""}</span>
+                      <span className="colors">
+                        {input.bits.map((bit, k) => <span key={k} className={`input-color ${k < this.state.step ? "past" : ""} ${k === this.state.step ? "present" : ""} ${k > this.state.step ? "future" : ""}`} color={'GB'[Number(bit)]}>{'GB'[Number(bit)]}</span>)}
+                      </span>
+                    </div>
+                  )}
+                  <div className="expected-colors">
+                    <span className="expected-name">Expected</span>
+                    <span className="colors">
+                      {this.state.outputColors.map((color, k) => <span key={k} className={`expected-color ${k < this.state.step ? "past" : ""} ${k === this.state.step ? "present" : ""} ${k > this.state.step ? "future" : ""}`} color={color}>{color}</span>)}
+                    </span>
+                  </div>
+                  <div className="actual-colors">
+                    <span className="actual-name">Actual</span>
+                    <span className="colors">
+                      {this.state.outputColors.slice(0, Math.max(0, this.state.step - 1)).map((color, k) => <span key={k} className={`actual-color past`} color={color}>{color}</span>)}
+                      {(() => {
+                        let color = this.state.errorReason === Module.ErrorReason.WRONG_OUTPUT ? this.state.lastColor : this.state.outputColors[this.state.step - 1];
+                        return color && <span className={`present`} color={color}>{color}</span>;
+                      })()}
+                    </span>
+                  </div>
+                </div>
                 <br/>
-                Cycles: {this.state.cycle}
+                <div className="colon-list">
+                  <div><span className="steps">Completed steps</span><span className="steps-value">{this.state.step}</span></div>
+                  <div><span className="cycles">Cycles</span><span className="cycles-value">{this.state.cycle}</span></div>
+                </div>
                 <br/>
-                { this.state.error ? `Error: ${this.state.error}` : "" }
+                <div className="colon-list">
+                   {this.state.error ? <div><span className="error">Error</span><span className="error-value">{this.state.error}</span></div> : "" }
+                </div>
                 <br/>
-                <br/>
-                { this.state.status === Module.Status.DONE ? "Finished level!" : "" }
+                { this.state.status === Module.Status.DONE && <div className="finished">Finished level!</div> }
               </div>
             </div>
           );
@@ -677,14 +764,6 @@
               return input;
             });
             inputs.delete();
-            var outputs = newState.board.get_outputs();
-            newState.outputs = Array.from({length: outputs.size()}).map((_, i) => {
-              let pointer = outputs.get(i);
-              let output = { location: pointer.location, power: pointer.power };
-              pointer.delete();
-              return output;
-            });
-            outputs.delete();
             var outputColors = newState.board.get_output_colors();
             newState.outputColors = Array.from({length: outputColors.size()}).map((_, i) => {
               let pointer = outputColors.get(i);
@@ -711,10 +790,23 @@
               return cells.at(y, x);
             }));
             cells.delete();
+            // output power is dynamic
+            var outputs = state.board.get_outputs();
+            newState.outputs = Array.from({length: outputs.size()}).map((_, i) => {
+              let pointer = outputs.get(i);
+              let output = { location: pointer.location, power: pointer.power };
+              pointer.delete();
+              return output;
+            });
+            outputs.delete();
             var bots = state.board.get_bots();
             newState.bots = Array.from({length: bots.size()}).map((bot, k) => bots.get(k));
             bots.delete();
+            var lastColor = state.board.get_last_color();
+            newState.lastColor = String.fromCharCode(lastColor.as_char);
+            lastColor.delete();
             newState.error = state.board.get_error();
+            newState.errorReason = state.board.get_error_reason();
             newState.status = state.board.check_status();
             newState.validBoard = newState.status !== Module.Status.INVALID;
             if (newState.error) console.log(newState.error);
@@ -829,7 +921,7 @@
         render() {
           if (!this.props.active) return null;
           return (
-            <div className={`symbolgroup ${this.props.selected === this ? "selected" : ""}`} style={{whiteSpace:"pre-line", alignItems:"bottom"}} onClick={this.pushThis}>{this.props.subtype}</div>
+            <div className={`symbolgroup ${this.props.selected === this ? "selected" : ""}`} style={{whiteSpace:"pre-wrap", alignItems:"bottom"}} onClick={this.pushThis}>{this.props.subtype}</div>
           );
         }
         pushThis = () => { this.props.handler(this); };

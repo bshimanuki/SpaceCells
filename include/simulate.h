@@ -36,13 +36,25 @@ public:
 };
 
 
+enum class ErrorReason {
+  NONE,
+  INVALID_LEVEL,
+  INVALID_INPUT,
+  RUNTIME_ERROR,
+  WRONG_OUTPUT,
+  TOO_MANY_CYCLES,
+};
+
+
 class Error {
   std::string error;
+  ErrorReason reason{};
 public:
   Error() {}
-  Error(const std::string &error) : error(error) {}
+  Error(const std::string &error, ErrorReason reason=ErrorReason::RUNTIME_ERROR) : error(error), reason(reason) {}
   operator std::string() const { return error; }
   operator bool() const { return !error.empty(); }
+  ErrorReason error_reason() const { return reason; }
   bool operator==(const Error &oth) const { return error == oth.error; }
   bool operator!=(const Error &oth) const { return !(error == oth.error); }
 
@@ -64,7 +76,7 @@ enum class Status {
 
 
 enum class Color_ {
-  INVALID,
+  INVALID, // state for error
   BLACK,
   BROWN,
   RED,
@@ -468,6 +480,7 @@ class Board {
   std::vector<Input> inputs;
   std::vector<Output> outputs;
   std::vector<Color> output_colors;
+  Color last_color;
   // error
   Error error;
   // runtime
@@ -488,6 +501,7 @@ public:
   size_t get_step() const { return step; }
   size_t get_cycle() const { return cycle; }
   const Grid<Cell>& get_cells() const { return cells; }
+  Color get_last_color() const { return last_color; }
 
   // Setup
   Board(size_t m, size_t n, size_t nbots);
@@ -527,6 +541,7 @@ public:
   Status check_status() const;
   // read value of last error
   std::string get_error() const;
+  ErrorReason get_error_reason() const;
   // return the most recent board
   std::string get_unresolved_board() const;
   std::string get_resolved_board() const;

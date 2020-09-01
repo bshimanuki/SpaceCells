@@ -17,6 +17,7 @@ EMSCRIPTEN_BINDINGS(puzzle_bindings) {
     .function("get_output_colors", &Board::get_output_colors)
     .function("get_trespassable", &Board::get_trespassable)
     .function("get_level", &Board::get_level)
+    .function("get_last_color", &Board::get_last_color)
     .property("step", &Board::get_step)
     .property("cycle", &Board::get_cycle)
     .function("get_cells", &Board::get_cells)
@@ -32,6 +33,7 @@ EMSCRIPTEN_BINDINGS(puzzle_bindings) {
     .function("run", static_cast<std::pair<bool,bool>(Board::*)(size_t)>(&Board::run))
     .function("check_status", &Board::check_status)
     .function("get_error", &Board::get_error)
+    .function("get_error_reason", &Board::get_error_reason)
     .function("get_unresolved_board", &Board::get_unresolved_board)
     .function("get_resolved_board", &Board::get_resolved_board)
     ;
@@ -64,6 +66,15 @@ EMSCRIPTEN_BINDINGS(puzzle_bindings) {
     .value("INVALID", Status::INVALID)
     .value("RUNNING", Status::RUNNING)
     .value("DONE", Status::DONE)
+    ;
+
+  enum_<ErrorReason>("ErrorReason")
+    .value("NONE", ErrorReason::NONE)
+    .value("INVALID_LEVEL", ErrorReason::INVALID_LEVEL)
+    .value("INVALID_INPUT", ErrorReason::INVALID_INPUT)
+    .value("RUNTIME_ERROR", ErrorReason::RUNTIME_ERROR)
+    .value("WRONG_OUTPUT", ErrorReason::WRONG_OUTPUT)
+    .value("TOO_MANY_CYCLES", ErrorReason::TOO_MANY_CYCLES)
     ;
 
   class_<Input>("Input")

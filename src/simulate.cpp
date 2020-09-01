@@ -16,10 +16,10 @@
 namespace puzzle {
 
 
-const Error Error::BoardSizeMismatch("Board size mismatch");
-const Error Error::InvalidInput("Invalid input");
-const Error Error::InvalidLevelFormat("Invalid level format");
-const Error Error::OutOfRange("Out of range error");
+const Error Error::BoardSizeMismatch("Board size mismatch", ErrorReason::INVALID_INPUT);
+const Error Error::InvalidInput("Invalid input", ErrorReason::INVALID_INPUT);
+const Error Error::InvalidLevelFormat("Invalid level format", ErrorReason::INVALID_LEVEL);
+const Error Error::OutOfRange("Out of range error", ErrorReason::RUNTIME_ERROR);
 
 
 Color::Color(char c) {
@@ -614,6 +614,9 @@ bool Board::validate_level() {
 }
 
 bool Board::reset_and_validate() {
+  error = Error();
+  invalid = false;
+  last_color = Color();
   if (validate_level()) return error = Error::InvalidLevelFormat;
   for (auto &bot : bots) bot = Bot();
   // check grids
@@ -926,20 +929,20 @@ bool Board::move() {
     }
   }
   if (next) {
-    Color color = Color_::BLACK;
+    last_color = Color_::BLACK;
     for (const auto& output : outputs) {
       if (output.power) {
-        color = color + Color(cells.at(output.location));
+        last_color = last_color + Color(cells.at(output.location));
       }
     }
-    if (color == Color_::INVALID) {
+    if (last_color == Color_::INVALID) {
       invalid = true;
-      return error = Error("Output is in undetermined state");
+      return error = Error("Output is in undetermined state", ErrorReason::WRONG_OUTPUT);
     }
-    if (color != output_colors[step]) {
+    if (last_color != output_colors[step]) {
       // std::cerr << "Output " << color << " instead of " << output_colors[step] << std::endl;
       invalid = true;
-      return error = Error("Wrong output");
+      return error = Error("Wrong output", ErrorReason::WRONG_OUTPUT);
     }
     ++step;
   }
@@ -967,7 +970,7 @@ std::pair<bool, bool> Board::run(size_t max_cycles, std::ostream *os) {
       return {true, false};
     }
   }
-  error = Error(Formatter() << "Did not complete within " << max_cycles << " cycles");
+  error = Error(Formatter() << "Did not complete within " << max_cycles << " cycles", ErrorReason::TOO_MANY_CYCLES);
   return {false, false};
 }
 
@@ -979,6 +982,10 @@ Status Board::check_status() const {
 
 std::string Board::get_error() const {
   return error;
+}
+
+ErrorReason Board::get_error_reason() const {
+  return error.error_reason();
 }
 
 std::string Board::get_unresolved_board() const {
