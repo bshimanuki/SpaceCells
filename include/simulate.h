@@ -151,7 +151,6 @@ struct Location {
 
 struct Input {
   Location location;
-  std::vector<bool> bits;
 };
 
 struct Output {
@@ -479,13 +478,15 @@ class Board {
   std::vector<Bot> bots;
   std::vector<Input> inputs;
   std::vector<Output> outputs;
-  std::vector<Color> output_colors;
+  std::vector<std::vector<std::vector<uint8_t>>> input_bits; // (input, test_case, step) -> bool (uint8_t because emscripten does not work on specialized vector<bool>
+  std::vector<std::vector<Color>> output_colors; // (test_case, step)
   Color last_color;
   // error
   Error error;
   // runtime
   Grid<Cell> cells;
   bool invalid = false;
+  size_t test_case = 0;
   size_t step = 0; // step index for I/O
   size_t cycle = 0; // cycle count
   // resolve memory allocation
@@ -495,9 +496,11 @@ public:
   const std::vector<Bot>& get_bots() const { return bots; }
   const std::vector<Input>& get_inputs() const { return inputs; }
   const std::vector<Output>& get_outputs() const { return outputs; }
-  const std::vector<Color>& get_output_colors() const { return output_colors; }
+  const std::vector<std::vector<std::vector<uint8_t>>>& get_input_bits() const { return input_bits; }
+  const std::vector<std::vector<Color>>& get_output_colors() const { return output_colors; }
   const Grid<bool>& get_trespassable() const { return trespassable; }
   const Grid<char>& get_level() const { return level; }
+  size_t get_test_case() const { return test_case; }
   size_t get_step() const { return step; }
   size_t get_cycle() const { return cycle; }
   const Grid<Cell>& get_cells() const { return cells; }
@@ -510,9 +513,9 @@ public:
   // add output cell square
   bool add_output(size_t y, size_t x);
   // set input bit sequence for input k
-  bool set_input(size_t k, const std::string &bits);
+  bool set_input_bits(const std::vector<std::vector<std::string>> &bits);
   // set output color sequence
-  bool set_output_colors(const std::string &colors);
+  bool set_output_colors(const std::vector<std::string> &colors);
   // set level grid
   bool set_level(const std::string &grid_fixed);
   // set initial cell layout

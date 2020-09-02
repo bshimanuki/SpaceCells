@@ -48,8 +48,8 @@ bool verify(std::istream &is_level, std::istream &is_submission, std::ostream *o
 Board load(std::istream &is_level, std::istream &is_submission, std::ostream *os) {
   std::string line;
   // Level
-  int m, n, b, ni, no;
-  is_level >> m >> n >> b >> ni >> no;
+  int m, n, b, ni, no, nt;
+  is_level >> m >> n >> b >> ni >> no >> nt;
   std::getline(is_level, line);
   std::string level = get_grid(is_level, m);
   Board board(m, n, b);
@@ -76,16 +76,23 @@ Board load(std::istream &is_level, std::istream &is_submission, std::ostream *os
     return board;
   }
   // I/O
-  for (int k=0; k<ni; ++k) {
+  std::vector<std::vector<std::string>> input_bits(nt);
+  std::vector<std::string> output_colors(nt);
+  for (int t=0; t<nt; ++t) {
+    input_bits[t].resize(ni);
+    for (int k=0; k<ni; ++k) {
+      is_level >> line;
+      input_bits[t][k] = line;
+    }
     is_level >> line;
-    if (board.set_input(k, line)) {
+    output_colors[t] = line;
+  }
+  if (board.set_input_bits(input_bits)) {
       show(os, board.get_error());
       board.invalidate();
       return board;
-    }
   }
-  is_level >> line;
-  if (board.set_output_colors(line)) {
+  if (board.set_output_colors(output_colors)) {
     show(os, board.get_error());
     board.invalidate();
     return board;

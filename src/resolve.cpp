@@ -116,9 +116,9 @@ bool Board::resolve() {
       cell.previous_value = cell.value;
     }
   }
-  for (const Input &input : inputs) {
-    Cell &input_cell = cells.at(input.location);
-    input_cell.previous_value = input.bits[step] ? Cell::Value_::ONE : Cell::Value_::ZERO;
+  for (size_t i=0; i<inputs.size(); ++i) {
+    Cell &input_cell = cells.at(inputs[i].location);
+    input_cell.previous_value = input_bits[test_case][i][step] ? Cell::Value_::ONE : Cell::Value_::ZERO;
   }
   // NB: resolve() does not call itself, so static variables are okay
   static Grid<std::array<Node, MAXR>> grid_nodes(m, n);

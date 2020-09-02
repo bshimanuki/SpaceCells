@@ -14,16 +14,18 @@ EMSCRIPTEN_BINDINGS(puzzle_bindings) {
     .function("get_bots", &Board::get_bots)
     .function("get_inputs", &Board::get_inputs)
     .function("get_outputs", &Board::get_outputs)
+    .function("get_input_bits", &Board::get_input_bits)
     .function("get_output_colors", &Board::get_output_colors)
     .function("get_trespassable", &Board::get_trespassable)
     .function("get_level", &Board::get_level)
     .function("get_last_color", &Board::get_last_color)
+    .property("test_case", &Board::get_test_case)
     .property("step", &Board::get_step)
     .property("cycle", &Board::get_cycle)
     .function("get_cells", &Board::get_cells)
     .function("add_input", &Board::add_input)
     .function("add_output", &Board::add_output)
-    .function("set_input", &Board::set_input)
+    .function("set_input_bits", &Board::set_input_bits)
     .function("set_output_colors", &Board::set_output_colors)
     .function("set_cells", &Board::set_cells)
     .function("set_instructions", &Board::set_instructions)
@@ -77,15 +79,13 @@ EMSCRIPTEN_BINDINGS(puzzle_bindings) {
     .value("TOO_MANY_CYCLES", ErrorReason::TOO_MANY_CYCLES)
     ;
 
-  class_<Input>("Input")
-    .property("location", &Input::location)
-    .function("get_bit", +[](const Input &input, size_t k){ return static_cast<bool>(input.bits[k]); })
-    .function("size", +[](const Input &input){ return input.bits.size(); })
+  value_object<Input>("Input")
+    .field("location", &Input::location)
     ;
 
-  class_<Output>("Output")
-    .property("location", &Output::location)
-    .property("power", &Output::power)
+  value_object<Output>("Output")
+    .field("location", &Output::location)
+    .field("power", &Output::power)
     ;
 
   class_<Cell>("Cell")
@@ -132,8 +132,12 @@ EMSCRIPTEN_BINDINGS(puzzle_bindings) {
     .function("at", static_cast<char&(Grid<char>::*)(size_t, size_t)>(&Grid<char>::at))
     ;
 
+  register_vector<uint8_t>("vector<uint8_t>");
+  register_vector<std::vector<uint8_t>>("vector<vector<uint8_t>>");
+  register_vector<std::vector<std::vector<uint8_t>>>("vector<vector<vector<uint8_t>>>");
   register_vector<Bot>("vector<Bot>");
   register_vector<Input>("vector<Input>");
   register_vector<Output>("vector<Output>");
   register_vector<Color>("vector<Color>");
+  register_vector<std::vector<Color>>("vector<vector<Color>>");
 }

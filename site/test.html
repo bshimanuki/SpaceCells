@@ -354,8 +354,10 @@
             levelGrid: [], // array of chars
             inputs: [], // converted to javascript objects
             outputs: [], // converted to javascript objects
-            outputColors: [], // array of chars
+            inputBits: [], // (test_case, input, step) -> bool
+            outputColors: [], // (test_case, step) -> char
             lastColor: null, // last output color as char
+            testCase: 0,
             step: 0,
             cycle: 0,
             error: "", // if any errors
@@ -573,26 +575,29 @@
               </div>
               <div style={{margin:"0 1vw", display:"flex", flexDirection:"column", width:"20vw"}} className="stats">
                 <div className="colon-list">
-                  {this.state.inputs.map((input, i) =>
+                  <div className="test-case">
+                    <span className="test-case-name">Test Case</span><span><span className="test-case-value">{this.state.testCase + 1}</span> / <span className="test-case-total">{this.state.outputColors.length}</span></span>
+                  </div>
+                  {(this.state.inputBits[this.state.testCase] || []).map((input, i) =>
                     <div key={i} className="input-colors">
                       <span className="input-name">Input{this.state.inputs.length > 1 ? ` ${i+1}` : ""}</span>
                       <span className="colors">
-                        {input.bits.map((bit, k) => <span key={k} className={`input-color ${k < this.state.step ? "past" : ""} ${k === this.state.step ? "present" : ""} ${k > this.state.step ? "future" : ""}`} color={'GB'[Number(bit)]}>{'GB'[Number(bit)]}</span>)}
+                        {input.map((bit, k) => <span key={k} className={`input-color ${k < this.state.step ? "past" : ""} ${k === this.state.step ? "present" : ""} ${k > this.state.step ? "future" : ""}`} color={'GB'[Number(bit)]}>{'GB'[Number(bit)]}</span>)}
                       </span>
                     </div>
                   )}
                   <div className="expected-colors">
                     <span className="expected-name">Expected</span>
                     <span className="colors">
-                      {this.state.outputColors.map((color, k) => <span key={k} className={`expected-color ${k < this.state.step ? "past" : ""} ${k === this.state.step ? "present" : ""} ${k > this.state.step ? "future" : ""}`} color={color}>{color}</span>)}
+                      {(this.state.outputColors[this.state.testCase] || []).map((color, k) => <span key={k} className={`expected-color ${k < this.state.step ? "past" : ""} ${k === this.state.step ? "present" : ""} ${k > this.state.step ? "future" : ""}`} color={color}>{color}</span>)}
                     </span>
                   </div>
                   <div className="actual-colors">
                     <span className="actual-name">Actual</span>
                     <span className="colors">
-                      {this.state.outputColors.slice(0, Math.max(0, this.state.step - 1)).map((color, k) => <span key={k} className={`actual-color past`} color={color}>{color}</span>)}
+                      {(this.state.outputColors[this.state.testCase] || []).slice(0, Math.max(0, this.state.step - 1)).map((color, k) => <span key={k} className={`actual-color past`} color={color}>{color}</span>)}
                       {(() => {
-                        let color = this.state.errorReason === Module.ErrorReason.WRONG_OUTPUT ? this.state.lastColor : this.state.outputColors[this.state.step - 1];
+                        let color = this.state.step ? this.state.errorReason === Module.ErrorReason.WRONG_OUTPUT ? this.state.lastColor : this.state.outputColors[this.state.testCase][this.state.step - 1] : null;
                         return color && <span className={`present`} color={color}>{color}</span>;
                       })()}
                     </span>
@@ -600,8 +605,9 @@
                 </div>
                 <br/>
                 <div className="colon-list">
-                  <div><span className="steps">Completed steps</span><span className="steps-value">{this.state.step}</span></div>
-                  <div><span className="cycles">Cycles</span><span className="cycles-value">{this.state.cycle}</span></div>
+                  <div><span className="steps">Completed Test Cases</span><span className="steps-value">{this.state.testCase + (this.state.step === (this.state.outputColors[this.state.testCase] || {}).length)}</span></div>
+                  {/*<div><span className="steps">Steps</span><span className="steps-value">{this.state.step}</span></div>*/}
+                  <div><span className="cycles">Total Cycles</span><span className="cycles-value">{this.state.cycle}</span></div>
                 </div>
                 <br/>
                 <div className="colon-list">
@@ -757,19 +763,32 @@
             }));
             boardLevel.delete();
             var inputs = newState.board.get_inputs();
-            newState.inputs = Array.from({length: inputs.size()}).map((_, i) => {
-              let pointer = inputs.get(i);
-              let input = { location: pointer.location, bits: Array.from({length: pointer.size()}).map((_, k) => pointer.get_bit(k))};
-              pointer.delete();
-              return input;
-            });
+            newState.inputs = Array.from({length: inputs.size()}).map((_, i) => inputs.get(i));
             inputs.delete();
+            var inputBits = newState.board.get_input_bits();
+            newState.inputBits = Array.from({length: inputBits.size()}).map((_, t) => {
+              let test_case_vec = inputBits.get(t);
+              let test_case_js = Array.from({length: test_case_vec.size()}).map((_, i) => {
+                let input_vec = test_case_vec.get(i);
+                let input_js = Array.from({length: input_vec.size()}).map((_, k) => !!input_vec.get(k));
+                input_vec.delete();
+                return input_js;
+              });
+              test_case_vec.delete();
+              return test_case_js;
+            });
+            inputBits.delete();
             var outputColors = newState.board.get_output_colors();
-            newState.outputColors = Array.from({length: outputColors.size()}).map((_, i) => {
-              let pointer = outputColors.get(i);
-              let color = String.fromCharCode(pointer.as_char);
-              pointer.delete();
-              return color;
+            newState.outputColors = Array.from({length: outputColors.size()}).map((_, t) => {
+              let test_case_vec = outputColors.get(t);
+              let test_case_js = Array.from({length: test_case_vec.size()}).map((_, k) => {
+                let pointer = test_case_vec.get(k);
+                let color = String.fromCharCode(pointer.as_char);
+                pointer.delete();
+                return color;
+              });
+              test_case_vec.delete();
+              return test_case_js
             });
             outputColors.delete();
             return newState;
@@ -780,6 +799,7 @@
         resetCells() {
           this.setState((state, props) => {
             var newState = {};
+            newState.testCase = state.board.test_case;
             newState.step = state.board.step;
             newState.cycle = state.board.cycle;
             state.cells.forEach(row => row.forEach(cell => {
@@ -792,12 +812,7 @@
             cells.delete();
             // output power is dynamic
             var outputs = state.board.get_outputs();
-            newState.outputs = Array.from({length: outputs.size()}).map((_, i) => {
-              let pointer = outputs.get(i);
-              let output = { location: pointer.location, power: pointer.power };
-              pointer.delete();
-              return output;
-            });
+            newState.outputs = Array.from({length: outputs.size()}).map((_, i) => outputs.get(i));
             outputs.delete();
             var bots = state.board.get_bots();
             newState.bots = Array.from({length: bots.size()}).map((bot, k) => bots.get(k));
@@ -837,20 +852,15 @@
             getFileFromServer(path, (text) => {
               if (text) {
                 if (this.state.simState !== "stop") this.simHandler("stop");
-                var submission = this.makeSubmission(this.state.squares, this.props.m, this.props.n);
-                var board = Module.LoadBoard(text, submission);
-                var inputs = board.get_inputs();
-                var inputLocations = Array.from({length: inputs.size()}).map((_, i) => {
-                  let pointer = inputs.get(i);
-                  let location = pointer.location;
-                  pointer.delete();
-                  return location;
-                });
-                inputs.delete();
                 var newState = {
                   levelName: value,
                   levelData: text,
                 }
+                var submission = this.makeSubmission(this.state.squares, this.props.m, this.props.n);
+                var board = Module.LoadBoard(text, submission);
+                var inputs = board.get_inputs();
+                var inputLocations = Array.from({length: inputs.size()}).map((_, i) => inputs.get(i).location);
+                inputs.delete();
                 let levelGrid = board.get_level();
                 newState.squares = this.state.squares.map((row, y) => row.map((square, x) => {
                   if (y < board.m && x < board.n && !cellAllowed(String.fromCharCode(levelGrid.at(y, x)))) return this.makeEmptySquare();

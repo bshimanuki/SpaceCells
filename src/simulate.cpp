@@ -480,7 +480,8 @@ bool Board::add_input(size_t y, size_t x) {
     error = Error::OutOfRange;
     return true;
   }
-  inputs.push_back({Location(y, x), {}});
+  inputs.push_back({Location(y, x)});
+  input_bits.emplace_back();
   return false;
 }
 
@@ -493,27 +494,40 @@ bool Board::add_output(size_t y, size_t x) {
   return false;
 }
 
-bool Board::set_input(size_t k, const std::string &bits) {
-  if (k > inputs.size()) {
-    error = Error::OutOfRange;
-    return true;
+bool Board::set_input_bits(const std::vector<std::vector<std::string>> &bits) {
+  for (const auto &test_case_vec : bits) {
+    for (const auto &input_vec : test_case_vec) {
+      if (std::any_of(input_vec.begin(), input_vec.end(), [](char b){ return (b & '0') != '0'; })) {
+        error = Error::InvalidLevelFormat;
+        return true;
+      }
+    }
   }
-  if (std::any_of(bits.begin(), bits.end(), [](char b){ return (b & '0') != '0'; })) {
-    error = Error::InvalidLevelFormat;
-    return true;
+  input_bits.resize(bits.size());
+  for (size_t t=0; t<bits.size(); ++t) {
+    input_bits[t].resize(bits[t].size());
+    for (size_t k=0; k<bits[t].size(); ++k) {
+      input_bits[t][k].resize(bits[t][k].size());
+      for (size_t c=0; c<bits[t][k].size(); ++c) {
+        input_bits[t][k][c] = bits[t][k][c] == '1';
+      }
+    }
   }
-  inputs[k].bits.resize(bits.size());
-  std::transform(bits.begin(), bits.end(), inputs[k].bits.begin(), [](char b){ return b == '1'; });
   return false;
 }
 
-bool Board::set_output_colors(const std::string &colors) {
-  if (std::any_of(colors.begin(), colors.end(), [](char c){ return Color(c) == Color(Color_::INVALID); })) {
-    error = Error::InvalidLevelFormat;
-    return true;
+bool Board::set_output_colors(const std::vector<std::string> &colors) {
+  for (const auto &test_case_colors : colors) {
+    if (std::any_of(test_case_colors.begin(), test_case_colors.end(), [](char c){ return Color(c) == Color(Color_::INVALID); })) {
+      error = Error::InvalidLevelFormat;
+      return true;
+    }
   }
   output_colors.resize(colors.size());
-  std::copy(colors.begin(), colors.end(), output_colors.begin());
+  for (size_t t=0; t<colors.size(); ++t) {
+    output_colors[t].resize(colors[t].size());
+    std::copy(colors[t].begin(), colors[t].end(), output_colors[t].begin());
+  }
   return false;
 }
 
@@ -702,11 +716,16 @@ bool Board::reset_and_validate() {
     }
   }
   // check I/O sequence sizes
-  for (const Input &input : inputs) {
-    if (input.bits.size() != output_colors.size()) return error = Error::InvalidLevelFormat;
+  if (input_bits.size() != output_colors.size()) return error = Error::InvalidLevelFormat;
+  for (size_t t=0; t<input_bits.size(); ++t) {
+    if (input_bits[t].size() != inputs.size()) return error = Error::InvalidLevelFormat;
+    for (size_t k=0; k<input_bits[t].size(); ++k) {
+      if (input_bits[t][k].size() != output_colors[t].size()) return error = Error::InvalidLevelFormat;
+    }
   }
   // reset state
   cells = initial_cells;
+  test_case = 0;
   step = 0;
   cycle = 0;
   for (const Input &input : inputs) {
@@ -939,12 +958,16 @@ bool Board::move() {
       invalid = true;
       return error = Error("Output is in undetermined state", ErrorReason::WRONG_OUTPUT);
     }
-    if (last_color != output_colors[step]) {
+    if (last_color != output_colors[test_case][step]) {
       // std::cerr << "Output " << color << " instead of " << output_colors[step] << std::endl;
       invalid = true;
       return error = Error("Wrong output", ErrorReason::WRONG_OUTPUT);
     }
     ++step;
+    if (step >= output_colors[test_case].size() && test_case < output_colors.size() - 1) {
+      ++test_case;
+      step = 0;
+    }
   }
   ++cycle;
   return false;
@@ -977,7 +1000,7 @@ std::pair<bool, bool> Board::run(size_t max_cycles, std::ostream *os) {
 
 Status Board::check_status() const {
   if (invalid) return Status::INVALID;
-  if (step >= output_colors.size()) return Status::DONE;
+  if (test_case == output_colors.size() - 1 && step >= output_colors.back().size()) return Status::DONE;
   return Status::RUNNING;
 }
 
