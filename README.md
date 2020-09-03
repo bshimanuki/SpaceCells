@@ -11,6 +11,20 @@ Open a browser and go to `localhost:8000/site/test.html`.
 
 If you don't have python 3, you can run `python -m SimpleHTTPServer 8000` instead.
 
+## Levels
+#### not
+Given a blue or green input, output the other color.
+#### xor
+Given two inputs, output green if they are the same or blue if they are different.
+#### rainbow
+No inputs. Output red, orange, yellow, green, blue, and purple in order and repeat.
+#### median filter
+Given one sequential input, output the median (majority) of the past 3 inputs. The first 3 inputs will be blue.
+#### adder
+Given two sequential inputs, let green represent a 0 bit and blue represent a 1 bit. The inputs are given from low bit to high bit. Output the corresponding color for the addition of these numbers in base 2.
+#### stack
+Given two sequential inputs, push the upper color onto a stack if the lower color is green, and pop from the stack to the output if the lower color is blue. When pushing onto the stack, output the color pushed. The inputs are guaranteed such that the stack never grows beyond 3 elements.
+
 ## Notes
 See the Google Drive document for an overview.
 

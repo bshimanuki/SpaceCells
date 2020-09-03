@@ -198,6 +198,7 @@
         "rainbow": "../examples/rainbow.lvl",
         "median": "../examples/median.lvl",
         "adder": "../examples/adder.lvl",
+        "stack": "../examples/stack.lvl",
       };
       Module.onRuntimeInitialized = _ => {
         ReactDOM.render(
@@ -428,7 +429,7 @@
           {type: "operation", subtype: "SYNC", value: "s"},
           {type: "operation", subtype: "ROTATE", value: "r"},
           {type: "operation", subtype: "BRANCH(|/)", options: {"<": "<", "v": "v", ">": ">", "^": "^"}},
-          {type: "operation", subtype: "BRANCH(-\)", options: {"<": "[", "v": "W", ">": "]", "^": "M"}},
+          {type: "operation", subtype: "BRANCH(-\\)", options: {"<": "[", "v": "W", ">": "]", "^": "M"}},
           {type: "operation", subtype: "POWER", options: {"TOGGLE POWER 1": "p", "TOGGLE POWER 2": "P"}},
         ];
 
