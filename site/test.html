@@ -159,10 +159,10 @@
       .colors * {
         font-family: monospace, sans-serif;
       }
-      .colors .past {
+      .colors .past,.actual-color:not(:last-child) {
         opacity: 50%;
       }
-      .colors .present {
+      .colors .present,.actual-color:last-child {
         font-weight: bold;
       }
       .colors .future {
@@ -196,6 +196,7 @@
         "not": "../examples/not.lvl",
         "and": "../examples/and.lvl",
         "delay": "../examples/delay.lvl",
+        "switch": "../examples/switch.lvl",
         "xor": "../examples/xor.lvl",
         "median": "../examples/median.lvl",
         "rainbow": "../examples/rainbow.lvl",
@@ -598,11 +599,8 @@
                   <div className="actual-colors">
                     <span className="actual-name">Actual</span>
                     <span className="colors">
-                      {(this.state.outputColors[this.state.testCase] || []).slice(0, Math.max(0, this.state.step - 1)).map((color, k) => <span key={k} className={`actual-color past`} color={color}>{color}</span>)}
-                      {(() => {
-                        let color = this.state.step ? this.state.errorReason === Module.ErrorReason.WRONG_OUTPUT ? this.state.lastColor : this.state.outputColors[this.state.testCase][this.state.step - 1] : null;
-                        return color && <span className={`present`} color={color}>{color}</span>;
-                      })()}
+                      {(this.state.outputColors[this.state.testCase] || []).slice(0, Math.max(0, this.state.step)).map((color, k) => <span key={k} className={`actual-color`} color={color}>{color}</span>)}
+                      {this.state.errorReason === Module.ErrorReason.WRONG_OUTPUT && <span className={``} color={this.state.lastColor}>{this.state.lastColor}</span>}
                     </span>
                   </div>
                 </div>
