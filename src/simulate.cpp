@@ -627,7 +627,7 @@ bool Board::validate_level() {
   return false;
 }
 
-bool Board::reset_and_validate() {
+bool Board::reset_and_validate(bool reset_test_case) {
   error = Error();
   invalid = false;
   last_color = Color();
@@ -725,9 +725,11 @@ bool Board::reset_and_validate() {
   }
   // reset state
   cells = initial_cells;
-  test_case = 0;
   step = 0;
-  cycle = 0;
+  if (reset_test_case) {
+    test_case = 0;
+    cycle = 0;
+  }
   for (const Input &input : inputs) {
     Cell &input_cell = cells.at(input.location);
     if (input_cell != 'x' && input_cell != '+') return error = Error::InvalidInput;
@@ -966,7 +968,7 @@ bool Board::move() {
     ++step;
     if (step >= output_colors[test_case].size() && test_case < output_colors.size() - 1) {
       ++test_case;
-      step = 0;
+      reset_and_validate(false);
     }
   }
   ++cycle;

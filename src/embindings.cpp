@@ -29,7 +29,7 @@ EMSCRIPTEN_BINDINGS(puzzle_bindings) {
     .function("set_output_colors", &Board::set_output_colors)
     .function("set_cells", &Board::set_cells)
     .function("set_instructions", &Board::set_instructions)
-    .function("reset_and_validate", &Board::reset_and_validate)
+    .function("reset_and_validate", static_cast<bool(Board::*)(void)>(&Board::reset_and_validate))
     .function("resolve", &Board::resolve)
     .function("move", &Board::move)
     .function("run", static_cast<std::pair<bool,bool>(Board::*)(size_t)>(&Board::run))

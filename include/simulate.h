@@ -529,7 +529,8 @@ public:
   // Runtime
   // check if setup is valid
   // ' ' for any, '.' for nothing, < v > ^ for equal to another, x+/\-| for cell
-  bool reset_and_validate();
+  bool reset_and_validate(bool reset_test_case);
+  bool reset_and_validate() { return reset_and_validate(true); }
   // resolve the board
   bool resolve();
   // step forward one cycle
