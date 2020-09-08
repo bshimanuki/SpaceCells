@@ -8,31 +8,54 @@ textarea {
 .spacer {
   flex: 1;
 }
+.grid-layout {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr) [grid-end];
+  grid-row-gap: 0.5vw;
+  grid-column-gap: 0.5vw;
+}
 .image-container {
   position: relative;
-}
-.image-base {
-  height: 100%;
   width: 100%;
+  padding-top: 100%;
 }
-.image-overlay {
+.image-container.horizontal {
+  padding-top: 50%;
+  grid-column-end: span 2;
+}
+.image-container.vertical {
+  padding-top: 200%;
+  grid-row-end: span 2;
+}
+.image-container.symbol-WM {
+  /* for spacing */
+  grid-row-start: 1;
+  grid-column-start: 5;
+}
+.symbol--,[class~="symbol-|"],[class~="symbol-]["] {
+  grid-row-start: 2;
+}
+.image-base,.image-overlay {
   position: absolute;
-  top: 0;
-  left: 0;
+  top: 50%;
+  left: 50%;
   height: 100%;
   width: 100%;
+  transform: translate(-50%, -50%);
 }
 .diode.horizontal .image-overlay {
-  left: -25%;
+  width: auto;
+  transform: translate(-100%, -50%);
 }
 .diode.vertical .image-overlay {
-  top: -25%;
+  height: auto;
+  transform: translate(-50%, -100%);
 }
 .diode.horizontal .image-overlay:last-of-type {
-  left: 25%;
+  transform: translate(0%, -50%);
 }
 .diode.vertical .image-overlay:last-of-type {
-  top: 25%;
+  transform: translate(-50%, 0%);
 }
 .board {
   display: flex;
@@ -84,10 +107,10 @@ textarea {
   box-shadow: inset 5px 5px 5px #8e3e8e, inset -5px -5px 5px  #8e3e8e;
 }
 .symbolgroup {
-  margin: 1ex;
-  padding: 4px 8px;
-  border: 1px solid #000;
-  border-radius: 5px;
+  /* margin: 1ex; */
+  /* padding: 4px 8px; */
+  /* border: 1px solid #000; */
+  /* border-radius: 5px; */
   font-family: monospace, sans-serif;
 }
 .symbolgroup.selected {

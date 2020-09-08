@@ -222,8 +222,8 @@ class Game extends React.Component {
     {type: "unresolved", subtype: "W\nM", value: "WM", multi:"vertical", outline: "outline_vertical", fill: "fill_x"},
     {type: "unresolved", subtype: "<x", value: "<x", multi:"horizontal", diode: true, outline: "outline_diode_left", fill: "fill_x"},
     {type: "unresolved", subtype: "x\nv", value: "xv", multi:"vertical", diode: true, outline: "outline_diode_down", fill: "fill_x"},
-    {type: "unresolved", subtype: "x>", value: "x>", multi:"horizontal", diode: true, outline: "outline_diode_right", fill: "fill_x"},
     {type: "unresolved", subtype: "^\nx", value: "^x", multi:"vertical", diode: true, outline: "outline_diode_up", fill: "fill_x"},
+    {type: "unresolved", subtype: "x>", value: "x>", multi:"horizontal", diode: true, outline: "outline_diode_right", fill: "fill_x"},
   ];
   symbolTypesDirection = [
     {type: "direction", subtype: "<", value: "<", name: "left"},
@@ -374,7 +374,7 @@ class Game extends React.Component {
               <div className={`trash ${this.state.selectedSymbolGroup && this.state.selectedOnBoard ? "active" : "inactive"}`} onClick={this.trash}>🗑</div>
             </div>
             <div style={{display:"flex", flexDirection:"row"}}>
-              <div style={{flex:3, display:"flex", flexDirection:"row", flexWrap:"wrap", alignItems:"flex-start"}}>
+              <div className="grid-layout" style={{flex:3}}>
                 {this.symbolTypesUnresolved.map(props => this.renderSymbolGroup("unresolved", props))}
                 {this.symbolTypesDirection.map(props => this.renderSymbolGroup("instruction", props))}
                 {this.symbolTypesOperation.map(props => this.renderSymbolGroup("instruction", props))}
@@ -744,7 +744,7 @@ class SymbolGroup extends React.PureComponent {
     if (!this.props.active) return null;
     if (this.props.type === "unresolved") {
       return (
-        <div className={`image-container symbolgroup ${this.props.selected === this ? "selected" : ""} ${this.props.diode && "diode"} ${this.props.multi || ""}`} onClick={this.pushThis} alt={this.props.subtype}>
+        <div className={`image-container symbolgroup symbol-${this.state.value} ${this.props.selected === this ? "selected" : ""} ${this.props.diode ? "diode" : ""} ${this.props.multi || ""}`} onClick={this.pushThis} alt={this.props.subtype}>
           <img className="image-base" src={`../assets/${this.props.outline}.svg`}/>
           <img className="image-overlay" src={`../assets/${this.props.fill}.svg`}/>
           <img className="image-overlay" src={`../assets/${this.props.fill}.svg`}/>

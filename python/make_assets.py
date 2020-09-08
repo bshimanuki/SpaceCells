@@ -232,7 +232,7 @@ class BlueDirectionRight(DirectionRightType, BlueBotType):
 class OperationType(CanvasType):
   RADIUS = 0.6
   STROKE = 'gray'
-  STROKE_WIDTH = 0.1
+  STROKE_WIDTH = 0.05
   TEXT_KWARGS = {
     'dominant_baseline': 'central',
     'text_anchor': 'middle',
@@ -307,7 +307,7 @@ class BranchType(OperationType, BranchDirectionType):
       d=self.path,
       stroke='none',
       fill='white',
-      opacity=0.5,
+      opacity=0.75,
     ))
     return dwg
 class Branch1Type(BranchType):
