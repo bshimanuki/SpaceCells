@@ -1,6 +1,7 @@
 # binaries
 /bin
 /obj
+/assets
 
 # build files
 *.o

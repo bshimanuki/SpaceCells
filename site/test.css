@@ -138,6 +138,9 @@ textarea {
 .toggle label:last-of-type {
   border-radius: 0 5px 5px 0;
 }
+.sim-toggle * {
+  font-family: Symbola;
+}
 .colon-list {
   display: table;
   width: min-content;

@@ -707,7 +707,7 @@ class Game extends React.Component {
 class Toggle extends React.PureComponent {
   render() {
     return (
-      <div className="toggle">
+      <div className={`toggle ${this.props.name}-toggle`}>
         {Object.keys(this.props.options).map(option =>
         <React.Fragment key={`radio-${option}`}>
           <input type="radio" id={`radio-${option}`} value={option} name={this.props.name}
