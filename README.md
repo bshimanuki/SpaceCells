@@ -14,6 +14,12 @@ If you don't have python 3, you can run `python -m SimpleHTTPServer 8000` instea
 ## Levels
 #### not
 Given a blue or green input, output the other color.
+#### and
+Given two inputs, output blue if they are both blue and green otherwise.
+#### delay
+Given one input, output the color of the previous input. Output blue as the first output.
+#### switch
+Given one input, switch the output between blue and red whenever the input is blue. The output should start as blue (unless the first input is blue).
 #### xor
 Given two inputs, output green if they are the same or blue if they are different.
 #### rainbow
@@ -49,10 +55,10 @@ Here is a list of what each symbol corresponds to:
 - `|`: latched `+` cell in `|` polarity (orange orientation)
 - `][`: offset 1x2 `x` cell
 - `WM`: offset 2x1 `x` cell
-- `<x`: 2x1 diode cell going left
-- `^x`: 1x2 diode cell going up
+- `<x`: 1x2 diode cell going left
+- `^x`: 2x1 diode cell going up
 - `x>`: 1x2 diode cell going right
-- `xv`: 1x2 diode cell going down
+- `xv`: 2x1 diode cell going down
 ### Directions (Instructions)
 - `<`: left
 - `v`: down
