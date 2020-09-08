@@ -8,6 +8,32 @@ textarea {
 .spacer {
   flex: 1;
 }
+.image-container {
+  position: relative;
+}
+.image-base {
+  height: 100%;
+  width: 100%;
+}
+.image-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+}
+.diode.horizontal .image-overlay {
+  left: -25%;
+}
+.diode.vertical .image-overlay {
+  top: -25%;
+}
+.diode.horizontal .image-overlay:last-of-type {
+  left: 25%;
+}
+.diode.vertical .image-overlay:last-of-type {
+  top: 25%;
+}
 .board {
   display: flex;
   flex-direction: column;

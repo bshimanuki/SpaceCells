@@ -80,9 +80,9 @@ class CellFillType(CanvasType):
     return dwg
 
 class XCellType(CellFillType):
-  OFFSET = 0.5
-  R1 = 0.25 # blue
-  R0 = 0.28 # green
+  OFFSET = 0.35
+  R1 = 0.20 # blue
+  R0 = 0.22 # green
   @property
   def CENTERS1(self):
     return (
@@ -97,20 +97,20 @@ class XCellType(CellFillType):
     )
 
 class PlusCellType(CellFillType):
-  OFFSET = 0.6
-  R1 = 0.33 # red
-  R0 = 0.30 # orange
+  OFFSET = 0.5
+  R1 = 0.27 # red
+  R0 = 0.24 # orange
   @property
   def CENTERS1(self):
     return (
-      (0, self.OFFSET),
-      (0, -self.OFFSET),
+      (self.OFFSET, 0),
+      (-self.OFFSET, 0),
     )
   @property
   def CENTERS0(self):
     return (
-      (self.OFFSET, 0),
-      (-self.OFFSET, 0),
+      (0, self.OFFSET),
+      (0, -self.OFFSET),
     )
 
 class BlueCell(XCellType):
@@ -127,7 +127,7 @@ class RedCell(PlusCellType):
     super().__init__(color1='red')
 class OrangeCell(PlusCellType):
   def __init__(self):
-    super().__init__(color1='orange')
+    super().__init__(color0='orange')
 class PlusCell(PlusCellType):
   def __init__(self):
     super().__init__(color1='lightgray', color0='lightgray')
@@ -290,9 +290,9 @@ class SyncType(UnicodeOperationType):
 class RotateType(UnicodeOperationType):
   TEXT = '⭮'
 class Power0Type(OperationType):
-  TEXT = ['POWER', 'Ψ']
+  TEXT = ['POWER', 'ℵ']
 class Power1Type(OperationType):
-  TEXT = ['POWER', 'φ']
+  TEXT = ['POWER', 'ב']
 
 class BranchDirectionType(DirectionType):
   HEAD_DISTANCE = 0.8
