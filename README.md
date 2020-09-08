@@ -67,7 +67,7 @@ Here is a list of what each symbol corresponds to:
 - `l`: LATCH
 - `u`: UNLATCH
 - `t`: TOGGLE LATCH
-- `*`: REFRESH
+- `*`: RELATCH
 - `s`: SYNC
 - `r`: ROTATE
 - `<`: BRANCH left if cell is | or /

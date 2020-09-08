@@ -234,7 +234,7 @@ class Game extends React.Component {
     {type: "operation", subtype: "NEXT", value: "n"},
     {type: "operation", subtype: "GRAB/DROP", options: {GRAB: "g", DROP: "d", "GRAB/DROP": "w"}},
     {type: "operation", subtype: "LATCH/UNLATCH", options: {LATCH: "l", UNLATCH: "u", "TOGGLE LATCH": "t"}},
-    {type: "operation", subtype: "REFRESH", value: "*"},
+    {type: "operation", subtype: "RELATCH", value: "*"},
     {type: "operation", subtype: "SYNC", value: "s"},
     {type: "operation", subtype: "ROTATE", value: "r"},
     {type: "operation", subtype: "BRANCH(|/)", options: {"<": "<", "v": "v", ">": ">", "^": "^"}},

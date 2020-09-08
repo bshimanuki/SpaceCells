@@ -74,7 +74,7 @@ $(BINDIR)/%.html: $(OBJDIR)/%.em.o $(EM_LIBS)
 	@mkdir -p $(BINDIR)
 	$(EMCC) $(CCFLAGS) -o $@ $^ $(INC) $(LDFLAGS) --bind
 
-.PHONY: clean
+.PHONY: clean assets
 
 .SECONDARY: $(OBJS) $(DEPS) $(EM_OBJS) $(BOOST_OBJS)
 
@@ -85,6 +85,9 @@ default: $(BINS)
 emscripten: $(EMBINDINGS_JS)
 
 python: $(BINDINGS_PYTHON)
+
+assets:
+	python3 python/make_assets.py
 
 all: default emscripten python
 
