@@ -19,6 +19,9 @@ textarea {
   width: 100%;
   padding-top: 100%;
 }
+.symbol {
+  z-index: 1;
+}
 .image-container.symbol {
   position: absolute;
 }
@@ -37,6 +40,12 @@ textarea {
 }
 .symbolgroup.symbol--,.symbolgroup[class~="symbol-|"],.symbolgroup[class~="symbol-]["] {
   grid-row-start: 2;
+}
+.image-overlay {
+  pointer-events: none;
+}
+.image-base {
+  pointer-events: auto;
 }
 .image-base,.image-overlay {
   position: absolute;

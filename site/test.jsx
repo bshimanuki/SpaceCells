@@ -94,8 +94,8 @@ class Symbol extends React.PureComponent {
       }
       var fill_image = fill_images[this.props.cellValue] || `../assets/${this.props.fill}.svg`;
       return (
-        <div className={`image-container symbol cell symbol-${this.props.value} ${this.props.className} ${selectedClass} ${this.props.diode ? "diode" : ""} ${this.props.multi || ""}`} onClick={this.handler} alt={this.props.subtype}>
-          <img className="image-base" src={outline_image}/>
+        <div className={`image-container symbol cell symbol-${this.props.value} ${this.props.className} ${selectedClass} ${this.props.diode ? "diode" : ""} ${this.props.multi || ""}`} alt={this.props.subtype}>
+          <img className="image-base" src={outline_image} onClick={this.handler}/>
           <img className="image-overlay" src={fill_image}/>
           <img className="image-overlay" src={fill_image}/>
         </div>
@@ -103,7 +103,7 @@ class Symbol extends React.PureComponent {
     } else {
       return (
         <div className={`symbol-shift ${this.props.className}`}>
-          <img src={`../assets/${this.props.type}_${this.props.botColors[this.props.bot]}_${this.props.name}.svg`} className={`symbol image-overlay ${selectedClass}`} onClick={this.handler} alt={this.props.subtype}/>
+          <img src={`../assets/${this.props.type}_${this.props.botColors[this.props.bot]}_${this.props.name}.svg`} className={`symbol image-base ${selectedClass}`} onClick={this.handler} alt={this.props.subtype}/>
         </div>
       );
     }
@@ -155,10 +155,10 @@ class Square extends React.PureComponent {
     return (
       <div className={classNames.join(" ")} onClick={this.handler}>
         {this.renderSymbol({className:"cell", cellValue:(this.props.cell && String.fromCharCode(this.props.cell.resolved())), cell:this.props.cell, symbolGroup:this.props.unresolved, index:this.props.unresolved_index})}
-        {this.renderSymbol({className:"bot0-token direction", symbolGroup:this.props.direction[0]})}
-        {this.renderSymbol({className:"bot1-token direction", symbolGroup:this.props.direction[1]})}
         {this.renderSymbol({className:"bot0-token operation", symbolGroup:this.props.operation[0]})}
         {this.renderSymbol({className:"bot1-token operation", symbolGroup:this.props.operation[1]})}
+        {this.renderSymbol({className:"bot0-token direction", symbolGroup:this.props.direction[0]})}
+        {this.renderSymbol({className:"bot1-token direction", symbolGroup:this.props.direction[1]})}
       </div>
     );
     // old
