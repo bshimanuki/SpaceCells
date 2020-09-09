@@ -1,8 +1,8 @@
 CC = g++
 EMCC = em++
 
-PYTHON_VERSION = 3.6m
-LBOOST_PYTHON = -lboost_python-py36
+PYTHON_VERSION = 3.8
+LBOOST_PYTHON = -lboost_python38
 
 OPT_LVL += -O3
 # OPT_LVL += -g

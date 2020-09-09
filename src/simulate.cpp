@@ -843,6 +843,18 @@ bool Board::move() {
           return error = Error("Cells collided");
         }
       }
+      for (const auto& oth_bot : bots) {
+        if (&oth_bot != &bot) {
+          const Cell &oth_cell = cells.at(oth_bot.location);
+          if (oth_cell.moving) {
+            Location oth_dest = oth_bot.location + Location(oth_cell.moving);
+            if (oth_dest == dest) {
+              invalid = true;
+              return error = Error("Cells collided");
+            }
+          }
+        }
+      }
     }
   }
   // move cells
