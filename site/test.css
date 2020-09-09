@@ -19,20 +19,23 @@ textarea {
   width: 100%;
   padding-top: 100%;
 }
-.image-container.horizontal {
+.image-container.symbol {
+  position: absolute;
+}
+.symbolgroup.horizontal {
   padding-top: 50%;
   grid-column-end: span 2;
 }
-.image-container.vertical {
+.symbolgroup.vertical {
   padding-top: 200%;
   grid-row-end: span 2;
 }
-.image-container.symbol-WM {
+.symbolgroup.symbol-WM {
   /* for spacing */
   grid-row-start: 1;
   grid-column-start: 5;
 }
-.symbol--,[class~="symbol-|"],[class~="symbol-]["] {
+.symbolgroup.symbol--,.symbolgroup[class~="symbol-|"],.symbolgroup[class~="symbol-]["] {
   grid-row-start: 2;
 }
 .image-base,.image-overlay {
@@ -57,6 +60,23 @@ textarea {
 .diode.vertical .image-overlay:last-of-type {
   transform: translate(-50%, 0%);
 }
+.symbol.horizontal {
+  width: 200%;
+}
+.symbol.vertical {
+  height: 200%;
+}
+.symbol-shift {
+  position: absolute;
+  height: 100%;
+  width: 100%;
+}
+.symbol-shift.bot0-token {
+  transform: scale(0.667) translate(-33%, -33%);
+}
+.symbol-shift.bot1-token {
+  transform: scale(0.667) translate(33%, 33%);
+}
 .board {
   display: flex;
   flex-direction: column;
@@ -67,11 +87,12 @@ textarea {
   display: flex;
 }
 .square {
+  position: relative;
   height: 50px;
   width: 50px;
   border: 1px solid #000;
-  display: flex;
-  flex-direction: column;
+  /* display: flex; */
+  /* flex-direction: column; */
 }
 .token-row {
   flex: 1;
@@ -89,6 +110,13 @@ textarea {
     1px -1px 0 cyan,
     -1px  1px 0 cyan,
     1px  1px 0 cyan;
+}
+.symbol.selected {
+  filter: drop-shadow(0 0 6px dodgerblue);
+}
+.symbolgroup.selected {
+  filter: drop-shadow(0 0 6px dodgerblue);
+  /* background: yellow; */
 }
 .bot0-token {
   color: crimson;
@@ -112,9 +140,6 @@ textarea {
   /* border: 1px solid #000; */
   /* border-radius: 5px; */
   font-family: monospace, sans-serif;
-}
-.symbolgroup.selected {
-  background: yellow;
 }
 .symbol-options * {
   font-family: monospace, sans-serif;

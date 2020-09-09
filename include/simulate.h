@@ -222,12 +222,12 @@ public:
   explicit operator Color() const;
 
   // State checkers
-  inline bool is_1x1() const { return exists && !partner_delta; }
-  inline bool is_grabbable() const { return is_1x1(); }
-  inline bool is_latchable() const { return is_1x1(); }
-  inline bool is_refreshable() const { return is_1x1() && latched; }
-  inline bool is_rotateable() const { return is_1x1(); }
-  inline bool is_diode() const { return direction && !offset; }
+  bool is_1x1() const { return exists && !partner_delta; }
+  bool is_grabbable() const { return is_1x1(); }
+  bool is_latchable() const { return is_1x1(); }
+  bool is_refreshable() const { return is_1x1() && latched; }
+  bool is_rotateable() const { return is_1x1(); }
+  bool is_diode() const { return direction && !offset; }
 
 
 private:
@@ -486,6 +486,9 @@ class Board {
   // runtime
   Grid<Cell> cells;
   bool invalid = false;
+  // indicator for whether I/O incremented on most recent cycle
+  // does not count if moved to new test case
+  bool was_next = false;
   size_t test_case = 0;
   size_t step = 0; // step index for I/O
   size_t cycle = 0; // cycle count
@@ -500,6 +503,7 @@ public:
   const std::vector<std::vector<Color>>& get_output_colors() const { return output_colors; }
   const Grid<bool>& get_trespassable() const { return trespassable; }
   const Grid<char>& get_level() const { return level; }
+  bool get_was_next() const { return was_next; }
   size_t get_test_case() const { return test_case; }
   size_t get_step() const { return step; }
   size_t get_cycle() const { return cycle; }

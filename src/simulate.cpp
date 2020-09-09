@@ -742,6 +742,7 @@ bool Board::reset_and_validate(bool reset_test_case) {
 bool Board::move() {
   if (check_status() != Status::RUNNING) return false;
   bool next = false;
+  was_next = false;
   size_t syncing = 0;
   // toggle states
   for (size_t k=0; k<nbots; ++k) {
@@ -981,6 +982,8 @@ bool Board::move() {
     if (step >= output_colors[test_case].size() && test_case < output_colors.size() - 1) {
       ++test_case;
       reset_and_validate(false);
+    } else {
+      was_next = true;
     }
   }
   ++cycle;

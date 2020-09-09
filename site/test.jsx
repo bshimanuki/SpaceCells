@@ -9,6 +9,14 @@ var levels = {
   "adder": "../examples/adder.lvl",
   "stack": "../examples/stack.lvl",
 };
+var fill_images = {
+  "x": "../assets/fill_x.svg",
+  "+": "../assets/fill_plus.svg",
+  "/": "../assets/fill_blue.svg",
+  "\\": "../assets/fill_green.svg",
+  "-": "../assets/fill_red.svg",
+  "|": "../assets/fill_orange.svg",
+};
 Module.onRuntimeInitialized = _ => {
   ReactDOM.render(
     <Game m={10} n={12}/>,
@@ -51,7 +59,58 @@ class Token extends React.PureComponent {
   render() {
     var c = (((this.props.symbolGroup || {}).state || {}).value || {})[this.props.index];
     if (this.props.cellValue !== undefined) {
-      if (!this.props.stopped || !c) c = this.props.cellValue && String.fromCharCode(this.props.cellValue);
+      if (!this.props.stopped || !c) c = this.props.cellValue;
+    }
+    return (
+      <div onClick={() => {this.props.handler(this.props.y, this.props.x, this.props.symbolGroup, this.props.className);}} className={`token ${this.props.className} ${this.props.selectedSymbolGroup && this.props.selectedSymbolGroup === this.props.symbolGroup ? "selected" : ""}`}>
+        {c}
+      </div>
+    );
+  }
+}
+
+class Symbol extends React.PureComponent {
+  constructor(props) {
+    super(props);
+    this.handler = this.handler.bind(this);
+  }
+  handler(event) {
+    event.stopPropagation();
+    this.props.handler(this.props.y, this.props.x, this.props.symbolGroup, this.props.className);
+  }
+  render() {
+    var selectedClass = this.props.selectedSymbolGroup === this.props.symbolGroup ? "selected" : "";
+    if (!this.props.symbolGroup || !this.props.symbolGroup.state) {
+      return <div></div>;
+    }
+    if (this.props.type === "unresolved") {
+      if (this.props.index) {
+        return <div></div>;
+      }
+      var outline_image = `../assets/${this.props.outline}.svg`;
+      if (this.props.cell && this.props.cell.is_1x1) {
+        if (this.props.cell.latched) outline_image = `../assets/outline_latched.svg`;
+        else outline_image = `../assets/outline_unlatched.svg`;
+      }
+      var fill_image = fill_images[this.props.cellValue] || `../assets/${this.props.fill}.svg`;
+      return (
+        <div className={`image-container symbol cell symbol-${this.props.value} ${this.props.className} ${selectedClass} ${this.props.diode ? "diode" : ""} ${this.props.multi || ""}`} onClick={this.handler} alt={this.props.subtype}>
+          <img className="image-base" src={outline_image}/>
+          <img className="image-overlay" src={fill_image}/>
+          <img className="image-overlay" src={fill_image}/>
+        </div>
+      );
+    } else {
+      return (
+        <div className={`symbol-shift ${this.props.className}`}>
+          <img src={`../assets/${this.props.type}_${this.props.botColors[this.props.bot]}_${this.props.name}.svg`} className={`symbol image-overlay ${selectedClass}`} onClick={this.handler} alt={this.props.subtype}/>
+        </div>
+      );
+    }
+    // old
+    var c = (((this.props.symbolGroup || {}).state || {}).value || {})[this.props.index];
+    if (this.props.cellValue !== undefined) {
+      if (!this.props.stopped || !c) c = this.props.cellValue;
     }
     return (
       <div onClick={() => {this.props.handler(this.props.y, this.props.x, this.props.symbolGroup, this.props.className);}} className={`token ${this.props.className} ${this.props.selectedSymbolGroup && this.props.selectedSymbolGroup === this.props.symbolGroup ? "selected" : ""}`}>
@@ -62,9 +121,24 @@ class Token extends React.PureComponent {
 }
 
 class Square extends React.PureComponent {
+  constructor(props) {
+    super(props);
+    this.handler = this.handler.bind(this);
+  }
+
+  handler() {
+    this.props.handler(this.props.y, this.props.x, null, null);
+  }
+
   renderToken(props) {
     return (
       <Token handler={this.props.handler} selectedSymbolGroup={this.props.selectedSymbolGroup} selectedSymbolValue={this.props.selectedSymbolValue} y={this.props.y} x={this.props.x} index={0} stopped={this.props.stopped} {...props}/>
+    );
+  }
+
+  renderSymbol(props) {
+    return (
+      <Symbol selectedSymbolGroup={this.props.selectedSymbolGroup} y={this.props.y} x={this.props.x} index={0} stopped={this.props.stopped} {...props} {...(props.symbolGroup||{}).props} {...(props.symbolGroup||{}).state} handler={this.props.handler}/>
     );
   }
 
@@ -79,14 +153,24 @@ class Square extends React.PureComponent {
     if (this.props.powered) classNames.push("powered");
     classNames.push();
     return (
+      <div className={classNames.join(" ")} onClick={this.handler}>
+        {this.renderSymbol({className:"cell", cellValue:(this.props.cell && String.fromCharCode(this.props.cell.resolved())), cell:this.props.cell, symbolGroup:this.props.unresolved, index:this.props.unresolved_index})}
+        {this.renderSymbol({className:"bot0-token direction", symbolGroup:this.props.direction[0]})}
+        {this.renderSymbol({className:"bot1-token direction", symbolGroup:this.props.direction[1]})}
+        {this.renderSymbol({className:"bot0-token operation", symbolGroup:this.props.operation[0]})}
+        {this.renderSymbol({className:"bot1-token operation", symbolGroup:this.props.operation[1]})}
+      </div>
+    );
+    // old
+    return (
       <div className={classNames.join(" ")}>
         <div className="token-row">
-          {this.renderToken({className:"unresolved", cellValue:(this.props.cell && this.props.cell.unresolved()), symbolGroup:this.props.unresolved, index:this.props.unresolved_index})}
+          {this.renderToken({className:"unresolved", cellValue:(this.props.cell && String.fromCharCode(this.props.cell.unresolved())), symbolGroup:this.props.unresolved, index:this.props.unresolved_index})}
           {this.renderToken({className:"bot0-token direction", symbolGroup:this.props.direction[0]})}
           {this.renderToken({className:"bot1-token direction", symbolGroup:this.props.direction[1]})}
         </div>
         <div className="token-row">
-          {this.renderToken({className:"resolved", cellValue:(this.props.cell && this.props.cell.resolved())})}
+          {this.renderToken({className:"resolved", cellValue:(this.props.cell && String.fromCharCode(this.props.cell.resolved()))})}
           {this.renderToken({className:"bot0-token operation", symbolGroup:this.props.operation[0]})}
           {this.renderToken({className:"bot1-token operation", symbolGroup:this.props.operation[1]})}
         </div>
@@ -394,21 +478,21 @@ class Game extends React.Component {
             <div key={i} className="input-colors">
               <span className="input-name">Input{this.state.inputs.length > 1 ? ` ${i+1}` : ""}</span>
               <span className="colors">
-                {input.map((bit, k) => <span key={k} className={`input-color ${k < this.state.step ? "past" : ""} ${k === this.state.step ? "present" : ""} ${k > this.state.step ? "future" : ""}`} color={'GB'[Number(bit)]}>{'GB'[Number(bit)]}</span>)}
+                {input.map((bit, k) => <span key={k} className={`input-color ${k < this.state.step - this.state.wasNext ? "past" : ""} ${k === this.state.step - this.state.wasNext ? "present" : ""} ${k > this.state.step - this.state.wasNext ? "future" : ""}`} color={'GB'[Number(bit)]}>{'GB'[Number(bit)]}</span>)}
               </span>
             </div>
             )}
             <div className="expected-colors">
               <span className="expected-name">Expected</span>
               <span className="colors">
-                {(this.state.outputColors[this.state.testCase] || []).map((color, k) => <span key={k} className={`expected-color ${k < this.state.step ? "past" : ""} ${k === this.state.step ? "present" : ""} ${k > this.state.step ? "future" : ""}`} color={color}>{color}</span>)}
+                {(this.state.outputColors[this.state.testCase] || []).map((color, k) => <span key={k} className={`expected-color ${k < this.state.step - this.state.wasNext ? "past" : ""} ${k === this.state.step - this.state.wasNext ? "present" : ""} ${k > this.state.step - this.state.wasNext ? "future" : ""}`} color={color}>{color}</span>)}
               </span>
             </div>
             <div className="actual-colors">
               <span className="actual-name">Actual</span>
               <span className="colors">
                 {(this.state.outputColors[this.state.testCase] || []).slice(0, Math.max(0, this.state.step)).map((color, k) => <span key={k} className={`actual-color`} color={color}>{color}</span>)}
-                {this.state.errorReason === Module.ErrorReason.WRONG_OUTPUT && <span className={``} color={this.state.lastColor}>{this.state.lastColor}</span>}
+                {this.state.errorReason === Module.ErrorReason.WRONG_OUTPUT && <span className={`actual-color`} color={this.state.lastColor}>{this.state.lastColor}</span>}
               </span>
             </div>
           </div>
@@ -608,6 +692,7 @@ class Game extends React.Component {
   resetCells() {
     this.setState((state, props) => {
       var newState = {};
+      newState.wasNext = state.board.was_next;
       newState.testCase = state.board.test_case;
       newState.step = state.board.step;
       newState.cycle = state.board.cycle;

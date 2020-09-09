@@ -19,6 +19,7 @@ EMSCRIPTEN_BINDINGS(puzzle_bindings) {
     .function("get_trespassable", &Board::get_trespassable)
     .function("get_level", &Board::get_level)
     .function("get_last_color", &Board::get_last_color)
+    .property("was_next", &Board::get_was_next)
     .property("test_case", &Board::get_test_case)
     .property("step", &Board::get_step)
     .property("cycle", &Board::get_cycle)
@@ -106,6 +107,12 @@ EMSCRIPTEN_BINDINGS(puzzle_bindings) {
     .function("resolved", &Cell::resolved)
     .function("unresolved", &Cell::operator char)
     .property("color", &Cell::operator Color)
+    .property("is_1x1", &Cell::is_1x1)
+    .property("is_grabbable", &Cell::is_grabbable)
+    .property("is_latchable", &Cell::is_latchable)
+    .property("is_refreshable", &Cell::is_refreshable)
+    .property("is_rotateable", &Cell::is_rotateable)
+    .property("is_diode", &Cell::is_diode)
     ;
 
   class_<Operation>("Operation")
