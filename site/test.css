@@ -21,6 +21,10 @@ textarea {
 }
 .symbol {
   z-index: 1;
+  pointer-events: visiblePainted;
+}
+.direction,.operation {
+  z-index: 2;
 }
 .image-container.symbol {
   position: absolute;

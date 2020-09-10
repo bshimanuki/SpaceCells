@@ -1,7 +1,9 @@
 # binaries
 /bin
+/build
 /obj
-/assets
+/node_modules
+/site/assets
 
 # build files
 *.o

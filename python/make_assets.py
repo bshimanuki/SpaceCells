@@ -6,7 +6,8 @@ import numpy as np
 from svgwrite import Drawing
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-ASSETS = 'assets'
+ASSETS_PATH = os.path.join(ROOT, 'site/assets')
+ASSETS_JS = 'assets.js'
 
 def add_arrow(dwg, tail, head, head_angle, head_length, draw_tail=True, **kwargs):
   head = np.asarray(head, dtype=float)
@@ -22,7 +23,7 @@ def add_arrow(dwg, tail, head, head_angle, head_length, draw_tail=True, **kwargs
 
 class SvgObject:
   def save(self, filename):
-    path = os.path.join(ROOT, ASSETS, filename)
+    path = os.path.join(ASSETS_PATH, filename)
     self.render().saveas(path)
 
 class CanvasType(SvgObject):
@@ -416,77 +417,87 @@ class BlueBranch0Right(Branch0Type, DirectionRightType, BlueBotType):
   pass
 
 def main():
-  os.makedirs(os.path.join(ROOT, ASSETS), exist_ok=True)
+  os.makedirs(ASSETS_PATH, exist_ok=True)
 
-  BlueCell().save('fill_blue.svg')
-  GreenCell().save('fill_green.svg')
-  XCell().save('fill_x.svg')
-  RedCell().save('fill_red.svg')
-  OrangeCell().save('fill_orange.svg')
-  PlusCell().save('fill_plus.svg')
+  assets = {
+    BlueCell: 'fill_blue.svg',
+    GreenCell: 'fill_green.svg',
+    XCell: 'fill_x.svg',
+    RedCell: 'fill_red.svg',
+    OrangeCell: 'fill_orange.svg',
+    PlusCell: 'fill_plus.svg',
 
-  CellBorder().save('outline_unlatched.svg')
-  LatchedCellBorder().save('outline_latched.svg')
-  HorizontalOffsetCellBorder().save('outline_horizontal.svg')
-  VerticalOffsetCellBorder().save('outline_vertical.svg')
+    CellBorder: 'outline_unlatched.svg',
+    LatchedCellBorder: 'outline_latched.svg',
+    HorizontalOffsetCellBorder: 'outline_horizontal.svg',
+    VerticalOffsetCellBorder: 'outline_vertical.svg',
 
-  DiodeUp().save('outline_diode_up.svg')
-  DiodeDown().save('outline_diode_down.svg')
-  DiodeLeft().save('outline_diode_left.svg')
-  DiodeRight().save('outline_diode_right.svg')
+    DiodeUp: 'outline_diode_up.svg',
+    DiodeDown: 'outline_diode_down.svg',
+    DiodeLeft: 'outline_diode_left.svg',
+    DiodeRight: 'outline_diode_right.svg',
 
-  RedDirectionUp().save('direction_red_up.svg')
-  RedDirectionDown().save('direction_red_down.svg')
-  RedDirectionLeft().save('direction_red_left.svg')
-  RedDirectionRight().save('direction_red_right.svg')
-  BlueDirectionUp().save('direction_blue_up.svg')
-  BlueDirectionDown().save('direction_blue_down.svg')
-  BlueDirectionLeft().save('direction_blue_left.svg')
-  BlueDirectionRight().save('direction_blue_right.svg')
+    RedDirectionUp: 'direction_red_up.svg',
+    RedDirectionDown: 'direction_red_down.svg',
+    RedDirectionLeft: 'direction_red_left.svg',
+    RedDirectionRight: 'direction_red_right.svg',
+    BlueDirectionUp: 'direction_blue_up.svg',
+    BlueDirectionDown: 'direction_blue_down.svg',
+    BlueDirectionLeft: 'direction_blue_left.svg',
+    BlueDirectionRight: 'direction_blue_right.svg',
 
-  RedStart().save('operation_red_start.svg')
-  BlueStart().save('operation_blue_start.svg')
-  RedNext().save('operation_red_next.svg')
-  BlueNext().save('operation_blue_next.svg')
-  RedGrab().save('operation_red_grab.svg')
-  BlueGrab().save('operation_blue_grab.svg')
-  RedDrop().save('operation_red_drop.svg')
-  BlueDrop().save('operation_blue_drop.svg')
-  RedSwap().save('operation_red_swap.svg')
-  BlueSwap().save('operation_blue_swap.svg')
-  RedLatch().save('operation_red_latch.svg')
-  BlueLatch().save('operation_blue_latch.svg')
-  RedUnlatch().save('operation_red_unlatch.svg')
-  BlueUnlatch().save('operation_blue_unlatch.svg')
-  RedToggleLatch().save('operation_red_togglelatch.svg')
-  BlueToggleLatch().save('operation_blue_togglelatch.svg')
-  RedRelatch().save('operation_red_relatch.svg')
-  BlueRelatch().save('operation_blue_relatch.svg')
-  RedSync().save('operation_red_sync.svg')
-  BlueSync().save('operation_blue_sync.svg')
-  RedRotate().save('operation_red_rotate.svg')
-  BlueRotate().save('operation_blue_rotate.svg')
-  RedPower0().save('operation_red_power0.svg')
-  BluePower0().save('operation_blue_power0.svg')
-  RedPower1().save('operation_red_power1.svg')
-  BluePower1().save('operation_blue_power1.svg')
+    RedStart: 'operation_red_start.svg',
+    BlueStart: 'operation_blue_start.svg',
+    RedNext: 'operation_red_next.svg',
+    BlueNext: 'operation_blue_next.svg',
+    RedGrab: 'operation_red_grab.svg',
+    BlueGrab: 'operation_blue_grab.svg',
+    RedDrop: 'operation_red_drop.svg',
+    BlueDrop: 'operation_blue_drop.svg',
+    RedSwap: 'operation_red_swap.svg',
+    BlueSwap: 'operation_blue_swap.svg',
+    RedLatch: 'operation_red_latch.svg',
+    BlueLatch: 'operation_blue_latch.svg',
+    RedUnlatch: 'operation_red_unlatch.svg',
+    BlueUnlatch: 'operation_blue_unlatch.svg',
+    RedToggleLatch: 'operation_red_togglelatch.svg',
+    BlueToggleLatch: 'operation_blue_togglelatch.svg',
+    RedRelatch: 'operation_red_relatch.svg',
+    BlueRelatch: 'operation_blue_relatch.svg',
+    RedSync: 'operation_red_sync.svg',
+    BlueSync: 'operation_blue_sync.svg',
+    RedRotate: 'operation_red_rotate.svg',
+    BlueRotate: 'operation_blue_rotate.svg',
+    RedPower0: 'operation_red_power0.svg',
+    BluePower0: 'operation_blue_power0.svg',
+    RedPower1: 'operation_red_power1.svg',
+    BluePower1: 'operation_blue_power1.svg',
 
-  RedBranch1Up().save('operation_red_branch1up.svg')
-  BlueBranch1Up().save('operation_blue_branch1up.svg')
-  RedBranch1Down().save('operation_red_branch1down.svg')
-  BlueBranch1Down().save('operation_blue_branch1down.svg')
-  RedBranch1Left().save('operation_red_branch1left.svg')
-  BlueBranch1Left().save('operation_blue_branch1left.svg')
-  RedBranch1Right().save('operation_red_branch1right.svg')
-  BlueBranch1Right().save('operation_blue_branch1right.svg')
-  RedBranch0Up().save('operation_red_branch0up.svg')
-  BlueBranch0Up().save('operation_blue_branch0up.svg')
-  RedBranch0Down().save('operation_red_branch0down.svg')
-  BlueBranch0Down().save('operation_blue_branch0down.svg')
-  RedBranch0Left().save('operation_red_branch0left.svg')
-  BlueBranch0Left().save('operation_blue_branch0left.svg')
-  RedBranch0Right().save('operation_red_branch0right.svg')
-  BlueBranch0Right().save('operation_blue_branch0right.svg')
+    RedBranch1Up: 'operation_red_branch1up.svg',
+    BlueBranch1Up: 'operation_blue_branch1up.svg',
+    RedBranch1Down: 'operation_red_branch1down.svg',
+    BlueBranch1Down: 'operation_blue_branch1down.svg',
+    RedBranch1Left: 'operation_red_branch1left.svg',
+    BlueBranch1Left: 'operation_blue_branch1left.svg',
+    RedBranch1Right: 'operation_red_branch1right.svg',
+    BlueBranch1Right: 'operation_blue_branch1right.svg',
+    RedBranch0Up: 'operation_red_branch0up.svg',
+    BlueBranch0Up: 'operation_blue_branch0up.svg',
+    RedBranch0Down: 'operation_red_branch0down.svg',
+    BlueBranch0Down: 'operation_blue_branch0down.svg',
+    RedBranch0Left: 'operation_red_branch0left.svg',
+    BlueBranch0Left: 'operation_blue_branch0left.svg',
+    RedBranch0Right: 'operation_red_branch0right.svg',
+    BlueBranch0Right: 'operation_blue_branch0right.svg',
+  }
+
+  lines = []
+  for cls, fname in assets.items():
+    cls().save(fname)
+    root = os.path.splitext(fname)[0]
+    lines.append("export {{ default as {} }} from './{}';".format(root, fname))
+  with open(os.path.join(ASSETS_PATH, ASSETS_JS), 'wt') as js_file:
+    js_file.write('\n'.join(lines))
 
 if __name__ == '__main__':
   main()

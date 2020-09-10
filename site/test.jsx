@@ -1,3 +1,14 @@
+import React from 'react';
+import ReactDOM from 'react-dom';
+
+import "./test.css";
+import * as Assets from "./assets/assets.js";
+
+function Asset(props) {
+  var SVG = Assets[props.src];
+  return <SVG {...props}/>;
+}
+
 var levels = {
   "not": "../examples/not.lvl",
   "and": "../examples/and.lvl",
@@ -10,12 +21,12 @@ var levels = {
   "stack": "../examples/stack.lvl",
 };
 var fill_images = {
-  "x": "../assets/fill_x.svg",
-  "+": "../assets/fill_plus.svg",
-  "/": "../assets/fill_blue.svg",
-  "\\": "../assets/fill_green.svg",
-  "-": "../assets/fill_red.svg",
-  "|": "../assets/fill_orange.svg",
+  "x": "fill_x",
+  "+": "fill_plus",
+  "/": "fill_blue",
+  "\\": "fill_green",
+  "-": "fill_red",
+  "|": "fill_orange",
 };
 Module.onRuntimeInitialized = _ => {
   ReactDOM.render(
@@ -87,23 +98,23 @@ class Symbol extends React.PureComponent {
       if (this.props.index) {
         return <div></div>;
       }
-      var outline_image = `../assets/${this.props.outline}.svg`;
+      var outline_image = this.props.outline;
       if (this.props.cell && this.props.cell.is_1x1) {
-        if (this.props.cell.latched) outline_image = `../assets/outline_latched.svg`;
-        else outline_image = `../assets/outline_unlatched.svg`;
+        if (this.props.cell.latched) outline_image = "outline_latched";
+        else outline_image = "outline_unlatched";
       }
-      var fill_image = fill_images[this.props.cellValue] || `../assets/${this.props.fill}.svg`;
+      var fill_image = fill_images[this.props.cellValue] || this.props.fill;
       return (
         <div className={`image-container symbol cell symbol-${this.props.value} ${this.props.className} ${selectedClass} ${this.props.diode ? "diode" : ""} ${this.props.multi || ""}`} alt={this.props.subtype}>
-          <img className="image-base" src={outline_image} onClick={this.handler}/>
-          <img className="image-overlay" src={fill_image}/>
-          <img className="image-overlay" src={fill_image}/>
+          <Asset className="image-base" src={outline_image} onClick={this.handler}/>
+          <Asset className="image-overlay" src={fill_image}/>
+          <Asset className="image-overlay" src={fill_image}/>
         </div>
       );
     } else {
       return (
         <div className={`symbol-shift ${this.props.className}`}>
-          <img src={`../assets/${this.props.type}_${this.props.botColors[this.props.bot]}_${this.props.name}.svg`} className={`symbol image-base ${selectedClass}`} onClick={this.handler} alt={this.props.subtype}/>
+          <Asset src={`${this.props.type}_${this.props.botColors[this.props.bot]}_${this.props.name}`} className={`symbol image-base ${selectedClass}`} onClick={this.handler} alt={this.props.subtype}/>
         </div>
       );
     }
@@ -830,14 +841,14 @@ class SymbolGroup extends React.PureComponent {
     if (this.props.type === "unresolved") {
       return (
         <div className={`image-container symbolgroup symbol-${this.state.value} ${this.props.selected === this ? "selected" : ""} ${this.props.diode ? "diode" : ""} ${this.props.multi || ""}`} onClick={this.pushThis} alt={this.props.subtype}>
-          <img className="image-base" src={`../assets/${this.props.outline}.svg`}/>
-          <img className="image-overlay" src={`../assets/${this.props.fill}.svg`}/>
-          <img className="image-overlay" src={`../assets/${this.props.fill}.svg`}/>
+          <Asset className="image-base" src={this.props.outline}/>
+          <Asset className="image-overlay" src={this.props.fill}/>
+          <Asset className="image-overlay" src={this.props.fill}/>
         </div>
       );
     } else {
       return (
-        <img src={`../assets/${this.props.type}_${this.props.botColors[this.props.bot]}_${this.state.name}.svg`} className={`symbolgroup ${this.props.selected === this ? "selected" : ""}`} onClick={this.pushThis} alt={this.props.subtype}/>
+        <Asset src={`${this.props.type}_${this.props.botColors[this.props.bot]}_${this.state.name}`} className={`symbolgroup ${this.props.selected === this ? "selected" : ""}`} onClick={this.pushThis} alt={this.props.subtype}/>
       );
     }
     // old

@@ -13,7 +13,7 @@ CCFLAGS += $(OPT_LVL)
 SRCDIR = src
 INCDIR = include
 OBJDIR = obj
-BINDIR = bin
+BINDIR = build
 
 EMBINDINGS_CPP := $(SRCDIR)/embindings.cpp
 PYTHON_CPP := $(SRCDIR)/python_bindings.cpp
@@ -74,7 +74,7 @@ $(BINDIR)/%.html: $(OBJDIR)/%.em.o $(EM_LIBS)
 	@mkdir -p $(BINDIR)
 	$(EMCC) $(CCFLAGS) -o $@ $^ $(INC) $(LDFLAGS) --bind
 
-.PHONY: clean assets
+.PHONY: clean assets clean-assets
 
 .SECONDARY: $(OBJS) $(DEPS) $(EM_OBJS) $(BOOST_OBJS)
 
@@ -89,9 +89,12 @@ python: $(BINDINGS_PYTHON)
 assets:
 	python3 python/make_assets.py
 
+clean-assets:
+	rm -rf site/assets
+
 all: default emscripten python
 
-clean:
+clean: clean-assets
 	rm -rf $(OBJDIR) $(BINDIR)
 
 -include $(DEPS)
