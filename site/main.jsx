@@ -75,20 +75,6 @@ function cellAllowed(c) {
   return " _".includes(c);
 }
 
-class Token extends React.PureComponent {
-  render() {
-    var c = (((this.props.symbolGroup || {}).state || {}).value || {})[this.props.index];
-    if (this.props.cellValue !== undefined) {
-      if (!this.props.stopped || !c) c = this.props.cellValue;
-    }
-    return (
-      <div onClick={() => {this.props.handler(this.props.y, this.props.x, this.props.symbolGroup, this.props.className);}} className={`token ${this.props.className} ${this.props.selectedSymbolGroup && this.props.selectedSymbolGroup === this.props.symbolGroup ? "selected" : ""}`}>
-        {c}
-      </div>
-    );
-  }
-}
-
 class Symbol extends React.PureComponent {
   constructor(props) {
     super(props);
@@ -127,16 +113,6 @@ class Symbol extends React.PureComponent {
         </div>
       );
     }
-    // old
-    var c = (((this.props.symbolGroup || {}).state || {}).value || {})[this.props.index];
-    if (this.props.cellValue !== undefined) {
-      if (!this.props.stopped || !c) c = this.props.cellValue;
-    }
-    return (
-      <div onClick={() => {this.props.handler(this.props.y, this.props.x, this.props.symbolGroup, this.props.className);}} className={`token ${this.props.className} ${this.props.selectedSymbolGroup && this.props.selectedSymbolGroup === this.props.symbolGroup ? "selected" : ""}`}>
-        {c}
-      </div>
-    );
   }
 }
 
@@ -148,12 +124,6 @@ class Square extends React.PureComponent {
 
   handler() {
     this.props.handler(this.props.y, this.props.x, null, null);
-  }
-
-  renderToken(props) {
-    return (
-      <Token handler={this.props.handler} selectedSymbolGroup={this.props.selectedSymbolGroup} selectedSymbolValue={this.props.selectedSymbolValue} y={this.props.y} x={this.props.x} index={0} stopped={this.props.stopped} {...props}/>
-    );
   }
 
   renderSymbol(props) {
@@ -175,25 +145,10 @@ class Square extends React.PureComponent {
     return (
       <div className={classNames.join(" ")} onClick={this.handler}>
         {this.renderSymbol({className:"cell", cellValue:(this.props.cell && String.fromCharCode(this.props.cell.resolved())), cell:this.props.cell, symbolGroup:this.props.unresolved, index:this.props.unresolved_index})}
-        {this.renderSymbol({className:"bot0-token operation", symbolGroup:this.props.operation[0]})}
-        {this.renderSymbol({className:"bot1-token operation", symbolGroup:this.props.operation[1]})}
-        {this.renderSymbol({className:"bot0-token direction", symbolGroup:this.props.direction[0]})}
-        {this.renderSymbol({className:"bot1-token direction", symbolGroup:this.props.direction[1]})}
-      </div>
-    );
-    // old
-    return (
-      <div className={classNames.join(" ")}>
-        <div className="token-row">
-          {this.renderToken({className:"unresolved", cellValue:(this.props.cell && String.fromCharCode(this.props.cell.unresolved())), symbolGroup:this.props.unresolved, index:this.props.unresolved_index})}
-          {this.renderToken({className:"bot0-token direction", symbolGroup:this.props.direction[0]})}
-          {this.renderToken({className:"bot1-token direction", symbolGroup:this.props.direction[1]})}
-        </div>
-        <div className="token-row">
-          {this.renderToken({className:"resolved", cellValue:(this.props.cell && String.fromCharCode(this.props.cell.resolved()))})}
-          {this.renderToken({className:"bot0-token operation", symbolGroup:this.props.operation[0]})}
-          {this.renderToken({className:"bot1-token operation", symbolGroup:this.props.operation[1]})}
-        </div>
+        {this.renderSymbol({className:"bot0-symbol operation", symbolGroup:this.props.operation[0]})}
+        {this.renderSymbol({className:"bot1-symbol operation", symbolGroup:this.props.operation[1]})}
+        {this.renderSymbol({className:"bot0-symbol direction", symbolGroup:this.props.direction[0]})}
+        {this.renderSymbol({className:"bot1-symbol direction", symbolGroup:this.props.direction[1]})}
       </div>
     );
   }
@@ -862,10 +817,6 @@ class SymbolGroup extends React.PureComponent {
         </div>
       );
     }
-    // old
-    return (
-      <div className={`symbolgroup ${this.props.selected === this ? "selected" : ""}`} style={{whiteSpace:"pre-wrap", alignItems:"bottom"}} onClick={this.pushThis}>{this.props.subtype}</div>
-    );
   }
   pushThis = () => { this.props.handler(this); };
 }

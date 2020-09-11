@@ -10,7 +10,7 @@ textarea {
 }
 .grid-layout {
   display: grid;
-  grid-template-columns: repeat(5, 1fr) [grid-end];
+  grid-template-columns: repeat(9, 1fr) [grid-end];
   grid-row-gap: 0.5vw;
   grid-column-gap: 0.5vw;
 }
@@ -92,10 +92,10 @@ textarea {
   height: 100%;
   width: 100%;
 }
-.symbol-shift.bot0-token {
+.symbol-shift.bot0-symbol {
   transform: scale(0.667) translate(-33%, -33%);
 }
-.symbol-shift.bot1-token {
+.symbol-shift.bot1-symbol {
   transform: scale(0.667) translate(33%, 33%);
 }
 .board {
@@ -109,41 +109,15 @@ textarea {
 }
 .square {
   position: relative;
-  height: 3vw;
-  width: 3vw;
+  height: 50px;
+  width: 50px;
   border: 1px solid #000;
-  /* display: flex; */
-  /* flex-direction: column; */
-}
-.token-row {
-  flex: 1;
-  display: flex;
-  flex-direction: row;
-}
-.token {
-  flex: 1;
-  text-align: center;
-  font-size: 15pt;
-}
-.token.selected {
-  text-shadow:
-    -1px -1px 0 cyan,
-    1px -1px 0 cyan,
-    -1px  1px 0 cyan,
-    1px  1px 0 cyan;
 }
 .symbol.selected {
   filter: drop-shadow(0 0 6px dodgerblue);
 }
 .symbolgroup.selected {
   filter: drop-shadow(0 0 6px dodgerblue);
-  /* background: yellow; */
-}
-.bot0-token {
-  color: crimson;
-}
-.bot1-token {
-  color: royalblue;
 }
 .bot0 {
   box-shadow: inset 3px 3px 5px crimson, inset -3px -3px 5px crimson;
@@ -279,4 +253,3 @@ textarea {
 .error-value {
   font-weight: bold;
 }
-
