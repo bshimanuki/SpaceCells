@@ -8,6 +8,69 @@ textarea {
 .spacer {
   flex: 1;
 }
+
+/* layout */
+body {
+  background-color: whitesmoke;
+}
+#game {
+}
+.level-selector-sidebar {
+  margin: 0 1vw;
+  width: 10vw;
+}
+.center-content {
+  width: min-content;
+  align-items: center;
+}
+.stats-sidebar {
+  margin: 0 1vw;
+  width: 20vw;
+}
+#submission {
+  height: 50vh;
+}
+
+/* board */
+.board {
+  background: beige;
+  display: flex;
+  flex-direction: column;
+  font-family: monospace, sans-serif;
+  border: 1px solid #000;
+}
+.board-row {
+  display: flex;
+}
+.square {
+  position: relative;
+  height: calc(20px + 5vmin);
+  width: calc(20px + 5vmin);
+  border: 1px solid #000;
+}
+
+/* bottom bar */
+.bottom-bar {
+  width: 100%;
+}
+.toggle-bar {
+  background-color: tan;
+  align-items: center;
+}
+.symbol-bar {
+  border-radius: 0 0 1vmin 1vmin;
+  overflow: hidden;
+}
+.symbol-grid-bar {
+  padding: 1vmin;
+  background-color: lightgray;
+}
+.symbol-options-bar {
+  padding-left: 3vw;
+  background-color: tan;
+}
+
+/* cell / instruction selection grid*/
 .grid-layout {
   display: grid;
   grid-template-columns: repeat(9, 1fr) [grid-end];
@@ -18,18 +81,6 @@ textarea {
   position: relative;
   width: 100%;
   padding-top: 100%;
-}
-.symbol {
-  z-index: 1;
-}
-.direction,.operation {
-  z-index: 2;
-}
-.symbol.selected {
-  z-index: 3;
-}
-.image-container.symbol {
-  position: absolute;
 }
 .symbolgroup.horizontal {
   padding-top: 50%;
@@ -47,17 +98,28 @@ textarea {
 .symbolgroup.symbol--,.symbolgroup[class~="symbol-|"],.symbolgroup[class~="symbol-]["] {
   grid-row-start: 2;
 }
+
+/* symbols */
+.symbol {
+  z-index: 1;
+}
+.direction,.operation {
+  z-index: 2;
+}
+.symbol.selected {
+  z-index: 3;
+}
+.image-container.symbol {
+  position: absolute;
+}
 .image-container {
   pointer-events: none;
 }
-.image-overlay {
-  pointer-events: none;
+.symbolgroup.image-container {
+  pointer-events: auto;
 }
-.image-base {
-  pointer-events: none;
-}
-.image-base g {
-  pointer-events: visiblePainted;
+.symbol .image-base g {
+  pointer-events: auto;
 }
 .image-base,.image-overlay {
   position: absolute;
@@ -87,6 +149,16 @@ textarea {
 .symbol.vertical {
   height: 200%;
 }
+
+/* symbol svg internals */
+svg text {
+  font-weight: bold;
+  stroke: black;
+  stroke-width: 0.05;
+  paint-order: stroke fill;
+}
+
+/* board instruction transforms */
 .symbol-shift {
   position: absolute;
   height: 100%;
@@ -98,26 +170,13 @@ textarea {
 .symbol-shift.bot1-symbol {
   transform: scale(0.667) translate(33%, 33%);
 }
-.board {
-  display: flex;
-  flex-direction: column;
-  font-family: monospace, sans-serif;
-  border: 1px solid #000;
-}
-.board-row {
-  display: flex;
-}
-.square {
-  position: relative;
-  height: 50px;
-  width: 50px;
-  border: 1px solid #000;
-}
+
+/* cell and symbol highlights */
 .symbol.selected {
-  filter: drop-shadow(0 0 6px dodgerblue);
+  filter: drop-shadow(0 0 1vmin dodgerblue);
 }
 .symbolgroup.selected {
-  filter: drop-shadow(0 0 6px dodgerblue);
+  filter: drop-shadow(0 0 1vmin dodgerblue);
 }
 .bot0 {
   box-shadow: inset 3px 3px 5px crimson, inset -3px -3px 5px crimson;
@@ -129,20 +188,11 @@ textarea {
   /* mix crimson and royalblue */
   box-shadow: inset 5px 5px 5px #8e3e8e, inset -5px -5px 5px  #8e3e8e;
 }
-.symbolgroup {
-  /* margin: 1ex; */
-  /* padding: 4px 8px; */
-  /* border: 1px solid #000; */
-  /* border-radius: 5px; */
-  font-family: monospace, sans-serif;
-}
-.symbol-options * {
-  font-family: monospace, sans-serif;
-  align-items: center;
-}
+
+/* trash */
 .trash {
   font-size: 30px;
-  margin: 0 0 0 2ex;
+  margin: 0 1vw;
 }
 .trash.inactive {
   visibility: hidden;
@@ -154,14 +204,16 @@ textarea {
     -1px  1px 0 red,
     1px  1px 0 red;
 }
+
+/* boundary cells */
 .untrespassable:not(.input):not(.output) {
-  background: gray;
+  background: saddlebrown;
 }
 .input {
-  background: cornsilk;
+  background: honeydew;
 }
 .output {
-  background: cornsilk;
+  background: honeydew;
   border-style: dashed;
   border-width: medium;
   border-color: gray;
@@ -169,6 +221,8 @@ textarea {
 .output.powered {
   border-color: gold;
 }
+
+/* toggles */
 .toggle {
   display: flex;
   flex-direction: row;
@@ -225,6 +279,8 @@ textarea {
   content: ": ";
   white-space: pre;
 }
+
+/* results info */
 .colors * {
   font-family: monospace, sans-serif;
 }

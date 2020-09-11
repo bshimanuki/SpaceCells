@@ -286,8 +286,8 @@ class ToggleLatchType(OperationType):
   TEXT = ['LATCH /', 'UNLATCH']
 class RelatchType(OperationType):
   TEXT = 'RELATCH'
-class DropType(OperationType):
-  TEXT = 'DROP'
+# class RelatchType(UnicodeOperationType):
+  # TEXT = '💥'
 class SyncType(UnicodeOperationType):
   TEXT = '🗘'
 class RotateType(UnicodeOperationType):

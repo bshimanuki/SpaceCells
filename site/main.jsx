@@ -395,17 +395,17 @@ class Game extends React.Component {
   render() {
     return (
       <div style={{display:"flex", justifyContent:"center"}}>
-        <div style={{margin:"0 1vw", display:"flex", flexDirection:"column", width:"20vw"}}>
+        <div className="level-selector-sidebar" style={{display:"flex", flexDirection:"column"}}>
           <div>
             <label htmlFor="level_select">Choose level:</label>
             <select name="level_select" id="level_select" value={this.state.levelName} onChange={this.setLevelHandler}>
               {Object.keys(levels).map(levelName => <option key={levelName} value={levelName}>{levelName}</option>)}
             </select>
           </div>
-          <textarea name="submission" id="submission" value={this.state.submission} rows={20} onChange={this.setSubmission}/>
+          <textarea name="submission" id="submission" value={this.state.submission} onChange={this.setSubmission}/>
           <input type="button" value="Load" onClick={this.setBoardHandler}/>
         </div>
-        <div style={{display:"flex", flexDirection:"column", alignItems:"center", width:"min-content"}} className="game">
+        <div className="center-content" style={{display:"flex", flexDirection:"column", alignItems:"center", width:"min-content"}}>
           <div style={{display:"flex", width:"min-content"}} className="game-board">
             <Board
               handler={this.boardHandler}
@@ -424,27 +424,27 @@ class Game extends React.Component {
               bots={this.state.bots}
             />
           </div>
-          <div style={{display:"flex", flexDirection:"column"}}>
-            <div style={{display:"flex", flexDirection:"row", alignItems:"center"}}>
+          <div className="bottom-bar" style={{display:"flex", flexDirection:"column"}}>
+            <div className="toggle-bar" style={{display:"flex", flexDirection:"row"}}>
               <Toggle handler={this.symbolTypeHandler} selected={this.state.symbolType} name="symbol-type" options={{unresolved:"Cells", instruction:"Instructions"}}/>
               <Toggle handler={this.botHandler} selected={this.state.bot} name="bot" options={["Red", "Blue"]} colors={this.botColors}/>
               <Toggle handler={this.simHandler} selected={this.state.simState} name="sim" options={{stop:"⏹", pause:"⏸", step:"⧐", play:"▶", fast:"⏩", nonstop:"⏭"}}/>
               <div style={{flex:1}}></div>
               <div className={`trash ${this.state.selectedSymbolGroup && this.state.selectedOnBoard ? "active" : "inactive"}`} onClick={this.trash}>🗑</div>
             </div>
-            <div style={{display:"flex", flexDirection:"row"}}>
-              <div className="grid-layout" style={{flex:3}}>
+            <div className="symbol-bar" style={{display:"flex", flexDirection:"row"}}>
+              <div className="symbol-grid-bar grid-layout" style={{flex:3}}>
                 {this.symbolTypesUnresolved.map(props => this.renderSymbolGroup("unresolved", props))}
                 {this.symbolTypesDirection.map(props => this.renderSymbolGroup("instruction", props))}
                 {this.symbolTypesOperation.map(props => this.renderSymbolGroup("instruction", props))}
               </div>
-              <div style={{flex:1, display:"flex", flexDirection:"column"}}>
+              <div className="symbol-options-bar" style={{flex:1, display:"flex", flexDirection:"column"}}>
                 <SymbolOptions changeOption={this.changeSymbolOption} {...this.state.selectedSymbolGroupState}/>
               </div>
             </div>
           </div>
         </div>
-        <div style={{margin:"0 1vw", display:"flex", flexDirection:"column", width:"20vw"}} className="stats">
+        <div className="stats-sidebar" style={{display:"flex", flexDirection:"column"}}>
           <div className="colon-list">
             <div className="test-case">
               <span className="test-case-name">Test Case</span><span><span className="test-case-value">{this.state.testCase + 1}</span> / <span className="test-case-total">{this.state.outputColors.length}</span></span>
@@ -804,16 +804,16 @@ class SymbolGroup extends React.PureComponent {
     if (!this.props.active) return null;
     if (this.props.type === "unresolved") {
       return (
-        <div className={`image-container symbolgroup symbol-${this.state.value} ${this.props.selected === this ? "selected" : ""} ${this.props.diode ? "diode" : ""} ${this.props.multi || ""}`} alt={this.props.subtype}>
-          <Asset className="image-base" src={this.props.outline} onClick={this.pushThis}/>
+        <div className={`image-container symbolgroup symbol-${this.state.value} ${this.props.selected === this ? "selected" : ""} ${this.props.diode ? "diode" : ""} ${this.props.multi || ""}`} onClick={this.pushThis} alt={this.props.subtype}>
+          <Asset className="image-base" src={this.props.outline}/>
           <Asset className="image-overlay" src={this.props.fill}/>
           <Asset className="image-overlay" src={this.props.fill}/>
         </div>
       );
     } else {
       return (
-        <div className={`image-container symbolgroup symbol-${this.state.value} ${this.props.selected === this ? "selected" : ""}`} alt={this.props.subtype}>
-          <Asset src={`${this.props.type}_${this.props.botColors[this.props.bot]}_${this.state.name}`} className="image-base" onClick={this.pushThis}/>
+        <div className={`image-container symbolgroup symbol-${this.state.value} ${this.props.selected === this ? "selected" : ""}`} onClick={this.pushThis} alt={this.props.subtype}>
+          <Asset src={`${this.props.type}_${this.props.botColors[this.props.bot]}_${this.state.name}`} className="image-base"/>
         </div>
       );
     }
