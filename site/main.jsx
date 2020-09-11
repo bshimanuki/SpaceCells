@@ -1,8 +1,23 @@
-import React from 'react';
-import ReactDOM from 'react-dom';
+import React from "react";
+import ReactDOM from "react-dom";
 
-import "./test.css";
+import "./main.css";
 import * as Assets from "./assets/assets.js";
+import Embindings from "./embindings.js";
+import EmbindingsWASM from "./embindings.wasm";
+
+var Module;
+const EmbindingsLoader = Embindings({
+  locateFile: () => EmbindingsWASM,
+});
+EmbindingsLoader.then((core) => {
+  Module = core;
+  ReactDOM.render(
+    <Game m={10} n={12}/>,
+    document.getElementById("game")
+  );
+  console.log("loaded");
+});
 
 function Asset(props) {
   var SVG = Assets[props.src];
@@ -28,13 +43,7 @@ var fill_images = {
   "-": "fill_red",
   "|": "fill_orange",
 };
-Module.onRuntimeInitialized = _ => {
-  ReactDOM.render(
-    <Game m={10} n={12}/>,
-    document.getElementById('game')
-  );
-  console.log("loaded");
-}
+
 var level_debug;
 var board_debug;
 var submission_debug;
@@ -63,7 +72,7 @@ function matchLocation(object, y, x) {
 }
 
 function cellAllowed(c) {
-  return ' _'.includes(c);
+  return " _".includes(c);
 }
 
 class Token extends React.PureComponent {
@@ -489,7 +498,7 @@ class Game extends React.Component {
             <div key={i} className="input-colors">
               <span className="input-name">Input{this.state.inputs.length > 1 ? ` ${i+1}` : ""}</span>
               <span className="colors">
-                {input.map((bit, k) => <span key={k} className={`input-color ${k < this.state.step - this.state.wasNext ? "past" : ""} ${k === this.state.step - this.state.wasNext ? "present" : ""} ${k > this.state.step - this.state.wasNext ? "future" : ""}`} color={'GB'[Number(bit)]}>{'GB'[Number(bit)]}</span>)}
+                {input.map((bit, k) => <span key={k} className={`input-color ${k < this.state.step - this.state.wasNext ? "past" : ""} ${k === this.state.step - this.state.wasNext ? "present" : ""} ${k > this.state.step - this.state.wasNext ? "future" : ""}`} color={"GB"[Number(bit)]}>{"GB"[Number(bit)]}</span>)}
               </span>
             </div>
             )}

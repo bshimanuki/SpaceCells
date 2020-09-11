@@ -1,13 +1,13 @@
 var HTMLWebpackPlugin = require('html-webpack-plugin');
 
 var HTMLWebpackPluginConfig = new HTMLWebpackPlugin({
-  template: __dirname + '/site/test.html',
-  filename: 'test.html',
+  template: __dirname + '/site/index.html',
+  filename: 'index.html',
   inject: 'body',
 });
 
 module.exports = {
-  entry: __dirname + '/site/test.jsx',
+  entry: __dirname + '/site/main.jsx',
   output: {
     filename: 'bundle.js',
     path: __dirname + '/build'
@@ -20,7 +20,12 @@ module.exports = {
         loader: 'babel-loader',
       },
       {
-        test: /\.css/,
+        test: /embindings\.wasm$/,
+        type: 'javascript/auto',
+        loader: 'file-loader',
+      },
+      {
+        test: /\.css$/,
         exclude: /node_modules/,
         use: [
           'style-loader',
@@ -28,7 +33,7 @@ module.exports = {
         ]
       },
       {
-        test: /\.svg/,
+        test: /\.svg$/,
         exclude: /node_modules/,
         use: [
           {
@@ -40,8 +45,8 @@ module.exports = {
                 },
               },
             },
-          }
-        ]
+          },
+        ],
       },
     ],
   },

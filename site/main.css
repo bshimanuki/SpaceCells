@@ -25,6 +25,9 @@ textarea {
 .direction,.operation {
   z-index: 2;
 }
+.symbol.selected {
+  z-index: 3;
+}
 .image-container.symbol {
   position: absolute;
 }
@@ -43,6 +46,9 @@ textarea {
 }
 .symbolgroup.symbol--,.symbolgroup[class~="symbol-|"],.symbolgroup[class~="symbol-]["] {
   grid-row-start: 2;
+}
+.image-container {
+  pointer-events: none;
 }
 .image-overlay {
   pointer-events: none;
@@ -103,8 +109,8 @@ textarea {
 }
 .square {
   position: relative;
-  height: 50px;
-  width: 50px;
+  height: 3vw;
+  width: 3vw;
   border: 1px solid #000;
   /* display: flex; */
   /* flex-direction: column; */

@@ -10,10 +10,12 @@ OPT_LVL += -O3
 CCFLAGS = -std=c++1z -Wall -Werror
 CCFLAGS += $(OPT_LVL)
 
+EMFLAGS = -s ENVIRONMENT=web -s MODULARIZE=1 --closure 1
+
 SRCDIR = src
 INCDIR = include
 OBJDIR = obj
-BINDIR = build
+BINDIR = bin
 
 EMBINDINGS_CPP := $(SRCDIR)/embindings.cpp
 PYTHON_CPP := $(SRCDIR)/python_bindings.cpp
@@ -66,13 +68,9 @@ $(OBJDIR)/%.em.o: $(SRCDIR)/%.cpp
 	@mkdir -p $(OBJDIR)
 	$(EMCC) $(DEP_OPTIONS) $(CCFLAGS) -o $@ -c $< $(INC)
 
-$(BINDIR)/%.js: $(OBJDIR)/%.em.o $(EM_LIBS)
+$(BINDIR)/%.html $(BINDIR)/%.js: $(OBJDIR)/%.em.o $(EM_LIBS)
 	@mkdir -p $(BINDIR)
-	$(EMCC) $(CCFLAGS) -o $@ $^ $(INC) $(LDFLAGS) --bind
-
-$(BINDIR)/%.html: $(OBJDIR)/%.em.o $(EM_LIBS)
-	@mkdir -p $(BINDIR)
-	$(EMCC) $(CCFLAGS) -o $@ $^ $(INC) $(LDFLAGS) --bind
+	$(EMCC) $(CCFLAGS) $(EMFLAGS) -o $@ $^ $(INC) $(LDFLAGS) --bind
 
 .PHONY: clean assets clean-assets
 
