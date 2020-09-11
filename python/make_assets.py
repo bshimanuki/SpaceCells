@@ -247,6 +247,8 @@ class OperationType(CanvasType):
   }
   FONT_SIZE = 0.30
   TEXT_HEIGHT = 0.35
+  UNICODE_FONT_SIZE = 0.5
+  UNICODE_TEXT_HEIGHT = 0.45
   def render(self):
     dwg = super().render()
     dwg.group.add(dwg.circle(
@@ -259,16 +261,22 @@ class OperationType(CanvasType):
     if self.TEXT is not None:
       texts = self.TEXT if isinstance(self.TEXT, list) else [self.TEXT]
       for i, text in enumerate(texts):
-        y = (i - (len(texts) - 1) / 2.) * self.TEXT_HEIGHT
+        if text.isascii():
+          font_size = self.FONT_SIZE
+          text_height = self.TEXT_HEIGHT
+        else:
+          font_size = self.UNICODE_FONT_SIZE
+          text_height = self.UNICODE_TEXT_HEIGHT
+        y = (i - (len(texts) - 1) / 2.) * text_height
         dwg.group.add(dwg.text(
           text,
           insert=(0, y),
-          font_size=self.FONT_SIZE,
+          font_size=font_size,
           **self.TEXT_KWARGS,
         ))
     return dwg
 class UnicodeOperationType(OperationType):
-  FONT_SIZE = 0.8
+  UNICODE_FONT_SIZE = 0.8
 
 class StartType(OperationType):
   TEXT = 'START'

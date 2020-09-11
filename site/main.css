@@ -55,6 +55,22 @@ body {
   width: 60px;
   border: 1px solid #000;
 }
+.square-overlay,.square-underlay {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.square-overlay {
+  z-index: 4;
+}
+.square-inset {
+  position: absolute;
+  width: 96%;
+  height: 96%;
+  top: 2%;
+  left: 2%;
+}
 
 /* bottom bar */
 .bottom-bar {
@@ -103,27 +119,15 @@ body {
 }
 
 /* symbols */
-.symbol {
-  z-index: 1;
-}
-.direction,.operation {
-  z-index: 2;
-}
-.symbol.selected {
-  z-index: 3;
-}
+.symbol { z-index: 1; }
+.direction,.operation { z-index: 2; }
+.symbol.selected { z-index: 3; }
 .image-container.symbol {
   position: absolute;
 }
-.image-container {
-  pointer-events: none;
-}
-.symbolgroup.image-container {
-  pointer-events: auto;
-}
-.symbol .image-base g {
-  pointer-events: auto;
-}
+.image-container { pointer-events: none; }
+.symbolgroup.image-container { pointer-events: auto; }
+.symbol .image-base g { pointer-events: auto; }
 .image-base,.image-overlay {
   position: absolute;
   top: 50%;
@@ -146,12 +150,8 @@ body {
 .diode.vertical .image-overlay:last-of-type {
   transform: translate(-50%, 0%);
 }
-.symbol.horizontal {
-  width: 200%;
-}
-.symbol.vertical {
-  height: 200%;
-}
+.symbol.horizontal { width: 200%; }
+.symbol.vertical { height: 200%; }
 
 /* symbol svg internals */
 svg text {
@@ -181,15 +181,29 @@ svg text {
 .symbolgroup.selected {
   filter: drop-shadow(0 0 1vmin dodgerblue);
 }
-.bot0 {
+.bot0 .square-overlay {
   box-shadow: inset 3px 3px 5px crimson, inset -3px -3px 5px crimson;
 }
-.bot1 {
+.bot1 .square-overlay {
   box-shadow: inset 3px 3px 5px royalblue, inset -3px -3px 5px royalblue;
 }
-.bot0.bot1 {
+.bot0.bot1 .square-overlay {
   /* mix crimson and royalblue */
   box-shadow: inset 5px 5px 5px #8e3e8e, inset -5px -5px 5px  #8e3e8e;
+}
+
+/* boundary cells */
+.untrespassable:not(.input):not(.output) {
+  background: saddlebrown;
+}
+.input,.output {
+  background: honeydew;
+}
+.output.unpowered .cell { opacity: 0.5 }
+.output.powered .square-underlay {
+  border-style: dashed;
+  border-width: 1%;
+  border-color: gold;
 }
 
 /* trash */
@@ -197,32 +211,13 @@ svg text {
   font-size: 30px;
   margin: 0 3%;
 }
-.trash.inactive {
-  visibility: hidden;
-}
+.trash.inactive { visibility: hidden; }
 .trash:hover {
   text-shadow:
     -1px -1px 0 red,
     1px -1px 0 red,
     -1px  1px 0 red,
     1px  1px 0 red;
-}
-
-/* boundary cells */
-.untrespassable:not(.input):not(.output) {
-  background: saddlebrown;
-}
-.input {
-  background: honeydew;
-}
-.output {
-  background: honeydew;
-  border-style: dashed;
-  border-width: medium;
-  border-color: gray;
-}
-.output.powered {
-  border-color: gold;
 }
 
 /* toggles */

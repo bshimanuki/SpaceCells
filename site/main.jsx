@@ -134,21 +134,26 @@ class Square extends React.PureComponent {
 
   render() {
     var classNames = [];
-    classNames.push("square");
     if (this.props.bot0) classNames.push("bot0");
     if (this.props.bot1) classNames.push("bot1");
     if (this.props.trespassable !== undefined) classNames.push(this.props.trespassable ? "trespassable" : "untrespassable");
     if (this.props.input) classNames.push("input");
-    if (this.props.output) classNames.push("output");
-    if (this.props.powered) classNames.push("powered");
-    classNames.push();
+    if (this.props.output) {
+      classNames.push("output");
+      classNames.push(this.props.powered ? "powered" : "unpowered");
+    }
+    classNames = classNames.join(" ");
     return (
-      <div className={classNames.join(" ")} onClick={this.handler}>
-        {this.renderSymbol({className:"cell", cellValue:(this.props.cell && String.fromCharCode(this.props.cell.resolved())), cell:this.props.cell, symbolGroup:this.props.unresolved, index:this.props.unresolved_index})}
-        {this.renderSymbol({className:"bot0-symbol operation", symbolGroup:this.props.operation[0]})}
-        {this.renderSymbol({className:"bot1-symbol operation", symbolGroup:this.props.operation[1]})}
-        {this.renderSymbol({className:"bot0-symbol direction", symbolGroup:this.props.direction[0]})}
-        {this.renderSymbol({className:"bot1-symbol direction", symbolGroup:this.props.direction[1]})}
+      <div className={`square ${classNames}`} onClick={this.handler}>
+        <div className="square-underlay"></div>
+        <div className="square-overlay"></div>
+        <div className="square-inset">
+          {this.renderSymbol({className:"cell", cellValue:(this.props.cell && String.fromCharCode(this.props.cell.resolved())), cell:this.props.cell, symbolGroup:this.props.unresolved, index:this.props.unresolved_index})}
+          {this.renderSymbol({className:"bot0-symbol operation", symbolGroup:this.props.operation[0]})}
+          {this.renderSymbol({className:"bot1-symbol operation", symbolGroup:this.props.operation[1]})}
+          {this.renderSymbol({className:"bot0-symbol direction", symbolGroup:this.props.direction[0]})}
+          {this.renderSymbol({className:"bot1-symbol direction", symbolGroup:this.props.direction[1]})}
+        </div>
       </div>
     );
   }
