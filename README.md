@@ -7,9 +7,11 @@ cd 70-auto-puzzle-spoilers
 git checkout packaged-binaries
 python3 -m http.server 8000
 ```
-Open a browser and go to `localhost:8000/site/test.html`.
+Open a browser and go to `localhost:8000/build`.
 
 If you don't have python 3, you can run `python -m SimpleHTTPServer 8000` instead.
+
+See the Google Drive design document for an overview of gameplay.
 
 ## Levels
 #### not
@@ -31,21 +33,10 @@ Given two sequential inputs, let green represent a 0 bit and blue represent a 1 
 #### stack
 Given two sequential inputs, push the upper color onto a stack if the lower color is green, and pop from the stack to the output if the lower color is blue. When pushing onto the stack, output the color pushed. The inputs are guaranteed such that the stack never grows beyond 3 elements.
 
-## Notes
-See the Google Drive document for an overview.
+## Appendix
+The interface has been implemented with icons, but the left hand sidebar can be used to load/copy a text submission (for testing).
 
-Currently, everything is rendered with text (no sprites yet). The left hand sidebar can be used to load/copy a submission (for testing).
-
-In the text format, each square is being displayed with up to 6 symbols. It looks like this.
-
-<table>
-<tr><td>cell</td><td>direction for red</td><td>direction for blue</td>
-<tr><td>resolved cell polarity</td><td>operation for red</td><td>operation for blue</td>
-</table>
-
-All of these except the resolved cell polarity are inserted by the solver (or else are empty).
-
-Here is a list of what each symbol corresponds to:
+Here is a list of what each symbol corresponds to in the text format.
 ### Cells
 - `x`: unlatched `x` cell
 - `+`: unlatched `+` cell
@@ -70,10 +61,10 @@ Here is a list of what each symbol corresponds to:
 - `g`: GRAB
 - `d`: DROP
 - `w`: GRAB/DROP
-- `l`: LATCH
-- `u`: UNLATCH
-- `t`: TOGGLE LATCH
-- `*`: RELATCH
+- `l`: LOCK
+- `u`: FREE
+- `t`: LOCK/FREE
+- `*`: RESET
 - `s`: SYNC
 - `r`: ROTATE
 - `<`: BRANCH left if cell is | or /

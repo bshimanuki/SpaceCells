@@ -294,8 +294,8 @@ class Game extends React.Component {
     {type: "operation", subtype: "START", value: "S", name: "start"},
     {type: "operation", subtype: "NEXT", value: "n", name: "next"},
     {type: "operation", subtype: "GRAB/DROP", options: {GRAB: "g", DROP: "d", "GRAB/DROP": "w"}, names: {GRAB: "grab", DROP: "drop", "GRAB/DROP": "swap"}},
-    {type: "operation", subtype: "LATCH/UNLATCH", options: {LATCH: "l", UNLATCH: "u", "TOGGLE LATCH": "t"}, names: {LATCH: "latch", UNLATCH: "unlatch", "TOGGLE LATCH": "togglelatch"}},
-    {type: "operation", subtype: "RELATCH", value: "*", name: "relatch"},
+    {type: "operation", subtype: "LOCK/FREE", options: {LOCK: "l", FREE: "u", "LOCK/FREE": "t"}, names: {LOCK: "latch", FREE: "unlatch", "LOCK/FREE": "togglelatch"}},
+    {type: "operation", subtype: "RESET", value: "*", name: "relatch"},
     {type: "operation", subtype: "SYNC", value: "s", name: "sync"},
     {type: "operation", subtype: "ROTATE", value: "r", name: "rotate"},
     {type: "operation", subtype: "BRANCH(|/)", options: {"<": "<", "v": "v", ">": ">", "^": "^"}, names: {"<": "branch1left", "v": "branch1down", ">": "branch1right", "^": "branch1up"}},
@@ -394,7 +394,7 @@ class Game extends React.Component {
 
   render() {
     return (
-      <div style={{display:"flex", justifyContent:"center"}}>
+      <div id="main-content" style={{display:"flex"}}>
         <div className="level-selector-sidebar" style={{display:"flex", flexDirection:"column"}}>
           <div>
             <label htmlFor="level_select">Choose level:</label>

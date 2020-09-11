@@ -42,6 +42,7 @@ module.exports = {
               svgoConfig: {
                 plugins: {
                   collapseGroups: false,
+                  removeUselessStrokeAndFill: false,
                 },
               },
             },

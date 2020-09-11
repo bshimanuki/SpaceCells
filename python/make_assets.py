@@ -190,12 +190,14 @@ class DirectionType(CanvasType):
   ARROW_KWARGS = {
     'head_angle': math.pi / 3,
     'head_length': 0.4,
-    'stroke_width': 0.2,
     'stroke_linecap': 'round',
   }
+  ARROWSTROKE_WIDTH = 0.2
+  CLICKABLE_STROKE_WIDTH = 0.5
   def render(self):
     dwg = super().render()
-    add_arrow(dwg, (0, 0), self.head, stroke=self.BOT_COLOR, draw_tail=self.DRAW_TAIL, **self.ARROW_KWARGS)
+    add_arrow(dwg, (0, 0), self.head, stroke='white', stroke_opacity=0, stroke_width=self.CLICKABLE_STROKE_WIDTH, draw_tail=self.DRAW_TAIL, **self.ARROW_KWARGS)
+    add_arrow(dwg, (0, 0), self.head, stroke=self.BOT_COLOR, stroke_width=self.ARROWSTROKE_WIDTH, draw_tail=self.DRAW_TAIL, **self.ARROW_KWARGS)
     return dwg
 
 class DirectionUpType(DirectionType):
@@ -243,8 +245,8 @@ class OperationType(CanvasType):
     'fill': 'white',
     'font_family': 'Verdana, Symbola',
   }
-  FONT_SIZE = 0.23
-  TEXT_HEIGHT = 0.23
+  FONT_SIZE = 0.30
+  TEXT_HEIGHT = 0.35
   def render(self):
     dwg = super().render()
     dwg.group.add(dwg.circle(
@@ -277,15 +279,15 @@ class GrabType(OperationType):
 class DropType(OperationType):
   TEXT = 'DROP'
 class SwapType(OperationType):
-  TEXT = ['GRAB /', 'DROP']
+  TEXT = ['GRAB', 'DROP']
 class LatchType(OperationType):
-  TEXT = 'LATCH'
+  TEXT = 'LOCK'
 class UnlatchType(OperationType):
-  TEXT = 'UNLATCH'
+  TEXT = 'FREE'
 class ToggleLatchType(OperationType):
-  TEXT = ['LATCH /', 'UNLATCH']
+  TEXT = ['LOCK', 'FREE']
 class RelatchType(OperationType):
-  TEXT = 'RELATCH'
+  TEXT = 'RESET'
 # class RelatchType(UnicodeOperationType):
   # TEXT = '💥'
 class SyncType(UnicodeOperationType):
@@ -293,9 +295,9 @@ class SyncType(UnicodeOperationType):
 class RotateType(UnicodeOperationType):
   TEXT = '⭮'
 class Power0Type(OperationType):
-  TEXT = ['POWER', 'ℵ']
+  TEXT = ['PWR', 'ℵ']
 class Power1Type(OperationType):
-  TEXT = ['POWER', 'ב']
+  TEXT = ['PWR', 'ב']
 
 class BranchDirectionType(DirectionType):
   HEAD_DISTANCE = 0.8

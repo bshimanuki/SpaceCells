@@ -15,20 +15,27 @@ body {
 }
 #game {
 }
+#main-content {
+  justify-content: center;
+  min-width: min-content;
+}
 .level-selector-sidebar {
-  margin: 0 1vw;
-  width: 10vw;
+  margin: 0 1%;
+  width: 15%;
 }
 .center-content {
-  width: min-content;
+  min-width: min-content;
   align-items: center;
+  background-color: tan;
+  border-radius: 0 0 1% 1%;
+  overflow: hidden;
 }
 .stats-sidebar {
-  margin: 0 1vw;
-  width: 20vw;
+  margin: 0 1%;
+  width: 20%;
 }
 #submission {
-  height: 50vh;
+  height: 50%;
 }
 
 /* board */
@@ -44,8 +51,8 @@ body {
 }
 .square {
   position: relative;
-  height: calc(20px + 5vmin);
-  width: calc(20px + 5vmin);
+  height: 60px;
+  width: 60px;
   border: 1px solid #000;
 }
 
@@ -54,28 +61,24 @@ body {
   width: 100%;
 }
 .toggle-bar {
-  background-color: tan;
   align-items: center;
 }
 .symbol-bar {
-  border-radius: 0 0 1vmin 1vmin;
-  overflow: hidden;
 }
 .symbol-grid-bar {
-  padding: 1vmin;
+  padding: 1%;
   background-color: lightgray;
 }
 .symbol-options-bar {
-  padding-left: 3vw;
-  background-color: tan;
+  padding-left: 3%;
 }
 
 /* cell / instruction selection grid*/
 .grid-layout {
   display: grid;
   grid-template-columns: repeat(9, 1fr) [grid-end];
-  grid-row-gap: 0.5vw;
-  grid-column-gap: 0.5vw;
+  grid-row-gap: 1%;
+  grid-column-gap: 1%;
 }
 .image-container {
   position: relative;
@@ -192,7 +195,7 @@ svg text {
 /* trash */
 .trash {
   font-size: 30px;
-  margin: 0 1vw;
+  margin: 0 3%;
 }
 .trash.inactive {
   visibility: hidden;
