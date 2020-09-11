@@ -13,13 +13,13 @@ def add_arrow(dwg, tail, head, head_angle, head_length, draw_tail=True, **kwargs
   head = np.asarray(head, dtype=float)
   tail = np.asarray(tail, dtype=float)
   if draw_tail:
-    dwg.add(dwg.line(start=tail, end=head, **kwargs))
+    dwg.group.add(dwg.line(start=tail, end=head, **kwargs))
   d = tail - head
   theta = math.atan2(d[1], d[0])
   for dt in (-1, 1):
     phi = theta + head_angle * dt
     end = head + np.array([math.cos(phi), math.sin(phi)]) * head_length
-    dwg.add(dwg.line(start=head, end=end, **kwargs))
+    dwg.group.add(dwg.line(start=head, end=end, **kwargs))
 
 class SvgObject:
   def save(self, filename):
@@ -33,6 +33,8 @@ class CanvasType(SvgObject):
   def render(self):
     viewbox = ' '.join(map(str, (-self.w, -self.h, 2*self.w, 2*self.h)))
     dwg = Drawing(viewBox=viewbox)
+    dwg.group = dwg.g(class_="svg-element")
+    dwg.add(dwg.group)
     return dwg
 
 class CellBorderType(CanvasType):
@@ -42,7 +44,7 @@ class CellBorderType(CanvasType):
   STROKE_WIDTH = 0.1
   def render(self):
     dwg = super().render()
-    dwg.add(dwg.rect(
+    dwg.group.add(dwg.rect(
       insert=(-self.w+self.STROKE_WIDTH/2, -self.h+self.STROKE_WIDTH/2),
       size=(2*self.w-self.STROKE_WIDTH, 2*self.h-self.STROKE_WIDTH),
       rx=self.ROUNDED,
@@ -63,7 +65,7 @@ class CellFillType(CanvasType):
   def render(self):
     dwg = super().render()
     for center in self.CENTERS1:
-      dwg.add(dwg.circle(
+      dwg.group.add(dwg.circle(
         center=center,
         r=self.R1,
         fill=self.color1,
@@ -71,7 +73,7 @@ class CellFillType(CanvasType):
         stroke_width=self.STROKE_WIDTH,
       ))
     for center in self.CENTERS0:
-      dwg.add(dwg.circle(
+      dwg.group.add(dwg.circle(
         center=center,
         r=self.R0,
         fill=self.color0,
@@ -245,7 +247,7 @@ class OperationType(CanvasType):
   TEXT_HEIGHT = 0.23
   def render(self):
     dwg = super().render()
-    dwg.add(dwg.circle(
+    dwg.group.add(dwg.circle(
       center=(0,0),
       r=self.RADIUS,
       fill=self.BOT_COLOR,
@@ -256,7 +258,7 @@ class OperationType(CanvasType):
       texts = self.TEXT if isinstance(self.TEXT, list) else [self.TEXT]
       for i, text in enumerate(texts):
         y = (i - (len(texts) - 1) / 2.) * self.TEXT_HEIGHT
-        dwg.add(dwg.text(
+        dwg.group.add(dwg.text(
           text,
           insert=(0, y),
           font_size=self.FONT_SIZE,
@@ -304,7 +306,7 @@ class BranchType(OperationType, BranchDirectionType):
   BRANCH_RADIUS = 0.5
   def render(self):
     dwg = super().render()
-    dwg.add(dwg.path(
+    dwg.group.add(dwg.path(
       d=self.path,
       stroke='none',
       fill='white',

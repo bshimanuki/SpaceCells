@@ -21,7 +21,6 @@ textarea {
 }
 .symbol {
   z-index: 1;
-  pointer-events: visiblePainted;
 }
 .direction,.operation {
   z-index: 2;
@@ -49,7 +48,10 @@ textarea {
   pointer-events: none;
 }
 .image-base {
-  pointer-events: auto;
+  pointer-events: none;
+}
+.image-base g {
+  pointer-events: visiblePainted;
 }
 .image-base,.image-overlay {
   position: absolute;

@@ -31,7 +31,16 @@ module.exports = {
         test: /\.svg/,
         exclude: /node_modules/,
         use: [
-          'react-svg-loader',
+          {
+            loader: '@svgr/webpack',
+            options: {
+              svgoConfig: {
+                plugins: {
+                  collapseGroups: false,
+                },
+              },
+            },
+          }
         ]
       },
     ],

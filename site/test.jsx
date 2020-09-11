@@ -113,8 +113,8 @@ class Symbol extends React.PureComponent {
       );
     } else {
       return (
-        <div className={`symbol-shift ${this.props.className}`}>
-          <Asset src={`${this.props.type}_${this.props.botColors[this.props.bot]}_${this.props.name}`} className={`symbol image-base ${selectedClass}`} onClick={this.handler} alt={this.props.subtype}/>
+        <div className={`image-container symbol symbol-shift ${this.props.className} ${selectedClass}`} alt={this.props.subtype}>
+          <Asset className="image-base" src={`${this.props.type}_${this.props.botColors[this.props.bot]}_${this.props.name}`} onClick={this.handler}/>
         </div>
       );
     }
@@ -840,15 +840,17 @@ class SymbolGroup extends React.PureComponent {
     if (!this.props.active) return null;
     if (this.props.type === "unresolved") {
       return (
-        <div className={`image-container symbolgroup symbol-${this.state.value} ${this.props.selected === this ? "selected" : ""} ${this.props.diode ? "diode" : ""} ${this.props.multi || ""}`} onClick={this.pushThis} alt={this.props.subtype}>
-          <Asset className="image-base" src={this.props.outline}/>
+        <div className={`image-container symbolgroup symbol-${this.state.value} ${this.props.selected === this ? "selected" : ""} ${this.props.diode ? "diode" : ""} ${this.props.multi || ""}`} alt={this.props.subtype}>
+          <Asset className="image-base" src={this.props.outline} onClick={this.pushThis}/>
           <Asset className="image-overlay" src={this.props.fill}/>
           <Asset className="image-overlay" src={this.props.fill}/>
         </div>
       );
     } else {
       return (
-        <Asset src={`${this.props.type}_${this.props.botColors[this.props.bot]}_${this.state.name}`} className={`symbolgroup ${this.props.selected === this ? "selected" : ""}`} onClick={this.pushThis} alt={this.props.subtype}/>
+        <div className={`image-container symbolgroup symbol-${this.state.value} ${this.props.selected === this ? "selected" : ""}`} alt={this.props.subtype}>
+          <Asset src={`${this.props.type}_${this.props.botColors[this.props.bot]}_${this.state.name}`} className="image-base" onClick={this.pushThis}/>
+        </div>
       );
     }
     // old
