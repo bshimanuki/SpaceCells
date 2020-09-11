@@ -629,7 +629,6 @@ bool Board::validate_level() {
 
 bool Board::reset_and_validate(bool reset_test_case) {
   error = Error();
-  invalid = false;
   last_color = Color();
   if (validate_level()) return error = Error::InvalidLevelFormat;
   for (auto &bot : bots) bot = Bot();
@@ -700,8 +699,7 @@ bool Board::reset_and_validate(bool reset_test_case) {
       for (size_t k=0; k<nbots; ++k) {
         if (operations[k].at(y, x).type == Operation::Type::START) {
           if (bots[k]) {
-            error = Error("Bot has multiple START instructions");
-            return true;
+            return error = Error("Bot has multiple START instructions");
           }
           bots[k] = Bot(Location(y, x));
         }
@@ -711,8 +709,7 @@ bool Board::reset_and_validate(bool reset_test_case) {
   // ensure each bot has a start location
   for (size_t k=0; k<nbots; ++k) {
     if (!bots[k].location.valid) {
-      error = Error("Bot does not have a START instruction");
-      return true;
+      return error = Error("Bot does not have a START instruction");
     }
   }
   // check I/O sequence sizes
@@ -781,7 +778,6 @@ bool Board::move() {
           break;
         default:
           if (operation.value & (0b11 << (2 * !cell.x))) {
-            invalid = true;
             return error = Error("Branch on undetermined state");
           }
           break;
@@ -829,28 +825,25 @@ bool Board::move() {
   // check cell collisions
   for (const auto &bot : bots) {
     const Cell &cell = cells.at(bot.location);
-    if (cell.moving) {
+    if (bot.holding && cell.moving) {
       Location dest = bot.location + Location(cell.moving);
       if (!trespassable.valid(dest) || !trespassable.at(dest)) {
         // will not activate since we stop at boundary instead
-        invalid = true;
         return error = Error("Collided with boundary");
       }
       Cell &next_cell = cells.at(dest);
       if (next_cell) {
         if (next_cell.moving != cell.moving) {
           // collided with cell
-          invalid = true;
           return error = Error("Cells collided");
         }
       }
       for (const auto& oth_bot : bots) {
-        if (&oth_bot != &bot) {
+        if (&oth_bot != &bot && oth_bot.holding) {
           const Cell &oth_cell = cells.at(oth_bot.location);
           if (oth_cell.moving) {
             Location oth_dest = oth_bot.location + Location(oth_cell.moving);
             if (oth_dest == dest) {
-              invalid = true;
               return error = Error("Cells collided");
             }
           }
@@ -904,7 +897,6 @@ bool Board::move() {
       if (!trespassable.valid(dest) || !trespassable.at(dest)) {
         // stop at boundary
         continue;
-        // invalid = true;
         // return error = Error("Collided with boundary");
       }
       bot.location = dest;
@@ -970,12 +962,10 @@ bool Board::move() {
       }
     }
     if (last_color == Color_::INVALID) {
-      invalid = true;
       return error = Error("Output is in undetermined state", ErrorReason::WRONG_OUTPUT);
     }
     if (last_color != output_colors[test_case][step]) {
       // std::cerr << "Output " << color << " instead of " << output_colors[step] << std::endl;
-      invalid = true;
       return error = Error("Wrong output", ErrorReason::WRONG_OUTPUT);
     }
     ++step;
@@ -993,14 +983,14 @@ bool Board::move() {
 std::pair<bool, bool> Board::run(size_t max_cycles, std::ostream *os) {
   // make sure it starts resolved
   if (resolve()) {
-    return {false, invalid};
+    return {false, error};
   }
   if (os) *os << "Cycle 0:" << std::endl << get_resolved_board();
-  for (size_t cycle=0; cycle<max_cycles; ++cycle) {
+  for (size_t _cycle=0; _cycle<max_cycles; ++_cycle) {
     bool error = move();
-    if (os) *os << "Cycle " << (cycle + 1) << ":" << std::endl << get_resolved_board();
+    if (os) *os << "Cycle " << (_cycle + 1) << ":" << std::endl << get_resolved_board();
     if (error) {
-      return {false, invalid};
+      return {false, error};
     }
     switch (check_status()) {
     case Status::INVALID:
@@ -1016,7 +1006,7 @@ std::pair<bool, bool> Board::run(size_t max_cycles, std::ostream *os) {
 }
 
 Status Board::check_status() const {
-  if (invalid) return Status::INVALID;
+  if (error) return Status::INVALID;
   if (test_case == output_colors.size() - 1 && step >= output_colors.back().size()) return Status::DONE;
   return Status::RUNNING;
 }

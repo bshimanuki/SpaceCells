@@ -86,19 +86,31 @@ class Symbol extends React.PureComponent {
   }
   render() {
     var selectedClass = this.props.selectedSymbolGroup === this.props.symbolGroup ? "selected" : "";
-    if (!this.props.symbolGroup || !this.props.symbolGroup.state) {
-      return <div></div>;
-    }
-    if (this.props.type === "unresolved") {
+    if (this.props.symbolType === "cell") {
       if (this.props.index) {
         return <div></div>;
       }
-      var outline_image = this.props.outline;
-      if (this.props.cell && this.props.cell.is_1x1) {
-        if (this.props.cell.latched) outline_image = "outline_latched";
-        else outline_image = "outline_unlatched";
+      var outline_image = null;
+      var fill_image = null;
+      if (this.props.simBoard) {
+        if (this.props.cell.exists) {
+          if (this.props.cell.is_1x1) {
+            if (this.props.cell.latched) outline_image = "outline_latched";
+            else outline_image = "outline_unlatched";
+          } else {
+            outline_image = this.props.outline;
+          }
+          fill_image = fill_images[this.props.cellValue];
+        } else {
+          return <div></div>;
+        }
+      } else {
+        if (!this.props.symbolGroup || !this.props.symbolGroup.state) {
+          return <div></div>;
+        }
+        outline_image = this.props.outline;
+        fill_image = this.props.fill;
       }
-      var fill_image = fill_images[this.props.cellValue] || this.props.fill;
       return (
         <div className={`image-container symbol cell symbol-${this.props.value} ${this.props.className} ${selectedClass} ${this.props.diode ? "diode" : ""} ${this.props.multi || ""}`} alt={this.props.subtype}>
           <Asset className="image-base" src={outline_image} onClick={this.handler}/>
@@ -107,6 +119,10 @@ class Symbol extends React.PureComponent {
         </div>
       );
     } else {
+      // instructions
+      if (!this.props.symbolGroup || !this.props.symbolGroup.state) {
+        return <div></div>;
+      }
       return (
         <div className={`image-container symbol symbol-shift ${this.props.className} ${selectedClass}`} alt={this.props.subtype}>
           <Asset className="image-base" src={`${this.props.type}_${this.props.botColors[this.props.bot]}_${this.props.name}`} onClick={this.handler}/>
@@ -128,7 +144,18 @@ class Square extends React.PureComponent {
 
   renderSymbol(props) {
     return (
-      <Symbol selectedSymbolGroup={this.props.selectedSymbolGroup} y={this.props.y} x={this.props.x} index={0} stopped={this.props.stopped} {...props} {...(props.symbolGroup||{}).props} {...(props.symbolGroup||{}).state} handler={this.props.handler}/>
+      <Symbol
+        selectedSymbolGroup={this.props.selectedSymbolGroup}
+        y={this.props.y}
+        x={this.props.x}
+        index={0}
+        simBoard={this.props.simBoard}
+        stopped={this.props.stopped}
+        {...props}
+        {...(props.symbolGroup||{}).props}
+        {...(props.symbolGroup||{}).state}
+        handler={this.props.handler}
+      />
     );
   }
 
@@ -147,12 +174,14 @@ class Square extends React.PureComponent {
       <div className={`square ${classNames}`} onClick={this.handler}>
         <div className="square-underlay"></div>
         <div className="square-overlay"></div>
+        <div className={`square-inset ${((this.props.unresolved || {}).props || {}).multi || ""}`}>
+          {this.renderSymbol({symbolType:"cell", className:"cell", cellValue:(this.props.cell && String.fromCharCode(this.props.cell.resolved())), cell:this.props.cell, symbolGroup:this.props.unresolved, index:this.props.unresolved_index})}
+        </div>
         <div className="square-inset">
-          {this.renderSymbol({className:"cell", cellValue:(this.props.cell && String.fromCharCode(this.props.cell.resolved())), cell:this.props.cell, symbolGroup:this.props.unresolved, index:this.props.unresolved_index})}
-          {this.renderSymbol({className:"bot0-symbol operation", symbolGroup:this.props.operation[0]})}
-          {this.renderSymbol({className:"bot1-symbol operation", symbolGroup:this.props.operation[1]})}
-          {this.renderSymbol({className:"bot0-symbol direction", symbolGroup:this.props.direction[0]})}
-          {this.renderSymbol({className:"bot1-symbol direction", symbolGroup:this.props.direction[1]})}
+          {this.renderSymbol({symbolType:"instruction", className:"bot0-symbol instruction operation", symbolGroup:this.props.operation[0]})}
+          {this.renderSymbol({symbolType:"instruction", className:"bot1-symbol instruction operation", symbolGroup:this.props.operation[1]})}
+          {this.renderSymbol({symbolType:"instruction", className:"bot0-symbol instruction direction", symbolGroup:this.props.direction[0]})}
+          {this.renderSymbol({symbolType:"instruction", className:"bot1-symbol instruction direction", symbolGroup:this.props.direction[1]})}
         </div>
       </div>
     );
@@ -164,7 +193,7 @@ class Board extends React.PureComponent {
     return (<Square
       key={props.y,props.x}
       handler={this.props.handler}
-      validBoard={this.props.validBoard}
+      simBoard={this.props.simBoard}
       selectedSymbolGroup={this.props.selectedSymbolGroup}
       selectedSymbolValue={this.props.selectedSymbolValue}
       stopped={this.props.stopped}
@@ -416,7 +445,7 @@ class Game extends React.Component {
               handler={this.boardHandler}
               selectedSymbolGroup={this.state.selectedSymbolGroup}
               selectedSymbolValue={((this.state.selectedSymbolGroup || {}).state || {}).value}
-              validBoard={this.state.validBoard}
+              simBoard={this.state.validBoard || this.state.cycle}
               stopped={this.state.simState==="stop"}
               m={this.props.m}
               n={this.props.n}

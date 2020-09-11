@@ -66,10 +66,16 @@ body {
 }
 .square-inset {
   position: absolute;
-  width: 96%;
-  height: 96%;
-  top: 2%;
-  left: 2%;
+  width: calc(100% - 6px);
+  height: calc(100% - 6px);
+  top: 3px;
+  left: 3px;
+}
+.square-inset.horizontal {
+  width: calc(200% - 6px);
+}
+.square-inset.vertical {
+  height: calc(200% - 6px);
 }
 
 /* bottom bar */
@@ -99,6 +105,9 @@ body {
 .image-container {
   position: relative;
   width: 100%;
+  height: 100%;
+}
+.symbolgroup {
   padding-top: 100%;
 }
 .symbolgroup.horizontal {
@@ -121,7 +130,7 @@ body {
 /* symbols */
 .symbol { z-index: 1; }
 .direction,.operation { z-index: 2; }
-.symbol.selected { z-index: 3; }
+.instruction.selected { z-index: 3; }
 .image-container.symbol {
   position: absolute;
 }
@@ -150,8 +159,6 @@ body {
 .diode.vertical .image-overlay:last-of-type {
   transform: translate(-50%, 0%);
 }
-.symbol.horizontal { width: 200%; }
-.symbol.vertical { height: 200%; }
 
 /* symbol svg internals */
 svg text {
@@ -181,15 +188,23 @@ svg text {
 .symbolgroup.selected {
   filter: drop-shadow(0 0 1vmin dodgerblue);
 }
+.bot0 .square-overlay, .bot1 .square-overlay {
+  border-style: solid;
+  border-width: 3.49px; /* extra 0.49 for rounding */
+  border-radius: 17px;
+}
 .bot0 .square-overlay {
-  box-shadow: inset 3px 3px 5px crimson, inset -3px -3px 5px crimson;
+  /* box-shadow: inset 3px 3px 5px crimson, inset -3px -3px 5px crimson; */
+  border-color: crimson;
 }
 .bot1 .square-overlay {
-  box-shadow: inset 3px 3px 5px royalblue, inset -3px -3px 5px royalblue;
+  /* box-shadow: inset 3px 3px 5px royalblue, inset -3px -3px 5px royalblue; */
+  border-color: royalblue;
 }
 .bot0.bot1 .square-overlay {
   /* mix crimson and royalblue */
-  box-shadow: inset 5px 5px 5px #8e3e8e, inset -5px -5px 5px  #8e3e8e;
+  /* box-shadow: inset 5px 5px 5px #8e3e8e, inset -5px -5px 5px  #8e3e8e; */
+  border-color: #8e3e8e;
 }
 
 /* boundary cells */

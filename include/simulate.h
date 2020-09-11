@@ -485,7 +485,6 @@ class Board {
   Error error;
   // runtime
   Grid<Cell> cells;
-  bool invalid = false;
   // indicator for whether I/O incremented on most recent cycle
   // does not count if moved to new test case
   bool was_next = false;
@@ -526,7 +525,6 @@ public:
   bool set_cells(const std::string &grid_cells);
   // set instructions for bot k
   bool set_instructions(size_t k, const std::string &grid_directions, const std::string &grid_operations);
-  void invalidate() { invalid = true; }
   // check and set level properties
   bool validate_level();
 
