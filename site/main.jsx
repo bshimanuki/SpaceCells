@@ -30,14 +30,6 @@ var levels = {
   "adder": "../examples/adder.lvl",
   "stack": "../examples/stack.lvl",
 };
-var fill_images = {
-  "x": "fill_x",
-  "+": "fill_plus",
-  "/": "fill_blue",
-  "\\": "fill_green",
-  "-": "fill_red",
-  "|": "fill_orange",
-};
 
 function getFileFromServer(url, doneCallback) {
   var xhr = new XMLHttpRequest();
@@ -174,10 +166,10 @@ class Square extends React.PureComponent {
           {this.renderSymbol({symbolType:"cell", className:"cell", cellValue:(this.props.cell && String.fromCharCode(this.props.cell.resolved())), cell:this.props.cell, symbolGroup:this.props.unresolved, index:this.props.unresolved_index})}
         </div>
         <div className="square-inset">
-          {this.renderSymbol({symbolType:"instruction", className:"bot0-symbol instruction operation", symbolGroup:this.props.operation[0]})}
-          {this.renderSymbol({symbolType:"instruction", className:"bot1-symbol instruction operation", symbolGroup:this.props.operation[1]})}
-          {this.renderSymbol({symbolType:"instruction", className:"bot0-symbol instruction direction", symbolGroup:this.props.direction[0]})}
-          {this.renderSymbol({symbolType:"instruction", className:"bot1-symbol instruction direction", symbolGroup:this.props.direction[1]})}
+          {this.renderSymbol({symbolType:"instruction", className:"bot0 instruction operation", symbolGroup:this.props.operation[0]})}
+          {this.renderSymbol({symbolType:"instruction", className:"bot1 instruction operation", symbolGroup:this.props.operation[1]})}
+          {this.renderSymbol({symbolType:"instruction", className:"bot0 instruction direction", symbolGroup:this.props.direction[0]})}
+          {this.renderSymbol({symbolType:"instruction", className:"bot1 instruction direction", symbolGroup:this.props.direction[1]})}
         </div>
       </div>
     );
@@ -343,6 +335,14 @@ class Game extends React.Component {
     }
   }
 
+  makeFixedCell(...args) {
+    let square = this.makeEmptySquare();
+    let [xSymbolGroup] = this.makeSymbol(...args);
+    square.unresolved = xSymbolGroup;
+    square.unresolved_index = 0;
+    return square;
+  }
+
   makeSymbol(type, c) {
     if ("._ ".includes(c)) return [null];
     var symbols;
@@ -352,13 +352,13 @@ class Game extends React.Component {
     else return [];
     for (let symbolType of symbols) {
       if ((symbolType.value || "").includes(c)) {
-        let newSymbol = {props: symbolType, state: {value: symbolType.value, name: symbolType.name}}
+        let newSymbol = {props: symbolType, state: {value: symbolType.value, svg: symbolType.svg}}
         newSymbol.setState = (func, callback) => {newSymbol.state = Object.assign(newSymbol.state, func(newSymbol.state, newSymbol.props)); callback()};
         if (symbolType.multi === "horizontal") return [newSymbol, 0, c === ">" ? -1 : 1];
         else if (symbolType.multi === "vertical") return [newSymbol, c === "v" ? -1 : 1, 0];
         else return [newSymbol];
-      } else if (Object.values(symbolType.options || {}).includes(c)) {
-        let newSymbol = {props: symbolType, state: {value: c}}
+      } else if (Object.keys(symbolType.options || {}).includes(c)) {
+        let newSymbol = {props: symbolType, state: {value: c, svg: symbolType.options[c][1]}}
         newSymbol.setState = (func, callback) => {newSymbol.state = Object.assign(newSymbol.state, func(newSymbol.state, newSymbol.props)); callback()};
         return [newSymbol];
       }
@@ -371,7 +371,7 @@ class Game extends React.Component {
     this.setState((state, props) => {
       var newState = {squares: state.squares.map(row => row.map(square => {
         let d = {};
-        for (key in square) {
+        for (let key in square) {
           if (Array.isArray(square[key])) d[key] = square[key].map(_ => null);
           else d[key] = null;
         }
@@ -581,6 +581,9 @@ class Game extends React.Component {
       if (this.state.inputs.some(square => matchLocation(square, y, x))) {
         // inputs are fixed
         return;
+      } else if (this.state.outputs.some(square => matchLocation(square, y, x))) {
+        // outputs are fixed
+        return;
       } else if (className.split(/\s+/).includes("resolved")) {
         this.setState({selectedSymbolGroup: null, selectedSymbolGroupState: null, selectedOnBoard: true});
       } else {
@@ -615,6 +618,7 @@ class Game extends React.Component {
             // inputs are fixed
             return;
           } else if (this.state.outputs.some(square => matchLocation(square, _y, _x))) {
+            // TODO: this check is not necessary if outputs are fixed
             let value = this.state.selectedSymbolGroup.state.value;
             // outputs can only be unlatched 1x1 cells
             if (value !== "x" && value !== "+") return;
@@ -762,16 +766,14 @@ class Game extends React.Component {
           inputs.delete();
           let levelGrid = board.get_level();
           newState.squares = this.state.squares.map((row, y) => row.map((square, x) => {
-            if (y < board.m && x < board.n && !cellAllowed(String.fromCharCode(levelGrid.at(y, x)))) return this.makeEmptySquare();
+            let levelValue = String.fromCharCode(levelGrid.at(y, x));
+            if (levelValue === "x") return this.makeFixedCell("unresolved", "x");
+            if (levelValue === "+") return this.makeFixedCell("unresolved", "+");
+            if (y < board.m && x < board.n && !cellAllowed(levelValue)) return this.makeEmptySquare();
             return {...square};
           }));
           levelGrid.delete();
           board.delete();
-          let [xSymbolGroup] = this.makeSymbol("unresolved", "x");
-          for (let location of inputLocations) {
-            ((newState.squares[location.y] || {})[location.x] || {}).unresolved = xSymbolGroup;
-            ((newState.squares[location.y] || {})[location.x] || {}).unresolved_index = 0;
-          }
           this.setState(newState, this.resetBoard);
         }
       });

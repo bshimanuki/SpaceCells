@@ -168,10 +168,10 @@ svg.symbol > * { pointer-events: auto; }
   height: 100%;
   width: 100%;
 }
-.symbol-shift.bot0-symbol {
+.symbol-shift.bot0 {
   transform: scale(0.667) translate(-33%, -33%);
 }
-.symbol-shift.bot1-symbol {
+.symbol-shift.bot1 {
   transform: scale(0.667) translate(33%, 33%);
 }
 

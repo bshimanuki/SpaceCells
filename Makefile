@@ -1,3 +1,5 @@
+SHELL := bash -O extglob
+
 CC = g++
 EMCC = em++
 
@@ -72,7 +74,7 @@ $(BINDIR)/%.html $(BINDIR)/%.js: $(OBJDIR)/%.em.o $(EM_LIBS)
 	@mkdir -p $(BINDIR)
 	$(EMCC) $(CCFLAGS) $(EMFLAGS) -o $@ $^ $(INC) $(LDFLAGS) --bind
 
-.PHONY: clean
+.PHONY: clean test
 
 .SECONDARY: $(OBJS) $(DEPS) $(EM_OBJS) $(BOOST_OBJS)
 
@@ -85,6 +87,12 @@ emscripten: $(EMBINDINGS_JS)
 python: $(BINDINGS_PYTHON)
 
 all: default emscripten python
+
+test: default
+	@for file in examples/*.sol ; do \
+		echo $(BINDIR)/run "$${file%%?([_0-9]*).sol}.lvl" "$$file" ; \
+		$(BINDIR)/run "$${file%%?([_0-9]*).sol}.lvl" "$$file" ; \
+	done
 
 clean:
 	rm -rf $(OBJDIR) $(BINDIR)
