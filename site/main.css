@@ -139,7 +139,6 @@ svg.symbol { pointer-events: none; }
 svg.symbol > * { pointer-events: auto; }
 .image-container { pointer-events: none; }
 .symbolgroup.image-container { pointer-events: auto; }
-/* .symbol .image-base g { pointer-events: auto; } */
 .image-base,.image-overlay {
   position: absolute;
   top: 50%;
@@ -161,14 +160,6 @@ svg.symbol > * { pointer-events: auto; }
 }
 .diode.vertical .image-overlay:last-of-type {
   transform: translate(-50%, 0%);
-}
-
-/* symbol svg internals */
-svg text {
-  font-weight: bold;
-  stroke: black;
-  stroke-width: 0.05;
-  paint-order: stroke fill;
 }
 
 /* board instruction transforms */

@@ -3,7 +3,6 @@ import ReactDOM from "react-dom";
 
 import "./main.css";
 import * as Svgs from "./svgs.jsx";
-import * as Assets from "./assets/assets.js";
 import Embindings from "./embindings.js";
 import EmbindingsWASM from "./embindings.wasm";
 
@@ -19,11 +18,6 @@ EmbindingsLoader.then((core) => {
   );
   console.log("loaded");
 });
-
-function Asset(props) {
-  var SVG = Assets[props.src];
-  return <SVG {...props}/>;
-}
 
 var levels = {
   "not": "../examples/not.lvl",

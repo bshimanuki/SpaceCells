@@ -77,3 +77,10 @@ svg.operation text {
   stroke: none;
   opacity: 0.75;
 }
+
+svg text {
+  font-weight: bold;
+  stroke: black;
+  stroke-width: 0.05;
+  paint-order: stroke fill;
+}
