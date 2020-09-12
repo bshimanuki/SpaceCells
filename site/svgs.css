@@ -1,0 +1,73 @@
+.bot-stroke {
+  stroke: lightgray;
+}
+.bot-fill {
+  fill: lightgray;
+}
+.bot0 .bot-stroke {
+  stroke: red;
+}
+.bot1 .bot-stroke {
+  stroke: blue;
+}
+.bot0 .bot-fill {
+  fill: red;
+}
+.bot1 .bot-fill {
+  fill: blue;
+}
+
+.arrow {
+  stroke-linecap: round;
+}
+
+.cell-border {
+  rx: 0.5;
+  ry: 0.5;
+  fill: white;
+  stroke: black;
+}
+.cell-border.latched {
+  stroke: goldenrod;
+}
+
+.cell-fill {
+  stroke: gray;
+  stroke-width: 0.05;
+  fill: lightgray;
+}
+
+.diode .arrow {
+  stroke: black;
+  stroke-width: 0.1;
+}
+
+.ghost {
+  stroke: white;
+  opacity: 0;
+}
+.direction .ghost {
+  stroke-width: 0.5;
+}
+.direction-main {
+  stroke-width: 0.2;
+}
+
+svg.operation text {
+  fill: white;
+  font-weight: bold;
+  stroke: black;
+  stroke-width: 0.05;
+  paint-order: stroke fill;
+}
+
+.operation-circle {
+  stroke: gray;
+  stroke-width: 0.05;
+}
+
+.branch-overlay {
+  fill: white;
+  stroke: none;
+  opacity: 0.75;
+}

@@ -2,6 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom";
 
 import "./main.css";
+import * as Svgs from "./svgs.jsx";
 import * as Assets from "./assets/assets.js";
 import Embindings from "./embindings.js";
 import EmbindingsWASM from "./embindings.wasm";
@@ -44,17 +45,6 @@ var fill_images = {
   "|": "fill_orange",
 };
 
-var level_debug;
-var board_debug;
-var submission_debug;
-function compute() {
-  // level_debug = document.getElementById("level").value;
-  submission_debug = document.getElementById("submission").value;
-  board_debug = Module.LoadBoard(level, submission_debug);
-  console.log(board_debug.check_status());
-  // board_debug.run(100);
-  // console.log(board_debug.check_status());
-}
 function getFileFromServer(url, doneCallback) {
   var xhr = new XMLHttpRequest();
   xhr.onreadystatechange = function() {
@@ -90,8 +80,8 @@ class Symbol extends React.PureComponent {
       if (this.props.index) {
         return <div></div>;
       }
-      var outline_image = null;
-      var fill_image = null;
+      let outline_image = null;
+      let fill_image = null;
       if (this.props.simBoard) {
         if (this.props.cell.exists) {
           if (this.props.cell.is_1x1) {
