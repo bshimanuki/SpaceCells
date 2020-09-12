@@ -624,6 +624,14 @@ bool Board::validate_level() {
       }
     }
   }
+  // check I/O sequence sizes
+  if (input_bits.size() != output_colors.size()) return error = Error::InvalidLevelFormat;
+  for (size_t t=0; t<input_bits.size(); ++t) {
+    if (input_bits[t].size() != inputs.size()) return error = Error::InvalidLevelFormat;
+    for (size_t k=0; k<input_bits[t].size(); ++k) {
+      if (input_bits[t][k].size() != output_colors[t].size()) return error = Error::InvalidLevelFormat;
+    }
+  }
   return false;
 }
 
@@ -632,9 +640,8 @@ bool Board::reset_and_validate(bool reset_test_case) {
   last_color = Color();
   if (validate_level()) return error = Error::InvalidLevelFormat;
   for (auto &bot : bots) bot = Bot();
-  // check grids
+  // validate cells
   for (size_t y=0; y<m; ++y) {
-    // validate cells
     for (size_t x=0; x<n; ++x) {
       switch (level.at(y, x)) {
       case ' ':
@@ -690,7 +697,24 @@ bool Board::reset_and_validate(bool reset_test_case) {
         }
         break;
       }
-      // validate instructions
+    }
+  }
+  // reset state
+  cells = initial_cells;
+  step = 0;
+  if (reset_test_case) {
+    test_case = 0;
+    cycle = 0;
+  }
+  for (const Input &input : inputs) {
+    Cell &input_cell = cells.at(input.location);
+    if (input_cell != 'x' && input_cell != '+') return error = Error::InvalidInput;
+    input_cell.latched = true;
+  }
+  if (resolve()) return true;
+  // validate instructions
+  for (size_t y=0; y<m; ++y) {
+    for (size_t x=0; x<n; ++x) {
       if (!trespassable.at(y, x)) {
         for (const auto &_directions : directions) if (_directions.at(y, x)) return error = Error::InvalidInput;
         for (const auto &_operations : operations) if (_operations.at(y, x)) return error = Error::InvalidInput;
@@ -712,27 +736,6 @@ bool Board::reset_and_validate(bool reset_test_case) {
       return error = Error("Bot does not have a START instruction");
     }
   }
-  // check I/O sequence sizes
-  if (input_bits.size() != output_colors.size()) return error = Error::InvalidLevelFormat;
-  for (size_t t=0; t<input_bits.size(); ++t) {
-    if (input_bits[t].size() != inputs.size()) return error = Error::InvalidLevelFormat;
-    for (size_t k=0; k<input_bits[t].size(); ++k) {
-      if (input_bits[t][k].size() != output_colors[t].size()) return error = Error::InvalidLevelFormat;
-    }
-  }
-  // reset state
-  cells = initial_cells;
-  step = 0;
-  if (reset_test_case) {
-    test_case = 0;
-    cycle = 0;
-  }
-  for (const Input &input : inputs) {
-    Cell &input_cell = cells.at(input.location);
-    if (input_cell != 'x' && input_cell != '+') return error = Error::InvalidInput;
-    input_cell.latched = true;
-  }
-  if (resolve()) return true;
   return false;
 }
 
