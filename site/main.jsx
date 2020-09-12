@@ -65,6 +65,25 @@ function cellAllowed(c) {
   return " _".includes(c);
 }
 
+function svgForCell(c) {
+  if (c.is_1x1) return c.x ? Svgs.XCell : Svgs.PlusCell;
+  let direction = String.fromCharCode(c.direction);
+  if (c.is_diode) {
+    switch (direction) {
+    case "^": return Svgs.DiodeUp;
+    case "v": return Svgs.DiodeDown;
+    case "<": return Svgs.DiodeLeft;
+    case ">": return Svgs.DiodeRight;
+    default: return null;
+    }
+  }
+  switch (direction) {
+  case "^": case "v": return Svgs.VerticalCell;
+  case "<": case ">": return Svgs.HorizontalCell;
+  default: return null;
+  }
+}
+
 class Symbol extends React.PureComponent {
   constructor(props) {
     super(props);
@@ -75,37 +94,27 @@ class Symbol extends React.PureComponent {
     this.props.handler(this.props.y, this.props.x, this.props.symbolGroup, this.props.className);
   }
   render() {
-    var selectedClass = this.props.selectedSymbolGroup === this.props.symbolGroup ? "selected" : "";
+    var classNames = []
+    classNames.push("symbol");
+    classNames.push("image-container");
+    if (this.props.selectedSymbolGroup === this.props.symbolGroup) classNames.push("selected");
     if (this.props.symbolType === "cell") {
-      if (this.props.index) {
+      if (this.props.index || !this.props.cell || !this.props.cell.exists) {
         return <div></div>;
       }
-      let outline_image = null;
-      let fill_image = null;
-      if (this.props.simBoard) {
-        if (this.props.cell.exists) {
-          if (this.props.cell.is_1x1) {
-            if (this.props.cell.latched) outline_image = "outline_latched";
-            else outline_image = "outline_unlatched";
-          } else {
-            outline_image = this.props.outline;
-          }
-          fill_image = fill_images[this.props.cellValue];
-        } else {
-          return <div></div>;
-        }
-      } else {
-        if (!this.props.symbolGroup || !this.props.symbolGroup.state) {
-          return <div></div>;
-        }
-        outline_image = this.props.outline;
-        fill_image = this.props.fill;
-      }
+      if (this.props.cell.is_1x1) classNames.push(this.props.cell.latched ? "latched" : "unlatched");
+      classNames.push(`resolved-${String.fromCharCode(this.props.cell.value)}`);
+      classNames.push(String.fromCharCode(this.props.cell.color));
+      if (this.props.cell.held) classNames.push("held");
+      if (this.props.cell.rotating) classNames.push("rotating");
+      if (this.props.cell.refreshing) classNames.push("refreshing");
+      let moving = String.fromCharCode(this.props.cell.moving);
+      if (moving !== " ") classNames.push(`moving-${moving}`);
+      classNames = classNames.join(" ");
+      let Component = svgForCell(this.props.cell);
       return (
-        <div className={`image-container symbol cell symbol-${this.props.value} ${this.props.className} ${selectedClass} ${this.props.diode ? "diode" : ""} ${this.props.multi || ""}`} alt={this.props.subtype}>
-          <Asset className="image-base" src={outline_image} onClick={this.handler}/>
-          <Asset className="image-overlay" src={fill_image}/>
-          <Asset className="image-overlay" src={fill_image}/>
+        <div className={classNames}>
+          <Component className="image-base symbol" onClick={this.handler}/>
         </div>
       );
     } else {
@@ -113,9 +122,12 @@ class Symbol extends React.PureComponent {
       if (!this.props.symbolGroup || !this.props.symbolGroup.state) {
         return <div></div>;
       }
+      classNames.push(`bot${this.props.bot}`);
+      classNames = classNames.join(" ");
+      let Component = this.props.symbolGroup.state.svg;
       return (
-        <div className={`image-container symbol symbol-shift ${this.props.className} ${selectedClass}`} alt={this.props.subtype}>
-          <Asset className="image-base" src={`${this.props.type}_${this.props.botColors[this.props.bot]}_${this.props.name}`} onClick={this.handler}/>
+        <div className={`symbol-shift ${classNames} ${this.props.className}`}>
+          <Component className="image-base symbol" onClick={this.handler}/>
         </div>
       );
     }
@@ -295,36 +307,36 @@ class Game extends React.Component {
   }
 
   symbolTypesUnresolved = [
-    {type: "unresolved", subtype: "x", value: "x", outline: "outline_unlatched", fill: "fill_x"},
-    {type: "unresolved", subtype: "+", value: "+", outline: "outline_unlatched", fill: "fill_plus"},
-    {type: "unresolved", subtype: "/", value: "/", outline: "outline_latched", fill: "fill_blue"},
-    {type: "unresolved", subtype: "\\", value: "\\", outline: "outline_latched", fill: "fill_green"},
-    {type: "unresolved", subtype: "-", value: "-", outline: "outline_latched", fill: "fill_red"},
-    {type: "unresolved", subtype: "|", value: "|", outline: "outline_latched", fill: "fill_orange"},
-    {type: "unresolved", subtype: "][", value: "][", multi:"horizontal", outline: "outline_horizontal", fill: "fill_x"},
-    {type: "unresolved", subtype: "W\nM", value: "WM", multi:"vertical", outline: "outline_vertical", fill: "fill_x"},
-    {type: "unresolved", subtype: "<x", value: "<x", multi:"horizontal", diode: true, outline: "outline_diode_left", fill: "fill_x"},
-    {type: "unresolved", subtype: "x\nv", value: "xv", multi:"vertical", diode: true, outline: "outline_diode_down", fill: "fill_x"},
-    {type: "unresolved", subtype: "^\nx", value: "^x", multi:"vertical", diode: true, outline: "outline_diode_up", fill: "fill_x"},
-    {type: "unresolved", subtype: "x>", value: "x>", multi:"horizontal", diode: true, outline: "outline_diode_right", fill: "fill_x"},
+    {type: "unresolved", subtype: "x", value: "x", svg: Svgs.XCell, className: "resolved-x unlatched"},
+    {type: "unresolved", subtype: "+", value: "+", svg: Svgs.PlusCell, className: "resolved-x unlatched"},
+    {type: "unresolved", subtype: "/", value: "/", svg: Svgs.XCell, className: "resolved-1 latched"},
+    {type: "unresolved", subtype: "\\", value: "\\", svg: Svgs.XCell, className: "resolved-0 latched"},
+    {type: "unresolved", subtype: "-", value: "-", svg: Svgs.PlusCell, className: "resolved-1 latched"},
+    {type: "unresolved", subtype: "|", value: "|", svg: Svgs.PlusCell, className: "resolved-0 latched"},
+    {type: "unresolved", subtype: "][", value: "][", svg: Svgs.HorizontalCell, multi: "horizontal"},
+    {type: "unresolved", subtype: "W\nM", value: "WM", svg: Svgs.VerticalCell, multi: "vertical"},
+    {type: "unresolved", subtype: "<x", value: "<x", svg: Svgs.DiodeLeft, multi: "horizontal"},
+    {type: "unresolved", subtype: "x\nv", value: "xv", svg: Svgs.DiodeDown, multi: "vertical"},
+    {type: "unresolved", subtype: "^\nx", value: "^x", svg: Svgs.DiodeUp, multi: "vertical"},
+    {type: "unresolved", subtype: "x>", value: "x>", svg: Svgs.DiodeRight, multi: "horizontal"},
   ];
   symbolTypesDirection = [
-    {type: "direction", subtype: "<", value: "<", name: "left"},
-    {type: "direction", subtype: "v", value: "v", name: "down"},
-    {type: "direction", subtype: ">", value: ">", name: "right"},
-    {type: "direction", subtype: "^", value: "^", name: "up"},
+    {type: "direction", subtype: "<", value: "<", svg: Svgs.DirectionLeft},
+    {type: "direction", subtype: "v", value: "v", svg: Svgs.DirectionDown},
+    {type: "direction", subtype: ">", value: ">", svg: Svgs.DirectionRight},
+    {type: "direction", subtype: "^", value: "^", svg: Svgs.DirectionUp},
   ];
   symbolTypesOperation = [
-    {type: "operation", subtype: "START", value: "S", name: "start"},
-    {type: "operation", subtype: "NEXT", value: "n", name: "next"},
-    {type: "operation", subtype: "GRAB/DROP", options: {GRAB: "g", DROP: "d", "GRAB/DROP": "w"}, names: {GRAB: "grab", DROP: "drop", "GRAB/DROP": "swap"}},
-    {type: "operation", subtype: "LOCK/FREE", options: {LOCK: "l", FREE: "u", "LOCK/FREE": "t"}, names: {LOCK: "latch", FREE: "unlatch", "LOCK/FREE": "togglelatch"}},
-    {type: "operation", subtype: "RESET", value: "*", name: "relatch"},
-    {type: "operation", subtype: "SYNC", value: "s", name: "sync"},
-    {type: "operation", subtype: "ROTATE", value: "r", name: "rotate"},
-    {type: "operation", subtype: "BRANCH(|/)", options: {"<": "<", "v": "v", ">": ">", "^": "^"}, names: {"<": "branch1left", "v": "branch1down", ">": "branch1right", "^": "branch1up"}},
-    {type: "operation", subtype: "BRANCH(-\\)", options: {"<": "[", "v": "W", ">": "]", "^": "M"}, names: {"<": "branch0left", "v": "branch0down", ">": "branch0right", "^": "branch0up"}},
-    {type: "operation", subtype: "POWER", options: {"TOGGLE POWER 1": "p", "TOGGLE POWER 2": "P"}, names: {"TOGGLE POWER 1": "power0", "TOGGLE POWER 2": "power1"}},
+    {type: "operation", subtype: "START", value: "S", svg: Svgs.Start},
+    {type: "operation", subtype: "NEXT", value: "n", svg: Svgs.Next},
+    {type: "operation", subtype: "GRAB/DROP", options: {g: ["GRAB", Svgs.Grab], d: ["DROP", Svgs.Drop], w: ["GRAB/DROP", Svgs.Swap]}},
+    {type: "operation", subtype: "LOCK/FREE", options: {l: ["LOCK", Svgs.Latch], u: ["FREE", Svgs.Unlatch], t: ["LOCK/FREE", Svgs.ToggleLatch]}},
+    {type: "operation", subtype: "RESET", value: "*", svg: Svgs.Relatch},
+    {type: "operation", subtype: "SYNC", value: "s", svg: Svgs.Sync},
+    {type: "operation", subtype: "ROTATE", value: "r", svg: Svgs.Rotate},
+    {type: "operation", subtype: "BRANCH(|/)", options: {"<": ["<", Svgs.Branch1Left], "v": ["v", Svgs.Branch1Down], ">": [">", Svgs.Branch1Right], "^": ["^", Svgs.Branch1Up]}},
+    {type: "operation", subtype: "BRANCH(-\\)", options: {"[": ["<", Svgs.Branch0Left], "W": ["v", Svgs.Branch0Down], "]": [">", Svgs.Branch0Right], "M": ["^", Svgs.Branch0Up]}},
+    {type: "operation", subtype: "POWER", options: {p: ["TOGGLE POWER 1", Svgs.Power0], P: ["TOGGLE POWER 2", Svgs.Power1]}},
   ];
 
   makeEmptySquare() {
@@ -456,7 +468,7 @@ class Game extends React.Component {
               <div style={{flex:1}}></div>
               <div className={`trash ${this.state.selectedSymbolGroup && this.state.selectedOnBoard ? "active" : "inactive"}`} onClick={this.trash}>🗑</div>
             </div>
-            <div className="symbol-bar" style={{display:"flex", flexDirection:"row"}}>
+            <div className={`symbol-bar bot${this.state.bot}`} style={{display:"flex", flexDirection:"row"}}>
               <div className="symbol-grid-bar grid-layout" style={{flex:3}}>
                 {this.symbolTypesUnresolved.map(props => this.renderSymbolGroup("unresolved", props))}
                 {this.symbolTypesDirection.map(props => this.renderSymbolGroup("instruction", props))}
@@ -785,8 +797,8 @@ class Game extends React.Component {
   changeSymbolOption(event) {
     let value = event.target.value;
     this.state.selectedSymbolGroup.setState((state, props) => ({
-      value: props.options[value],
-      name: props.names[value],
+      value: value,
+      svg: props.options[value][1],
     }), () => {this.setState({selectedSymbolGroupState: Object.assign({}, this.state.selectedSymbolGroup.props, this.state.selectedSymbolGroup.state)})});
   };
 }
@@ -817,30 +829,20 @@ class SymbolGroup extends React.PureComponent {
     // props: type, subtype, value, options
     this.state = {};
     this.state.value = this.props.value;
-    this.state.name = this.props.name;
+    this.state.svg = this.props.svg;
     if (this.props.options !== undefined) {
-      let option = Object.keys(this.props.options)[0];
-      this.state.value = this.props.options[option];
-      this.state.name = this.props.names[option];
+      this.state.value = Object.keys(this.props.options)[0];
+      this.state.svg = this.props.options[this.state.value][1];
     }
   }
   render() {
     if (!this.props.active) return null;
-    if (this.props.type === "unresolved") {
-      return (
-        <div className={`image-container symbolgroup symbol-${this.state.value} ${this.props.selected === this ? "selected" : ""} ${this.props.diode ? "diode" : ""} ${this.props.multi || ""}`} onClick={this.pushThis} alt={this.props.subtype}>
-          <Asset className="image-base" src={this.props.outline}/>
-          <Asset className="image-overlay" src={this.props.fill}/>
-          <Asset className="image-overlay" src={this.props.fill}/>
-        </div>
-      );
-    } else {
-      return (
-        <div className={`image-container symbolgroup symbol-${this.state.value} ${this.props.selected === this ? "selected" : ""}`} onClick={this.pushThis} alt={this.props.subtype}>
-          <Asset src={`${this.props.type}_${this.props.botColors[this.props.bot]}_${this.state.name}`} className="image-base"/>
-        </div>
-      );
-    }
+    const Component = this.state.svg;
+    return (
+      <div className={`image-container symbolgroup symbol-${this.state.value} ${this.props.selected === this ? "selected" : ""} ${this.props.className || ""} ${this.props.multi || ""}`} onClick={this.pushThis}>
+        <Component className="image-base"/>
+      </div>
+    );
   }
   pushThis = () => { this.props.handler(this); };
 }
@@ -849,8 +851,8 @@ class SymbolOptions extends React.PureComponent {
   render() {
     return (
       <div className="symbol-options">
-        {Object.keys(this.props.options || []).map((option, i) =>
-        <OptionItem key={i} option={option} {...this.props}/>
+        {Object.entries(this.props.options || []).map(([key, [option, svg]]) =>
+        <OptionItem key={key} short={key} option={option} {...this.props}/>
         )}
       </div>
     );
@@ -861,11 +863,11 @@ class OptionItem extends React.PureComponent {
   render() {
     return (
       <div style={{display:"flex", alignItems:"center"}} key={`radio-option-${this.props.option}`}>
-        <input type="radio" id={`radio-${this.props.option}`} value={this.props.option} name={`radio-for-${this.props.subtype}`}
-          checked={this.props.value === this.props.options[this.props.option]}
+        <input type="radio" id={`radio-${this.props.short}`} value={this.props.short} name={`radio-for-${this.props.subtype}`}
+          checked={this.props.value === this.props.short}
           onChange={this.props.changeOption}
         />
-        <label htmlFor={`radio-${this.props.option}`}>{this.props.option}</label>
+        <label htmlFor={`radio-${this.props.short}`}>{this.props.option}</label>
       </div>
     );
   }

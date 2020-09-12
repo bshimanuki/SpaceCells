@@ -134,9 +134,12 @@ body {
 .image-container.symbol {
   position: absolute;
 }
+.square-overlay,.square-underlay,.square-inset { pointer-events: none; }
+svg.symbol { pointer-events: none; }
+svg.symbol > * { pointer-events: auto; }
 .image-container { pointer-events: none; }
 .symbolgroup.image-container { pointer-events: auto; }
-.symbol .image-base g { pointer-events: auto; }
+/* .symbol .image-base g { pointer-events: auto; } */
 .image-base,.image-overlay {
   position: absolute;
   top: 50%;

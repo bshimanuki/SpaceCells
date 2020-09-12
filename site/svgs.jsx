@@ -4,8 +4,8 @@ import "./svgs.css";
 
 const padding = 0;
 
-function Svg({w, h, children, className}) {
-  return <svg className={className} viewBox={`${-w} ${-h} ${2*w} ${2*h}`}>{children}</svg>;
+function Svg({w, h, children, ...props}) {
+  return <svg viewBox={`${-w} ${-h} ${2*w} ${2*h}`} {...props}>{children}</svg>;
 }
 Svg.defaultProps = {w:1, h:1, className:""};
 
@@ -85,25 +85,25 @@ PlusCellFill.defaultProps = {
   r0: 0.24, // orange
 }
 
-export function XCell({w, h, ...props}) {
-  return <Svg w={w} h={h} {...props}>
+export function XCell({w, h, _className, className, ...props}) {
+  return <Svg w={w} h={h} className={`${_className} ${className}`} {...props}>
     <CellBorder w={w} h={h}/>
     <XCellFill/>
   </Svg>;
 }
-XCell.defaultProps = {w:1, h:1, className:"cell-x"}
-export function PlusCell({w, h, ...props}) {
-  return <Svg w={w} h={h} {...props}>
+XCell.defaultProps = {w:1, h:1, _className:"cell-x", className:""}
+export function PlusCell({w, h, _className, className, ...props}) {
+  return <Svg w={w} h={h} className={`${_className} ${className}`} {...props}>
     <CellBorder w={w} h={h}/>
     <PlusCellFill/>
   </Svg>;
 }
-PlusCell.defaultProps = {w:1, h:1, className:"cell-plus"}
+PlusCell.defaultProps = {w:1, h:1, _className:"cell-plus", className:""}
 export function HorizontalCell(props) {
-  return <XCell className="cell-horizontal" w={2}/>;
+  return <XCell _className="cell-horizontal" w={2} {...props}/>;
 }
 export function VerticalCell(props) {
-  return <XCell className="cell-vertical" h={2}/>;
+  return <XCell _className="cell-vertical" h={2} {...props}/>;
 }
 
 function Diode({dx, dy, headDistance, headLength, headAngle, className, ...props}) {

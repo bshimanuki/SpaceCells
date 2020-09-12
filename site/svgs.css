@@ -27,7 +27,7 @@
   fill: white;
   stroke: black;
 }
-.cell-border.latched {
+.latched .cell-border {
   stroke: goldenrod;
 }
 
@@ -36,6 +36,12 @@
   stroke-width: 0.05;
   fill: lightgray;
 }
+.resolved-1 .circle-0 { fill: white; }
+.resolved-0 .circle-1 { fill: white; }
+.resolved-1 .cell-x .circle-1 { fill: blue; }
+.resolved-0 .cell-x .circle-0 { fill: green; }
+.resolved-1 .cell-plus .circle-1 { fill: red; }
+.resolved-0 .cell-plus .circle-0 { fill: orange; }
 
 .diode .arrow {
   stroke: black;
