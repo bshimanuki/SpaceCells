@@ -2,14 +2,19 @@ import React from "react";
 
 import "./svgs.css";
 
-const padding = 0;
+// Cells are overlaid over grid squares without padding and we take care of padding here.
+// This is necessary for sizing to be correct on cells spanning multiple squares.
+const PADDING = 0.06;
+const BOT_PADDING = 0.02;
 
 function Svg({w, h, children, ...props}) {
-  return <svg viewBox={`${-w} ${-h} ${2*w} ${2*h}`} {...props}>{children}</svg>;
+  return <div {...props}>
+    <svg viewBox={`${-w} ${-h} ${2*w} ${2*h}`}>{children}</svg>
+  </div>;
 }
-Svg.defaultProps = {w:1, h:1, className:""};
+Svg.defaultProps = {w:1, h:1};
 
-function Arrow({x1, y1, x2, y2, headAngle, headLength, drawTail, className, ...props}) {
+function Arrow({x1, y1, x2, y2, headAngle, headLength, drawTail, padding, className, ...props}) {
   x1 *= 1 - padding;
   y1 *= 1 - padding;
   x2 *= 1 - padding;
@@ -30,24 +35,40 @@ Arrow.defaultProps = {
   x1: 0,
   y1: 0,
   className: "",
+  padding: PADDING,
 }
 
-function CellBorder({w, h, r, strokeWidth, ...props}) {
+function CellBorder({w, h, r, strokeWidth, className, padding, ...props}) {
   let x = -w + strokeWidth / 2 + 2 * padding;
   let y = -h + strokeWidth / 2 + 2 * padding;
   let width = 2 * w - strokeWidth - 4 * padding;
   let height = 2 * h - strokeWidth - 4 * padding;
-  r *= 1 - padding;
-  return <rect className="cell-border" x={x} y={y} width={width} height={height} rx={r} ry={r}
+  return <rect className={className} x={x} y={y} width={width} height={height} rx={r} ry={r}
     style={{strokeWidth:strokeWidth}} {...props}/>;
 }
 CellBorder.defaultProps = {
   r: 0.5,
   strokeWidth: 0.1,
+  className: "cell-border",
+  padding: PADDING,
 }
 
+export function CellBot({w, h, r, strokeWidth, padding, ...props}) {
+  return <Svg w={w} h={h} {...props}>
+    <CellBorder w={w} h={h} r={r} strokeWidth={strokeWidth} padding={padding} className="bot-outline bot-stroke"/>
+  </Svg>;
+}
+CellBot.defaultProps = {
+  w: 1,
+  h: 1,
+  r: CellBorder.defaultProps.r + CellBorder.defaultProps.strokeWidth / 2 + (PADDING - BOT_PADDING),
+  strokeWidth: 2 * (PADDING - BOT_PADDING),
+  padding: BOT_PADDING,
+}
+
+
 // x, y not padded
-function XCellFill({x, y, offset, r1, r0, ...props}) {
+function XCellFill({x, y, offset, r1, r0, padding, ...props}) {
   offset *= 1 - padding;
   r1 *= 1 - padding;
   r0 *= 1 - padding;
@@ -64,9 +85,10 @@ XCellFill.defaultProps = {
   offset: 0.35,
   r1: 0.20, // blue
   r0: 0.22, // green
+  padding: PADDING,
 }
 
-function PlusCellFill({x, y, offset, r1, r0, ...props}) {
+function PlusCellFill({x, y, offset, r1, r0, padding, ...props}) {
   offset *= 1 - padding;
   r1 *= 1 - padding;
   r0 *= 1 - padding;
@@ -83,6 +105,7 @@ PlusCellFill.defaultProps = {
   offset: 0.5,
   r1: 0.27, // red
   r0: 0.24, // orange
+  padding: PADDING,
 }
 
 export function XCell({w, h, _className, className, ...props}) {
@@ -137,37 +160,43 @@ export function DiodeRight(props) {
   return <Diode dx={1} dy={0} className="diode-right" {...props}/>;
 }
 
-function DirectionArrow({dx, dy, headDistance, className, ...props}) {
+function DirectionArrow({dx, dy, headDistance, drawGhost, className, ...props}) {
   let x = dx * headDistance;
   let y = dy * headDistance;
   return <>
-    <Arrow className="ghost" x2={x} y2={y} {...props}/>
-    <Arrow className="direction-main bot-stroke ${className}" x2={x} y2={y} {...props}/>
+    {drawGhost && <Arrow className="direction-ghost" x2={x} y2={y} {...props}/>}
+    {drawGhost && <Arrow className="direction-outline" x2={x} y2={y} {...props}/>}
+    <Arrow className={`direction-main bot-stroke ${className}`} x2={x} y2={y} {...props}/>
   </>;
 }
 DirectionArrow.defaultProps = {
-  headDistance: 0.9,
+  headDistance: 0.5,
   headAngle: Math.PI / 3,
   headLength: 0.4,
+  drawGhost: true,
 }
 
-function Direction({dx, dy, className, arrowProps, ...props}) {
-  return <Svg className={`direction ${className}`} {...props}>
+function Direction({dx, dy, _className, className, arrowProps, ...props}) {
+  return <Svg className={`direction ${_className} ${className}`} {...props}>
     <DirectionArrow dx={dx} dy={dy} {...arrowProps}/>
   </Svg>;
 }
+Direction.defaultProps = {
+  _className: "",
+  className: "",
+}
 
 export function DirectionUp(props) {
-  return <Direction dx={0} dy={-1} className="direction-up" {...props}/>;
+  return <Direction dx={0} dy={-1} _className="direction-up" {...props}/>;
 }
 export function DirectionDown(props) {
-  return <Direction dx={0} dy={1} className="direction-down" {...props}/>;
+  return <Direction dx={0} dy={1} _className="direction-down" {...props}/>;
 }
 export function DirectionLeft(props) {
-  return <Direction dx={-1} dy={0} className="direction-left" {...props}/>;
+  return <Direction dx={-1} dy={0} _className="direction-left" {...props}/>;
 }
 export function DirectionRight(props) {
-  return <Direction dx={1} dy={0} className="direction-right" {...props}/>;
+  return <Direction dx={1} dy={0} _className="direction-right" {...props}/>;
 }
 
 function Operation({texts, className, r, textAttrs, fontSize, textHeight, unicodeFontSize, unicodeTextHeight, underlay, overlay, ...props}) {
@@ -253,7 +282,7 @@ export function Power1(props) {
 
 function Branch({dx, dy, children, className, arrowProps, branchRadius, ...props}) {
   return <Operation className={className}
-    underlay={<DirectionArrow className="branch-arrow" dx={dx} dy={dy} drawTail {...arrowProps}/>}
+    underlay={<DirectionArrow className="branch-arrow" dx={dx} dy={dy} drawGhost={false} drawTail {...arrowProps}/>}
     overlay={children(branchRadius)}
     {...props}
     />
@@ -261,7 +290,7 @@ function Branch({dx, dy, children, className, arrowProps, branchRadius, ...props
 Branch.defaultProps = {
   className: "",
   arrowProps: {
-    headDistance: 0.8,
+    headDistance: 0.7,
   },
   branchRadius: 0.5,
 }

@@ -1,8 +1,23 @@
+svg {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  height: 100%;
+  width: 100%;
+  transform: translate(-50%, -50%);
+  user-select: none;
+}
+
 .bot-stroke {
   stroke: lightgray;
 }
 .bot-fill {
   fill: lightgray;
+}
+.bot-outline {
+  fill: none;
+  stroke: none;
+  opacity: 0.8;
 }
 .bot0 .bot-stroke {
   stroke: red;
@@ -25,7 +40,7 @@
   rx: 0.5;
   ry: 0.5;
   fill: white;
-  stroke: black;
+  stroke: gray;
 }
 .latched .cell-border {
   stroke: goldenrod;
@@ -48,18 +63,29 @@
   stroke-width: 0.1;
 }
 
-.ghost {
+.direction-ghost {
   stroke: white;
   opacity: 0;
+  stroke-width: 0.8;
 }
-.direction .ghost {
-  stroke-width: 0.5;
+.direction-outline {
+  stroke: gray;
+  stroke-width: 0.4;
 }
 .direction-main {
-  stroke-width: 0.2;
+  stroke-width: 0.3;
 }
+.square .direction {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+}
+.square .direction-up { transform: translate(0%, -25%); }
+.square .direction-down { transform: translate(0%, 25%); }
+.square .direction-left { transform: translate(-25%, 0%); }
+.square .direction-right { transform: translate(25%, 0%); }
 
-svg.operation text {
+.operation svg text {
   fill: white;
   font-weight: bold;
   stroke: black;

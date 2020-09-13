@@ -640,6 +640,18 @@ bool Board::reset_and_validate(bool reset_test_case) {
   last_color = Color();
   if (validate_level()) return error = Error::InvalidLevelFormat;
   for (auto &bot : bots) bot = Bot();
+  // reset state
+  cells = initial_cells;
+  step = 0;
+  if (reset_test_case) {
+    test_case = 0;
+    cycle = 0;
+  }
+  for (const Input &input : inputs) {
+    Cell &input_cell = cells.at(input.location);
+    if (input_cell != 'x' && input_cell != '+') return error = Error::InvalidInput;
+    input_cell.latched = true;
+  }
   // validate cells
   for (size_t y=0; y<m; ++y) {
     for (size_t x=0; x<n; ++x) {
@@ -699,18 +711,7 @@ bool Board::reset_and_validate(bool reset_test_case) {
       }
     }
   }
-  // reset state
-  cells = initial_cells;
-  step = 0;
-  if (reset_test_case) {
-    test_case = 0;
-    cycle = 0;
-  }
-  for (const Input &input : inputs) {
-    Cell &input_cell = cells.at(input.location);
-    if (input_cell != 'x' && input_cell != '+') return error = Error::InvalidInput;
-    input_cell.latched = true;
-  }
+  // resolve polarities
   if (resolve()) return true;
   // validate instructions
   for (size_t y=0; y<m; ++y) {

@@ -161,7 +161,9 @@ class Square extends React.PureComponent {
     return (
       <div className={`square ${classNames}`} onClick={this.handler}>
         <div className="square-underlay"></div>
-        <div className="square-overlay"></div>
+        <div className="square-overlay">
+          <Svgs.CellBot/>
+        </div>
         <div className={`square-inset ${((this.props.unresolved || {}).props || {}).multi || ""}`}>
           {this.renderSymbol({symbolType:"cell", className:"cell", cellValue:(this.props.cell && String.fromCharCode(this.props.cell.resolved())), cell:this.props.cell, symbolGroup:this.props.unresolved, index:this.props.unresolved_index})}
         </div>
@@ -293,10 +295,10 @@ class Game extends React.Component {
   }
 
   symbolTypesUnresolved = [
-    {type: "unresolved", subtype: "x", value: "x", svg: Svgs.XCell, className: "resolved-x unlatched"},
-    {type: "unresolved", subtype: "+", value: "+", svg: Svgs.PlusCell, className: "resolved-x unlatched"},
     {type: "unresolved", subtype: "/", value: "/", svg: Svgs.XCell, className: "resolved-1 latched"},
     {type: "unresolved", subtype: "\\", value: "\\", svg: Svgs.XCell, className: "resolved-0 latched"},
+    {type: "unresolved", subtype: "x", value: "x", svg: Svgs.XCell, className: "resolved-x unlatched"},
+    {type: "unresolved", subtype: "+", value: "+", svg: Svgs.PlusCell, className: "resolved-x unlatched"},
     {type: "unresolved", subtype: "-", value: "-", svg: Svgs.PlusCell, className: "resolved-1 latched"},
     {type: "unresolved", subtype: "|", value: "|", svg: Svgs.PlusCell, className: "resolved-0 latched"},
     {type: "unresolved", subtype: "][", value: "][", svg: Svgs.HorizontalCell, multi: "horizontal"},
