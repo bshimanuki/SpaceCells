@@ -70,6 +70,55 @@ function svgForCell(c) {
   }
 }
 
+const symbolTypesCellSymbol = [
+  {type: "cellSymbol", subtype: "/", value: "/", svg: Svgs.XCell, className: "resolved-1 latched"},
+  {type: "cellSymbol", subtype: "\\", value: "\\", svg: Svgs.XCell, className: "resolved-0 latched"},
+  {type: "cellSymbol", subtype: "x", value: "x", svg: Svgs.XCell, className: "resolved-x unlatched"},
+  {type: "cellSymbol", subtype: "+", value: "+", svg: Svgs.PlusCell, className: "resolved-x unlatched"},
+  {type: "cellSymbol", subtype: "-", value: "-", svg: Svgs.PlusCell, className: "resolved-1 latched"},
+  {type: "cellSymbol", subtype: "|", value: "|", svg: Svgs.PlusCell, className: "resolved-0 latched"},
+  {type: "cellSymbol", subtype: "][", value: "][", svg: Svgs.HorizontalCell, multi: "horizontal"},
+  {type: "cellSymbol", subtype: "W\nM", value: "WM", svg: Svgs.VerticalCell, multi: "vertical"},
+  {type: "cellSymbol", subtype: "<x", value: "<x", svg: Svgs.DiodeLeft, multi: "horizontal"},
+  {type: "cellSymbol", subtype: "x\nv", value: "xv", svg: Svgs.DiodeDown, multi: "vertical"},
+  {type: "cellSymbol", subtype: "^\nx", value: "^x", svg: Svgs.DiodeUp, multi: "vertical"},
+  {type: "cellSymbol", subtype: "x>", value: "x>", svg: Svgs.DiodeRight, multi: "horizontal"},
+];
+const symbolTypesDirection = [
+  {type: "direction", subtype: "<", value: "<", svg: Svgs.DirectionLeft},
+  {type: "direction", subtype: "v", value: "v", svg: Svgs.DirectionDown},
+  {type: "direction", subtype: ">", value: ">", svg: Svgs.DirectionRight},
+  {type: "direction", subtype: "^", value: "^", svg: Svgs.DirectionUp},
+];
+const symbolTypesOperation = [
+  {type: "operation", subtype: "START", value: "S", svg: Svgs.Start},
+  {type: "operation", subtype: "NEXT", value: "n", svg: Svgs.Next},
+  {type: "operation", subtype: "GRAB/DROP", options: {g: ["GRAB", Svgs.Grab], d: ["DROP", Svgs.Drop], w: ["GRAB/DROP", Svgs.Swap]}},
+  {type: "operation", subtype: "LOCK/FREE", options: {l: ["LOCK", Svgs.Latch], u: ["FREE", Svgs.Unlatch], t: ["LOCK/FREE", Svgs.ToggleLatch]}},
+  {type: "operation", subtype: "RESET", value: "*", svg: Svgs.Relatch},
+  {type: "operation", subtype: "SYNC", value: "s", svg: Svgs.Sync},
+  {type: "operation", subtype: "ROTATE", value: "r", svg: Svgs.Rotate},
+  {type: "operation", subtype: "BRANCH(|/)", options: {"<": ["<", Svgs.Branch1Left], "v": ["v", Svgs.Branch1Down], ">": [">", Svgs.Branch1Right], "^": ["^", Svgs.Branch1Up]}},
+  {type: "operation", subtype: "BRANCH(-\\)", options: {"[": ["<", Svgs.Branch0Left], "W": ["v", Svgs.Branch0Down], "]": [">", Svgs.Branch0Right], "M": ["^", Svgs.Branch0Up]}},
+  {type: "operation", subtype: "POWER", options: {p: ["TOGGLE POWER 1", Svgs.Power0], P: ["TOGGLE POWER 2", Svgs.Power1]}},
+];
+
+function makeSymbolTypesByValue(symbolTypes) {
+  let symbolTypesByValue = {};
+  for (let symbolTypeGroup of symbolTypes) {
+    if (symbolTypeGroup.value) symbolTypesByValue[symbolTypeGroup.value] = symbolTypeGroup;
+    else {
+      for (let symbolTypeValue in symbolTypeGroup.options) {
+        symbolTypesByValue[symbolTypeValue] = symbolTypeGroup;
+      }
+    }
+  }
+  return symbolTypesByValue;
+}
+const symbolTypesCellByValue = makeSymbolTypesByValue(symbolTypesCellSymbol);
+const symbolTypesDirectionByValue = makeSymbolTypesByValue(symbolTypesDirection);
+const symbolTypesOperationByValue = makeSymbolTypesByValue(symbolTypesOperation);
+
 class Symbol extends React.PureComponent {
   constructor(props) {
     super(props);
@@ -164,8 +213,8 @@ class Square extends React.PureComponent {
         <div className="square-overlay">
           <Svgs.CellBot/>
         </div>
-        <div className={`square-inset ${((this.props.unresolved || {}).props || {}).multi || ""}`}>
-          {this.renderSymbol({symbolType:"cell", className:"cell", cellValue:(this.props.cell && String.fromCharCode(this.props.cell.resolved())), cell:this.props.cell, symbolGroup:this.props.unresolved, index:this.props.unresolved_index})}
+        <div className={`square-inset ${((this.props.cellSymbol || {}).props || {}).multi || ""}`}>
+          {this.renderSymbol({symbolType:"cell", className:"cell", cellValue:(this.props.cell && String.fromCharCode(this.props.cell.resolved())), cell:this.props.cell, symbolGroup:this.props.cellSymbol, index:this.props.cellSymbol_index})}
         </div>
         <div className="square-inset">
           {this.renderSymbol({symbolType:"instruction", className:"bot0 instruction operation", symbolGroup:this.props.operation[0]})}
@@ -241,6 +290,9 @@ class Game extends React.Component {
       levelData: null,
       squares: Array.from({length: this.props.m}, e => Array.from({length: this.props.n}, this.makeEmptySquare)),
       submission: "",
+      submissionHistory: [],
+      submissionFuture: [],
+      submissionIndex: -1,
       // backend
       board: null, // Emscripten pointer
       cells: [], // 2D array of Emscripten pointers
@@ -263,7 +315,7 @@ class Game extends React.Component {
       simState: "stop",
       simTimeout: null,
       // selection
-      symbolType: "unresolved",
+      symbolType: "cellSymbol",
       bot: 0,
       selectedSymbolGroup: null,
       selectedSymbolGroupState: null,
@@ -280,12 +332,12 @@ class Game extends React.Component {
       let [symbolGroup, index] = func(square);
       return (((symbolGroup || {}).state || {}).value || {})[index] || "_";
     }).join("")).join("\n");
-    var unresolved = join(square => [square.unresolved, square.unresolved_index])
+    var cellSymbol = join(square => [square.cellSymbol, square.cellSymbol_index])
     var direction0 = join(square => [square.direction[0], 0])
     var operation0 = join(square => [square.operation[0], 0])
     var direction1 = join(square => [square.direction[1], 0])
     var operation1 = join(square => [square.operation[1], 0])
-    return [unresolved, direction0, operation0, direction1, operation1].join("\n\n");
+    return [cellSymbol, direction0, operation0, direction1, operation1].join("\n\n");
   }
 
   renderSymbolGroup(type, props) {
@@ -294,44 +346,11 @@ class Game extends React.Component {
     );
   }
 
-  symbolTypesUnresolved = [
-    {type: "unresolved", subtype: "/", value: "/", svg: Svgs.XCell, className: "resolved-1 latched"},
-    {type: "unresolved", subtype: "\\", value: "\\", svg: Svgs.XCell, className: "resolved-0 latched"},
-    {type: "unresolved", subtype: "x", value: "x", svg: Svgs.XCell, className: "resolved-x unlatched"},
-    {type: "unresolved", subtype: "+", value: "+", svg: Svgs.PlusCell, className: "resolved-x unlatched"},
-    {type: "unresolved", subtype: "-", value: "-", svg: Svgs.PlusCell, className: "resolved-1 latched"},
-    {type: "unresolved", subtype: "|", value: "|", svg: Svgs.PlusCell, className: "resolved-0 latched"},
-    {type: "unresolved", subtype: "][", value: "][", svg: Svgs.HorizontalCell, multi: "horizontal"},
-    {type: "unresolved", subtype: "W\nM", value: "WM", svg: Svgs.VerticalCell, multi: "vertical"},
-    {type: "unresolved", subtype: "<x", value: "<x", svg: Svgs.DiodeLeft, multi: "horizontal"},
-    {type: "unresolved", subtype: "x\nv", value: "xv", svg: Svgs.DiodeDown, multi: "vertical"},
-    {type: "unresolved", subtype: "^\nx", value: "^x", svg: Svgs.DiodeUp, multi: "vertical"},
-    {type: "unresolved", subtype: "x>", value: "x>", svg: Svgs.DiodeRight, multi: "horizontal"},
-  ];
-  symbolTypesDirection = [
-    {type: "direction", subtype: "<", value: "<", svg: Svgs.DirectionLeft},
-    {type: "direction", subtype: "v", value: "v", svg: Svgs.DirectionDown},
-    {type: "direction", subtype: ">", value: ">", svg: Svgs.DirectionRight},
-    {type: "direction", subtype: "^", value: "^", svg: Svgs.DirectionUp},
-  ];
-  symbolTypesOperation = [
-    {type: "operation", subtype: "START", value: "S", svg: Svgs.Start},
-    {type: "operation", subtype: "NEXT", value: "n", svg: Svgs.Next},
-    {type: "operation", subtype: "GRAB/DROP", options: {g: ["GRAB", Svgs.Grab], d: ["DROP", Svgs.Drop], w: ["GRAB/DROP", Svgs.Swap]}},
-    {type: "operation", subtype: "LOCK/FREE", options: {l: ["LOCK", Svgs.Latch], u: ["FREE", Svgs.Unlatch], t: ["LOCK/FREE", Svgs.ToggleLatch]}},
-    {type: "operation", subtype: "RESET", value: "*", svg: Svgs.Relatch},
-    {type: "operation", subtype: "SYNC", value: "s", svg: Svgs.Sync},
-    {type: "operation", subtype: "ROTATE", value: "r", svg: Svgs.Rotate},
-    {type: "operation", subtype: "BRANCH(|/)", options: {"<": ["<", Svgs.Branch1Left], "v": ["v", Svgs.Branch1Down], ">": [">", Svgs.Branch1Right], "^": ["^", Svgs.Branch1Up]}},
-    {type: "operation", subtype: "BRANCH(-\\)", options: {"[": ["<", Svgs.Branch0Left], "W": ["v", Svgs.Branch0Down], "]": [">", Svgs.Branch0Right], "M": ["^", Svgs.Branch0Up]}},
-    {type: "operation", subtype: "POWER", options: {p: ["TOGGLE POWER 1", Svgs.Power0], P: ["TOGGLE POWER 2", Svgs.Power1]}},
-  ];
 
   makeEmptySquare() {
     return {
-      unresolved: null,
-      unresolved_index: null,
-      resolved: null,
+      cellSymbol: null,
+      cellSymbol_index: null,
       direction: [null, null],
       operation: [null, null],
     }
@@ -340,17 +359,17 @@ class Game extends React.Component {
   makeFixedCell(...args) {
     let square = this.makeEmptySquare();
     let [xSymbolGroup] = this.makeSymbol(...args);
-    square.unresolved = xSymbolGroup;
-    square.unresolved_index = 0;
+    square.cellSymbol = xSymbolGroup;
+    square.cellSymbol_index = 0;
     return square;
   }
 
   makeSymbol(type, c) {
     if ("._ ".includes(c)) return [null];
     var symbols;
-    if (type === "unresolved") symbols = this.symbolTypesUnresolved;
-    else if (type === "direction") symbols = this.symbolTypesDirection;
-    else if (type === "operation") symbols = this.symbolTypesOperation;
+    if (type === "cellSymbol") symbols = symbolTypesCellSymbol;
+    else if (type === "direction") symbols = symbolTypesDirection;
+    else if (type === "operation") symbols = symbolTypesOperation;
     else return [];
     for (let symbolType of symbols) {
       if ((symbolType.value || "").includes(c)) {
@@ -398,9 +417,9 @@ class Game extends React.Component {
           }
         }
         for (let y=0; y<grid.length; ++y) for (let x=0; x<grid[y].length; ++x) {
-          if (type === "unresolved") {
-            newState.squares[y][x].unresolved = grid[y][x];
-            newState.squares[y][x].unresolved_index = indices[y][x];
+          if (type === "cellSymbol") {
+            newState.squares[y][x].cellSymbol = grid[y][x];
+            newState.squares[y][x].cellSymbol_index = indices[y][x];
           } else {
             newState.squares[y][x][type][bot] = grid[y][x];
           }
@@ -409,7 +428,7 @@ class Game extends React.Component {
       };
       var lines = submission.split(/(?:\r?\n)+/);
       var valid = true;
-      valid &= parse("unresolved", null, lines.slice(0, state.board.m));
+      valid &= parse("cellSymbol", null, lines.slice(0, state.board.m));
       valid &= parse("direction", 0, lines.slice(state.board.m, 2*state.board.m));
       valid &= parse("operation", 0, lines.slice(2*state.board.m, 3*state.board.m));
       valid &= parse("direction", 1, lines.slice(3*state.board.m, 4*state.board.m));
@@ -458,7 +477,7 @@ class Game extends React.Component {
           </div>
           <div className="bottom-bar" style={{display:"flex", flexDirection:"column"}}>
             <div className="toggle-bar" style={{display:"flex", flexDirection:"row"}}>
-              <Toggle handler={this.symbolTypeHandler} selected={this.state.symbolType} name="symbol-type" options={{unresolved:"Cells", instruction:"Instructions"}}/>
+              <Toggle handler={this.symbolTypeHandler} selected={this.state.symbolType} name="symbol-type" options={{cellSymbol:"Cells", instruction:"Instructions"}}/>
               <Toggle handler={this.botHandler} selected={this.state.bot} name="bot" options={["Red", "Blue"]} colors={this.botColors}/>
               <Toggle handler={this.simHandler} selected={this.state.simState} name="sim" options={{stop:"⏹", pause:"⏸", step:"⧐", play:"▶", fast:"⏩", nonstop:"⏭"}}/>
               <div style={{flex:1}}></div>
@@ -466,9 +485,9 @@ class Game extends React.Component {
             </div>
             <div className={`symbol-bar bot${this.state.bot}`} style={{display:"flex", flexDirection:"row"}}>
               <div className="symbol-grid-bar grid-layout" style={{flex:3}}>
-                {this.symbolTypesUnresolved.map(props => this.renderSymbolGroup("unresolved", props))}
-                {this.symbolTypesDirection.map(props => this.renderSymbolGroup("instruction", props))}
-                {this.symbolTypesOperation.map(props => this.renderSymbolGroup("instruction", props))}
+                {symbolTypesCellSymbol.map(props => this.renderSymbolGroup("cellSymbol", props))}
+                {symbolTypesDirection.map(props => this.renderSymbolGroup("instruction", props))}
+                {symbolTypesOperation.map(props => this.renderSymbolGroup("instruction", props))}
               </div>
               <div className="symbol-options-bar" style={{flex:1, display:"flex", flexDirection:"column"}}>
                 <SymbolOptions changeOption={this.changeSymbolOption} {...this.state.selectedSymbolGroupState}/>
@@ -597,16 +616,16 @@ class Game extends React.Component {
       if (this.state.selectedSymbolGroup && this.state.selectedSymbolGroup.state) {
         var locs = [[y, x]];
         // js doesn't have references...
-        if (this.state.selectedSymbolGroup.props.type === "unresolved") {
-          var current = this.state.squares[y][x].unresolved;
+        if (this.state.selectedSymbolGroup.props.type === "cellSymbol") {
+          var current = this.state.squares[y][x].cellSymbol;
           if (this.state.selectedSymbolGroup.props.multi === "horizontal") {
             if (x + 1 >= this.props.n) return;
             locs.push([y, x + 1]);
-            var partner = this.state.squares[y][x + 1].unresolved;
+            var partner = this.state.squares[y][x + 1].cellSymbol;
           } else if (this.state.selectedSymbolGroup.props.multi === "vertical") {
             if (y + 1 >= this.props.m) return;
             locs.push([y + 1, x]);
-            var partner = this.state.squares[y + 1][x].unresolved;
+            var partner = this.state.squares[y + 1][x].cellSymbol;
           } else {
             var partner = {state: false};
           }
@@ -630,15 +649,15 @@ class Game extends React.Component {
           var symbolClone = {props: {...this.state.selectedSymbolGroup.props}, state: {...this.state.selectedSymbolGroup.state}};
           symbolClone.setState = (func, callback) => {symbolClone.state = Object.assign(symbolClone.state, func(symbolClone.state, symbolClone.props)); callback()};
           var newState = {squares: this.state.squares.map(row => row.map(square => ({...square})))};
-          if (this.state.selectedSymbolGroup.props.type === "unresolved") {
-            newState.squares[y][x].unresolved = symbolClone;
-            newState.squares[y][x].unresolved_index = 0;
+          if (this.state.selectedSymbolGroup.props.type === "cellSymbol") {
+            newState.squares[y][x].cellSymbol = symbolClone;
+            newState.squares[y][x].cellSymbol_index = 0;
             if (this.state.selectedSymbolGroup.props.multi === "horizontal") {
-              newState.squares[y][x + 1].unresolved = symbolClone;
-              newState.squares[y][x + 1].unresolved_index = 1;
+              newState.squares[y][x + 1].cellSymbol = symbolClone;
+              newState.squares[y][x + 1].cellSymbol_index = 1;
             } else if (this.state.selectedSymbolGroup.props.multi === "vertical") {
-              newState.squares[y + 1][x].unresolved = symbolClone;
-              newState.squares[y + 1][x].unresolved_index = 1;
+              newState.squares[y + 1][x].cellSymbol = symbolClone;
+              newState.squares[y + 1][x].cellSymbol_index = 1;
             }
           } else {
             newState.squares[y][x][this.state.selectedSymbolGroup.props.type][this.state.bot] = symbolClone;
@@ -760,6 +779,8 @@ class Game extends React.Component {
           var newState = {
             levelName: value,
             levelData: text,
+            submissionHistory: [],
+            submissionFuture: [],
           }
           var submission = this.makeSubmission(this.state.squares, this.props.m, this.props.n);
           var board = Module.LoadBoard(text, submission);
@@ -769,8 +790,8 @@ class Game extends React.Component {
           let levelGrid = board.get_level();
           newState.squares = this.state.squares.map((row, y) => row.map((square, x) => {
             let levelValue = String.fromCharCode(levelGrid.at(y, x));
-            if (levelValue === "x") return this.makeFixedCell("unresolved", "x");
-            if (levelValue === "+") return this.makeFixedCell("unresolved", "+");
+            if (levelValue === "x") return this.makeFixedCell("cellSymbol", "x");
+            if (levelValue === "+") return this.makeFixedCell("cellSymbol", "+");
             if (y < board.m && x < board.n && !cellAllowed(levelValue)) return this.makeEmptySquare();
             return {...square};
           }));
