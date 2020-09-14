@@ -6,6 +6,8 @@ import * as Svgs from "./svgs.jsx";
 import Embindings from "./embindings.js";
 import EmbindingsWASM from "./embindings.wasm";
 
+const MAX_HISTORY = 1000;
+
 var Module;
 const EmbindingsLoader = Embindings({
   locateFile: () => EmbindingsWASM,
@@ -40,6 +42,15 @@ function getFileFromServer(url, doneCallback) {
   }
   xhr.open("GET", url, true);
   xhr.send();
+}
+
+function isTextBox(element) {
+  let tagName = element.tagName.toLowerCase();
+  if (tagName === "textarea") return true;
+  if (tagName !== "input") return false;
+  let type = element.type.toLowerCase();
+  const inputTypes = ["text", "password", "number", "email", "tel", "url", "search", "date", "datetime", "datetime-local", "time", "month", "week"];
+  return inputTypes.includes(type);
 }
 
 function matchLocation(object, y, x) {
@@ -304,6 +315,7 @@ class Game extends React.Component {
     this.symbolTypeHandler = this.symbolTypeHandler.bind(this);
     this.botHandler = this.botHandler.bind(this);
     this.simHandler = this.simHandler.bind(this);
+    this.keyboardHandler = this.keyboardHandler.bind(this);
     this.resetBoard = this.resetBoard.bind(this);
     this.resetCells = this.resetCells.bind(this);
     this.trash = this.trash.bind(this);
@@ -353,7 +365,12 @@ class Game extends React.Component {
   }
 
   componentDidMount() {
+    window.addEventListener("keydown", this.keyboardHandler)
     this.setLevelHandler({target: {value: this.state.levelName}});
+  }
+
+  componentWillUnmount() {
+    window.removeEventListener("keydown", this.keyboardHandler)
   }
 
   makeSubmission(squares, m, n) {
@@ -419,7 +436,7 @@ class Game extends React.Component {
     return [];
   }
 
-  loadSubmission(submission) {
+  loadSubmission(submission, {undoredo}) {
     var makeNewState = (state, props) => {
       var newState = {squares: state.squares.map(row => row.map(square => {
         let d = {};
@@ -469,7 +486,7 @@ class Game extends React.Component {
       }
       return [null, newState];
     };
-    this.resetBoard(makeNewState);
+    this.resetBoard({makeNewState, undoredo});
   }
 
   render() {
@@ -701,15 +718,52 @@ class Game extends React.Component {
     }
   }
 
-  resetBoard(makeNewState) {
+  keyboardHandler(event) {
+    if (isTextBox(event.target)) return;
+    if (event.ctrlKey) {
+      switch (event.key) {
+      case "z": return this.undo();
+      case "Z": return this.redo();
+      }
+    }
+  }
+
+  undo() {
+    if (this.state.submissionHistory.length > 1) {
+      let item = this.state.submissionHistory.pop();
+      this.state.submissionFuture.push(item);
+      item = this.state.submissionHistory[this.state.submissionHistory.length - 1]
+      this.loadSubmission(item, {undoredo:true});
+    }
+  }
+
+  redo() {
+    if (this.state.submissionFuture.length) {
+      let item = this.state.submissionFuture.pop();
+      this.state.submissionHistory.push(item);
+      this.loadSubmission(item, {undoredo:true});
+    }
+  }
+
+  resetBoard({...args}) {
     this.setState((state, props) => {
-      if (makeNewState) {
-        var [error, newState] = makeNewState(state, props);
+      if (args.makeNewState) {
+        var [error, newState] = args.makeNewState(state, props);
         if (error) return {error: error};
       } else var newState = {};
       if (state.board) state.board.delete();
       let stateGet = key => newState[key] || state[key];
       newState.submission = this.makeSubmission(stateGet("squares"), props.m, props.n);
+      if (args.undoredo) {
+        console.log(state.selectedSymbolState);
+        if (state.selectedSymbolState.onBoard) newState.selectedSymbolState = nullSymbolState;
+      } else {
+        if (newState.submission !== state.submissionHistory[state.submissionHistory.length-1]) {
+          state.submissionHistory.push(newState.submission);
+          if (state.submissionHistory.length > 2 * MAX_HISTORY) state.submissionHistory = state.submissionHistory.slice(state.submissionHistory.length - MAX_HISTORY);
+          newState.submissionFuture = [];
+        }
+      }
       newState.board = Module.LoadBoard(stateGet("levelData"), newState.submission);
       var trespassable = newState.board.get_trespassable();
       newState.trespassable = Array.from({length: newState.board.m}).map((row, y) => Array.from({length: newState.board.n}).map((cell, x) => {
