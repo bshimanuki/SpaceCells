@@ -152,6 +152,7 @@ function SymbolState(props) {
     onBoard: false,
     bot: null,
     trace: [],
+    additionalClassNames: "",
   }, props);
 }
 const nullSymbolState = SymbolState();
@@ -159,17 +160,19 @@ const nullSymbolState = SymbolState();
 class Symbol extends React.PureComponent {
   constructor(props) {
     super(props);
-    this.handler = this.handler.bind(this);
+    this.clickHandler = this.clickHandler.bind(this);
   }
-  handler(event) {
+  clickHandler(event) {
     event.stopPropagation();
-    this.props.handler(this.props.y, this.props.x, this.props.symbolState);
+    this.props.clickHandler(this.props.y, this.props.x, this.props.symbolState);
   }
   render() {
     var classNames = []
+    classNames.push(this.props.symbolState.additionalClassNames);
     classNames.push("symbol");
     classNames.push("image-container");
     if (this.props.selectedSymbolState === this.props.symbolState) classNames.push("selected");
+    if (this.props.draggedSymbolState === this.props.symbolState) classNames.push("dragged");
     if (this.props.symbolType === "cell") {
       if (this.props.index || !this.props.cell || !this.props.cell.exists) {
         return <div></div>;
@@ -186,7 +189,7 @@ class Symbol extends React.PureComponent {
       let Component = svgForCell(this.props.cell);
       return (
         <div className={classNames}>
-          <Component className="image-base symbol" onClick={this.handler}/>
+          <Component className="image-base symbol" onClick={this.clickHandler}/>
         </div>
       );
     } else {
@@ -200,7 +203,7 @@ class Symbol extends React.PureComponent {
       let Component = symbolType.svg || symbolType.options[this.props.symbolState.value][1];
       return (
         <div className={`symbol-shift ${classNames} ${this.props.className}`}>
-          <Component className="image-base symbol" onClick={this.handler}/>
+          <Component className="image-base symbol" onClick={this.clickHandler}/>
         </div>
       );
     }
@@ -210,26 +213,28 @@ class Symbol extends React.PureComponent {
 class Square extends React.PureComponent {
   constructor(props) {
     super(props);
-    this.handler = this.handler.bind(this);
+    this.clickHandler = this.clickHandler.bind(this);
   }
 
-  handler() {
-    this.props.handler(this.props.y, this.props.x, null, null);
+  clickHandler() {
+    this.props.clickHandler(this.props.y, this.props.x, null, null);
   }
 
   renderSymbol(props) {
     const selected = this.props.selectedSymbolState === props.symbolState;
+    const dragged = this.props.draggedSymbolState === props.symbolState;
     return (
       <Symbol
         selectedSymbolState={selected ? this.props.selectedSymbolState : nullSymbolState}
+        draggedSymbolState={dragged ? this.props.draggedSymbolState : nullSymbolState}
         y={this.props.y}
         x={this.props.x}
         index={0}
         simBoard={this.props.simBoard}
         stopped={this.props.stopped}
-        flipflop={selected && this.props.flipflop}
+        flipflop={(dragged || selected) && this.props.flipflop}
         {...props}
-        handler={this.props.handler}
+        clickHandler={this.props.clickHandler}
       />
     );
   }
@@ -251,7 +256,7 @@ class Square extends React.PureComponent {
     cellBotClassNames = cellBotClassNames.join(" ");
     const cellSymbolType = symbolTypeByState(this.props.cellSymbol);
     return (
-      <div className={`square ${classNames}`} onClick={this.handler}>
+      <div className={`square ${classNames}`} onClick={this.clickHandler}>
         <div className="square-underlay"></div>
         <div className={`square-overlay ${cellBotClassNames}`}>
           <Svgs.CellBot/>
@@ -273,13 +278,15 @@ class Square extends React.PureComponent {
 class Board extends React.PureComponent {
   renderSquare(props) {
     const selected = this.props.selectedSymbolState && this.props.selectedSymbolState.onBoard && this.props.selectedSymbolState.trace.includes(props.y) && this.props.selectedSymbolState.trace.includes(props.x);
+    const dragged = this.props.draggedSymbolState && this.props.draggedSymbolState.onBoard && this.props.draggedSymbolState.trace.includes(props.y) && this.props.draggedSymbolState.trace.includes(props.x);
     return (<Square
       key={props.y,props.x}
-      handler={this.props.handler}
+      clickHandler={this.props.clickHandler}
       simBoard={this.props.simBoard}
       selectedSymbolState={selected ? this.props.selectedSymbolState : nullSymbolState}
+      draggedSymbolState={dragged ? this.props.draggedSymbolState : nullSymbolState}
       stopped={this.props.stopped}
-      flipflop={selected && this.props.flipflop}
+      flipflop={(dragged || selected) && this.props.flipflop}
       {...props}
     />);
   }
@@ -313,8 +320,9 @@ class Board extends React.PureComponent {
 class Game extends React.Component {
   constructor(props) {
     super(props);
-    this.symbolHandler = this.symbolHandler.bind(this);
-    this.boardHandler = this.boardHandler.bind(this);
+    this.symbolDragHandler = this.symbolDragHandler.bind(this);
+    this.symbolClickHandler = this.symbolClickHandler.bind(this);
+    this.boardClickHandler = this.boardClickHandler.bind(this);
     this.changeSymbolOption = this.changeSymbolOption.bind(this);
     this.symbolTypeHandler = this.symbolTypeHandler.bind(this);
     this.botHandler = this.botHandler.bind(this);
@@ -363,6 +371,8 @@ class Game extends React.Component {
       selectedSymbolState: nullSymbolState,
       selectionSymbolStateCellSymbols: initialSelectionSymbolStates("selectionSymbolStateCellSymbols", symbolTypesCellSymbol),
       selectionSymbolStateInstructions: initialSelectionSymbolStates("selectionSymbolStateInstructions", [...symbolTypesDirection, ...symbolTypesOperation]),
+      draggedSymbolState: nullSymbolState,
+      dragNewPosition: null,
       // state change indicator alternate between +/-1
       flipflop: 1,
     };
@@ -392,12 +402,15 @@ class Game extends React.Component {
 
   renderSymbolGroup(type, symbolState) {
     const selected = this.state.selectedSymbolState && !this.state.selectedSymbolState.onBoard;
+    const dragged = this.state.draggedSymbolState && !this.state.draggedSymbolState.onBoard;
     return (
       <SymbolGroup
         key={symbolTypeByState(symbolState).subtype}
         active={this.state.symbolType===type}
-        handler={this.symbolHandler}
+        dragHandler={this.symbolDragHandler}
+        clickHandler={this.symbolClickHandler}
         selectedSymbolState={selected ? this.state.selectedSymbolState : nullSymbolState}
+        draggedSymbolState={dragged ? this.state.draggedSymbolState : nullSymbolState}
         bot={this.state.bot}
         symbolState={symbolState}
         flipflop={selected && this.state.flipflop}
@@ -509,8 +522,9 @@ class Game extends React.Component {
         <div className="center-content" style={{display:"flex", flexDirection:"column", alignItems:"center", width:"min-content"}}>
           <div style={{display:"flex", width:"min-content"}} className="game-board">
             <Board
-              handler={this.boardHandler}
+              clickHandler={this.boardClickHandler}
               selectedSymbolState={this.state.selectedSymbolState}
+              draggedSymbolState={this.state.draggedSymbolState}
               simBoard={this.state.validBoard || this.state.cycle}
               stopped={this.state.simState==="stop"}
               m={this.props.m}
@@ -649,7 +663,7 @@ class Game extends React.Component {
       });
   }
 
-  boardHandler(y, x, symbolState) {
+  boardClickHandler(y, x, symbolState) {
     if (this.state.simState !== "stop") return;
     if (symbolState) {
       if (this.state.inputs.some(square => matchLocation(square, y, x))) {
@@ -905,7 +919,7 @@ class Game extends React.Component {
     this.loadSubmission(this.state.submission);
   }
 
-  symbolHandler(symbolState) {
+  symbolClickHandler(symbolState) {
     if (this.state.simState !== "stop") return;
     this.setState({selectedSymbolState: symbolState});
   }
@@ -917,6 +931,19 @@ class Game extends React.Component {
     for (let i=0; i<trace.length; ++i) state = state[trace[i]];
     state.value = value;
     this.setState((state, props) => ({flipflop: -state.flipflop}))
+  }
+
+  symbolDragHandler(event, symbolState) {
+    if (event.type === "dragstart") {
+      console.log({...event});
+      let symbolType = symbolTypeByState(symbolState);
+      symbolState.classNames = "drag";
+      this.setState({draggedSymbolState: symbolState});
+    }
+    if (event.type === "dragend") {
+      symbolState.classNames = "";
+      this.setState({draggedSymbolState: nullSymbolState});
+    }
   }
 }
 
@@ -947,13 +974,25 @@ class SymbolGroup extends React.PureComponent {
     const symbolState = this.props.symbolState;
     const symbolType = symbolTypeByState(symbolState);
     const Component = symbolType.svg || symbolType.options[symbolState.value][1];
+    let classNames = [];
+    classNames.push("image-container");
+    classNames.push("symbolgroup");
+    classNames.push(symbolState.type);
+    classNames.push(`symbol-${symbolState.value}`);
+    if (this.props.selectedSymbolState === this.props.symbolState) classNames.push("selected");
+    if (this.props.draggedSymbolState === this.props.symbolState) classNames.push("dragged");
+    classNames.push(symbolType.className || "");
+    classNames.push(symbolType.multi || "");
+    classNames.push(this.props.symbolState.additionalClassNames);
+    classNames = classNames.join(" ");
     return (
-      <div className={`image-container symbolgroup ${symbolState.type} symbol-${symbolState.value} ${this.props.selectedSymbolState === this.props.symbolState ? "selected" : ""} ${symbolType.className || ""} ${symbolType.multi || ""}`} onClick={this.handler}>
+      <div className={classNames} onClick={this.clickHandler} onDrag={this.dragHandler} onDragStart={this.dragHandler} onDragEnd={this.dragHandler} draggable>
         <Component className="image-base"/>
       </div>
     );
   }
-  handler = () => { this.props.handler(this.props.symbolState); };
+  clickHandler = () => { this.props.clickHandler(this.props.symbolState); };
+  dragHandler = (event) => { this.props.dragHandler(event, this.props.symbolState); };
 }
 
 class SymbolOptions extends React.PureComponent {
