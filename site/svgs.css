@@ -31,6 +31,12 @@ svg {
 .bot1 .bot-fill {
   fill: blue;
 }
+.bot0.bot1 .bot-stroke {
+  stroke: purple;
+}
+.bot0.bot1 .bot-fill {
+  fill: purple;
+}
 
 .arrow {
   stroke-linecap: round;
