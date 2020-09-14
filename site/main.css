@@ -314,3 +314,6 @@ body {
 .dragged {
   opacity: 0.5;
 }
+.dragover {
+  background-color: green;
+}

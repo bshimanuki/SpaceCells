@@ -161,11 +161,19 @@ class Symbol extends React.PureComponent {
   constructor(props) {
     super(props);
     this.clickHandler = this.clickHandler.bind(this);
+    this.dragHandler = this.dragHandler.bind(this);
   }
+
   clickHandler(event) {
     event.stopPropagation();
     this.props.clickHandler(this.props.y, this.props.x, this.props.symbolState);
   }
+
+  dragHandler(event) {
+    event.stopPropagation();
+    this.props.dragHandler(event, this.props.y, this.props.x, this.props.symbolState);
+  }
+
   render() {
     var classNames = []
     classNames.push(this.props.symbolState.additionalClassNames);
@@ -189,7 +197,7 @@ class Symbol extends React.PureComponent {
       let Component = svgForCell(this.props.cell);
       return (
         <div className={classNames}>
-          <Component className="image-base symbol" onClick={this.clickHandler}/>
+          <Component className="image-base symbol" onClick={this.clickHandler} onDragStart={this.dragHandler} onDrag={this.dragHandler} onDragEnd={this.dragHandler}/>
         </div>
       );
     } else {
@@ -214,10 +222,15 @@ class Square extends React.PureComponent {
   constructor(props) {
     super(props);
     this.clickHandler = this.clickHandler.bind(this);
+    this.dragOverHandler = this.dragOverHandler.bind(this);
   }
 
   clickHandler() {
     this.props.clickHandler(this.props.y, this.props.x, null, null);
+  }
+
+  dragOverHandler(event) {
+    this.props.dragOverHandler(event, this.props.y, this.props.x);
   }
 
   renderSymbol(props) {
@@ -235,12 +248,14 @@ class Square extends React.PureComponent {
         flipflop={(dragged || selected) && this.props.flipflop}
         {...props}
         clickHandler={this.props.clickHandler}
+        dragHandler={this.props.dragHandler}
       />
     );
   }
 
   render() {
     var classNames = [];
+    classNames.push("square");
     if (this.props.bot0) classNames.push("bot0-loc");
     if (this.props.bot1) classNames.push("bot1-loc");
     if (this.props.trespassable !== undefined) classNames.push(this.props.trespassable ? "trespassable" : "untrespassable");
@@ -253,10 +268,11 @@ class Square extends React.PureComponent {
     var cellBotClassNames = [];
     if (this.props.bot0) cellBotClassNames.push("bot0");
     if (this.props.bot1) cellBotClassNames.push("bot1");
+    if (this.props.dragOver) cellBotClassNames.push("dragover");
     cellBotClassNames = cellBotClassNames.join(" ");
     const cellSymbolType = symbolTypeByState(this.props.cellSymbol);
     return (
-      <div className={`square ${classNames}`} onClick={this.clickHandler}>
+      <div className={classNames} onClick={this.clickHandler} onDragEnter={this.dragOverHandler} onDragOver={this.dragOverHandler} onDragLeave={this.dragOverHandler} onDrop={this.dragOverHandler}>
         <div className="square-underlay"></div>
         <div className={`square-overlay ${cellBotClassNames}`}>
           <Svgs.CellBot/>
@@ -279,14 +295,19 @@ class Board extends React.PureComponent {
   renderSquare(props) {
     const selected = this.props.selectedSymbolState && this.props.selectedSymbolState.onBoard && this.props.selectedSymbolState.trace.includes(props.y) && this.props.selectedSymbolState.trace.includes(props.x);
     const dragged = this.props.draggedSymbolState && this.props.draggedSymbolState.onBoard && this.props.draggedSymbolState.trace.includes(props.y) && this.props.draggedSymbolState.trace.includes(props.x);
+    const draggedSymbolType = symbolTypeByState(this.props.draggedSymbolState) || {};
+    const dragOver = this.props.dragOverPosition && [JSON.stringify([props.y, props.x]), JSON.stringify([props.y - (draggedSymbolType.multi === "vertical"), props.x - (draggedSymbolType.multi === "horizontal")])].includes(JSON.stringify(this.props.dragOverPosition));
     return (<Square
       key={props.y,props.x}
       clickHandler={this.props.clickHandler}
+      dragHandler={this.props.dragHandler}
+      dragOverHandler={this.props.dragOverHandler}
       simBoard={this.props.simBoard}
       selectedSymbolState={selected ? this.props.selectedSymbolState : nullSymbolState}
       draggedSymbolState={dragged ? this.props.draggedSymbolState : nullSymbolState}
+      dragOver={dragOver}
       stopped={this.props.stopped}
-      flipflop={(dragged || selected) && this.props.flipflop}
+      flipflop={(selected || dragged || dragOver) && this.props.flipflop}
       {...props}
     />);
   }
@@ -320,7 +341,8 @@ class Board extends React.PureComponent {
 class Game extends React.Component {
   constructor(props) {
     super(props);
-    this.symbolDragHandler = this.symbolDragHandler.bind(this);
+    this.dragHandler = this.dragHandler.bind(this);
+    this.dragOverHandler = this.dragOverHandler.bind(this);
     this.symbolClickHandler = this.symbolClickHandler.bind(this);
     this.boardClickHandler = this.boardClickHandler.bind(this);
     this.changeSymbolOption = this.changeSymbolOption.bind(this);
@@ -372,7 +394,7 @@ class Game extends React.Component {
       selectionSymbolStateCellSymbols: initialSelectionSymbolStates("selectionSymbolStateCellSymbols", symbolTypesCellSymbol),
       selectionSymbolStateInstructions: initialSelectionSymbolStates("selectionSymbolStateInstructions", [...symbolTypesDirection, ...symbolTypesOperation]),
       draggedSymbolState: nullSymbolState,
-      dragNewPosition: null,
+      dragOverPosition: null,
       // state change indicator alternate between +/-1
       flipflop: 1,
     };
@@ -407,13 +429,13 @@ class Game extends React.Component {
       <SymbolGroup
         key={symbolTypeByState(symbolState).subtype}
         active={this.state.symbolType===type}
-        dragHandler={this.symbolDragHandler}
+        dragHandler={this.dragHandler}
         clickHandler={this.symbolClickHandler}
         selectedSymbolState={selected ? this.state.selectedSymbolState : nullSymbolState}
         draggedSymbolState={dragged ? this.state.draggedSymbolState : nullSymbolState}
         bot={this.state.bot}
         symbolState={symbolState}
-        flipflop={selected && this.state.flipflop}
+        flipflop={(selected || dragged) && this.state.flipflop}
       />
     );
   }
@@ -523,8 +545,11 @@ class Game extends React.Component {
           <div style={{display:"flex", width:"min-content"}} className="game-board">
             <Board
               clickHandler={this.boardClickHandler}
+              dragHandler={this.dragHandler}
+              dragOverHandler={this.dragOverHandler}
               selectedSymbolState={this.state.selectedSymbolState}
               draggedSymbolState={this.state.draggedSymbolState}
+              dragOverPosition={this.state.dragOverPosition}
               simBoard={this.state.validBoard || this.state.cycle}
               stopped={this.state.simState==="stop"}
               m={this.props.m}
@@ -774,7 +799,6 @@ class Game extends React.Component {
       let stateGet = key => newState[key] || state[key];
       newState.submission = this.makeSubmission(stateGet("squares"), props.m, props.n);
       if (args.undoredo) {
-        console.log(state.selectedSymbolState);
         if (state.selectedSymbolState.onBoard) newState.selectedSymbolState = nullSymbolState;
       } else {
         if (newState.submission !== state.submissionHistory[state.submissionHistory.length-1]) {
@@ -933,16 +957,38 @@ class Game extends React.Component {
     this.setState((state, props) => ({flipflop: -state.flipflop}))
   }
 
-  symbolDragHandler(event, symbolState) {
-    if (event.type === "dragstart") {
-      console.log({...event});
+  dragHandler(event, symbolState) {
+    switch (event.type) {
+    case "dragstart":
       let symbolType = symbolTypeByState(symbolState);
       symbolState.classNames = "drag";
       this.setState({draggedSymbolState: symbolState});
-    }
-    if (event.type === "dragend") {
+      break;
+    case "drag":
+      break;
+    case "dragend":
       symbolState.classNames = "";
       this.setState({draggedSymbolState: nullSymbolState});
+      break;
+    }
+  }
+
+  dragOverHandler(event, y, x) {
+    console.log(event.type, y, x, {...event});
+    switch (event.type) {
+    case "dragenter":
+      this.setState({dragOverPosition: [y, x]});
+      break;
+    case "dragover":
+      break;
+    case "dragleave":
+      this.setState((state, props) => {
+        if (JSON.stringify(state.dragOverPosition) === JSON.stringify([y, x])) return {dragOverPosition: null};
+        return null;
+      });
+      break;
+    case "drop":
+      break;
     }
   }
 }
