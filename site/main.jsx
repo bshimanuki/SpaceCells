@@ -171,7 +171,7 @@ class Symbol extends React.PureComponent {
 
   dragHandler(event) {
     event.stopPropagation();
-    this.props.dragHandler(event, this.props.y, this.props.x, this.props.symbolState);
+    this.props.dragHandler(event, this.props.symbolState);
   }
 
   render() {
@@ -181,6 +181,13 @@ class Symbol extends React.PureComponent {
     classNames.push("image-container");
     if (this.props.selectedSymbolState === this.props.symbolState) classNames.push("selected");
     if (this.props.draggedSymbolState === this.props.symbolState) classNames.push("dragged");
+    let props = {
+      onClick: this.clickHandler,
+      onDragStart: this.dragHandler,
+      onDrag: this.dragHandler,
+      onDragEnd: this.dragHandler,
+      draggable: this.props.draggable,
+    };
     if (this.props.symbolType === "cell") {
       if (this.props.index || !this.props.cell || !this.props.cell.exists) {
         return <div></div>;
@@ -197,7 +204,7 @@ class Symbol extends React.PureComponent {
       let Component = svgForCell(this.props.cell);
       return (
         <div className={classNames}>
-          <Component className="image-base symbol" onClick={this.clickHandler} onDragStart={this.dragHandler} onDrag={this.dragHandler} onDragEnd={this.dragHandler}/>
+          <Component className="image-base symbol" {...props}/>
         </div>
       );
     } else {
@@ -211,7 +218,7 @@ class Symbol extends React.PureComponent {
       let Component = symbolType.svg || symbolType.options[this.props.symbolState.value][1];
       return (
         <div className={`symbol-shift ${classNames} ${this.props.className}`}>
-          <Component className="image-base symbol" onClick={this.clickHandler}/>
+          <Component className="image-base symbol" {...props}/>
         </div>
       );
     }
@@ -249,6 +256,7 @@ class Square extends React.PureComponent {
         {...props}
         clickHandler={this.props.clickHandler}
         dragHandler={this.props.dragHandler}
+        draggable={this.props.trespassable}
       />
     );
   }
@@ -958,10 +966,13 @@ class Game extends React.Component {
   }
 
   dragHandler(event, symbolState) {
+    console.log(event.type, {...event});
     switch (event.type) {
     case "dragstart":
       let symbolType = symbolTypeByState(symbolState);
       symbolState.classNames = "drag";
+      if (symbolState.onBoard) event.dataTransfer.effectAllowed = "move";
+      else event.dataTransfer.effectAllowed = "copy";
       this.setState({draggedSymbolState: symbolState});
       break;
     case "drag":
@@ -977,9 +988,11 @@ class Game extends React.Component {
     console.log(event.type, y, x, {...event});
     switch (event.type) {
     case "dragenter":
+      event.dataTransfer.dropEffect = event.dataTransfer.effectAllowed;
       this.setState({dragOverPosition: [y, x]});
       break;
     case "dragover":
+      event.dataTransfer.dropEffect = event.dataTransfer.effectAllowed;
       break;
     case "dragleave":
       this.setState((state, props) => {
