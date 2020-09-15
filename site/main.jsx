@@ -318,19 +318,20 @@ class Square extends React.PureComponent {
       classNames.push("output");
       classNames.push(this.props.powered ? "powered" : "unpowered");
     }
+    if (this.props.dragOver) classNames.push("dragover");
     classNames = classNames.join(" ");
     var cellBotClassNames = [];
     if (this.props.bot0) cellBotClassNames.push("bot0");
     if (this.props.bot1) cellBotClassNames.push("bot1");
-    if (this.props.dragOver) cellBotClassNames.push("dragover");
     cellBotClassNames = cellBotClassNames.join(" ");
     const cellSymbolType = symbolTypeByState(this.props.cellSymbol);
     return (
       <div className={classNames} onClick={this.clickHandler} onDragEnter={this.dragOverHandler} onDragOver={this.dragOverHandler} onDragLeave={this.dragOverHandler} onDrop={this.dragOverHandler}>
-        <div className="square-underlay"></div>
+        <div className="square-underlay"/>
         <div className={`square-overlay ${cellBotClassNames}`}>
           <Svgs.CellBot/>
         </div>
+        <div className="square-drag-overlay"/>
         <div className={`square-inset ${cellSymbolType && this.props.cellSymbolIndex === 0 ? cellSymbolType.multi : ""}`}>
           {this.renderSymbol({symbolType:"cell", className:"cell", cellValue:(this.props.cell && String.fromCharCode(this.props.cell.resolved())), cell:this.props.cell, symbolState:this.props.cellSymbol, index:this.props.cellSymbolIndex})}
         </div>
