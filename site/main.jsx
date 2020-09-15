@@ -608,6 +608,77 @@ class Game extends React.Component {
     );
   }
 
+  fits = (symbolState, y, x, dragging=false) => {
+    const symbolType = symbolTypeByState(symbolState);
+    var locs = [[y, x]];
+    var destSymbolStates = [];
+    // js doesn't have references...
+    if (symbolType.type === "cellSymbol") {
+      destSymbolStates.push(this.state.squares[y][x].cellSymbol);
+      switch (symbolType.multi) {
+      case "horizontal":
+        if (x + 1 >= this.props.n) return false;
+        locs.push([y, x + 1]);
+        destSymbolStates.push(this.state.squares[y][x + 1].cellSymbol);
+        break;
+      case "vertical":
+        if (y + 1 >= this.props.m) return false;
+        locs.push([y + 1, x]);
+        destSymbolStates.push(this.state.squares[y + 1][x].cellSymbol);
+        break;
+      default:
+        break;
+      }
+    } else {
+      destSymbolStates.push(this.state.squares[y][x][symbolType.type][this.state.bot]);
+    }
+    for (let loc of locs) {
+      let [_y, _x] = loc;
+      if (!((this.state.trespassable || {})[_y] || {})[_x]) return false;
+    }
+    for (let destSymbolState of destSymbolStates) {
+      if (destSymbolState.value && !(dragging && destSymbolState.dragging)) return false;
+    }
+    return true;
+  }
+
+  getMoveSymbols = (state, props, symbolState, position, dragging=false) => {
+    const symbolType = symbolTypeByState(symbolState);
+    const [y, x] = position;
+    let updater = {};
+    let symbolClone = Object.assign({}, symbolState, {
+      onBoard: true,
+    });
+    if (!symbolState.onBoard) {
+      symbolClone.bot = state.bot;
+      symbolClone.selected = false;
+      symbolClone.dragged = false;
+    }
+    if (symbolType.type === "cellSymbol") {
+      symbolClone.trace = ["squares", y, x, symbolType.type];
+      nest([y, x], {
+        cellSymbol: {$set: symbolClone},
+        cellSymbolIndex: {$set: 0},
+      }, updater);
+      if (symbolType.multi === "horizontal") {
+        nest([y, x + 1], {
+          cellSymbol: {$set: symbolClone},
+          cellSymbolIndex: {$set: 1},
+        }, updater);
+      } else if (symbolType.multi === "vertical") {
+        nest([y + 1, x], {
+          cellSymbol: {$set: symbolClone},
+          cellSymbolIndex: {$set: 1},
+        }, updater);
+      }
+    } else {
+      symbolClone.trace = ["squares", y, x, symbolType.type, symbolClone.bot];
+      nest([y, x, symbolType.type, this.state.bot], {$set: symbolClone}, updater);
+    }
+    let newState = {squares: update(state.squares, updater)};
+    return newState;
+  }
+
   getClearSelected = (state, props)  => {
     let delta = {};
     state.selectedSymbolStates.map(symbolState => nest(symbolState.trace, {selected: {$set: false}}, delta));
@@ -704,69 +775,10 @@ class Game extends React.Component {
       if (this.state.selectedSymbolStates.length === 1) {
         const selectedSymbolState = this.state.selectedSymbolStates[0];
         const symbolType = symbolTypeByState(selectedSymbolState);
-        var locs = [[y, x]];
-        // js doesn't have references...
-        if (symbolType.type === "cellSymbol") {
-          var current = this.state.squares[y][x].cellSymbol;
-          if (symbolType.multi === "horizontal") {
-            if (x + 1 >= this.props.n) return;
-            locs.push([y, x + 1]);
-            var partner = this.state.squares[y][x + 1].cellSymbol;
-          } else if (symbolType.multi === "vertical") {
-            if (y + 1 >= this.props.m) return;
-            locs.push([y + 1, x]);
-            var partner = this.state.squares[y + 1][x].cellSymbol;
-          } else {
-            var partner = nullSymbolState;
-          }
-          var selectedSymbolClone = Object.assign({}, selectedSymbolState, {
-            onBoard: true,
-            trace: ["squares", y, x, symbolType.type],
-            selected: false,
-            dragged: false,
-          });
-        } else {
-          var current = this.state.squares[y][x][symbolType.type][this.state.bot];
-          var partner = nullSymbolState;
-          var selectedSymbolClone  = Object.assign({}, selectedSymbolState, {
-            onBoard: true,
-            bot: this.state.bot,
-            trace: ["squares", y, x, symbolType.type, this.state.bot],
-            selected: false,
-            dragged: false,
-          });
-        }
-        for (let loc of locs) {
-          let [_y, _x] = loc;
-          if (this.state.inputs.some(square => matchLocation(square, _y, _x))) {
-            // inputs are fixed
-            return;
-          } else if (this.state.outputs.some(square => matchLocation(square, _y, _x))) {
-            // outputs are fixed
-            return;
-          } else if (this.state.outputs.some(square => matchLocation(square, _y, _x))) {
-            // TODO: this check is not necessary if outputs are fixed
-            let value = selectedSymbolState.value;
-            // outputs can only be unlatched 1x1 cells
-            if (value !== "x" && value !== "+") return;
-          } else if (!((this.state.trespassable || {})[_y] || {})[_x]) return;
-        }
-        if (!current.value && !partner.value) {
-          let newState = {squares: this.state.squares.map(row => row.map(square => ({...square})))};
-          if (symbolType.type === "cellSymbol") {
-            newState.squares[y][x].cellSymbol = selectedSymbolClone;
-            newState.squares[y][x].cellSymbolIndex = 0;
-            if (symbolType.multi === "horizontal") {
-              newState.squares[y][x + 1].cellSymbol = selectedSymbolClone;
-              newState.squares[y][x + 1].cellSymbolIndex = 1;
-            } else if (symbolType.multi === "vertical") {
-              newState.squares[y + 1][x].cellSymbol = selectedSymbolClone;
-              newState.squares[y + 1][x].cellSymbolIndex = 1;
-            }
-          } else {
-            newState.squares[y][x][symbolType.type][this.state.bot] = selectedSymbolClone;
-          }
-          this.setState(newState, this.resetBoard);
+        if (this.fits(selectedSymbolState, y, x)) {
+          this.setState((state, props) => {
+            return this.getMoveSymbols(state, props, selectedSymbolState, [y, x]);
+          }, this.resetBoard);
         }
       }
     }
