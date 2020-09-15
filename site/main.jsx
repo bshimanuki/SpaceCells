@@ -639,7 +639,8 @@ class Game extends React.Component {
         break;
       }
     } else {
-      destSymbolStates.push(state.squares[y][x][symbolType.type][state.bot]);
+      const bot = symbolState.onBoard ? symbolState.bot : state.bot;
+      destSymbolStates.push(state.squares[y][x][symbolType.type][bot]);
     }
     for (let loc of locs) {
       let [_y, _x] = loc;
@@ -667,9 +668,6 @@ class Game extends React.Component {
       let symbolClone = Object.assign({}, _symbolState, {
         onBoard: true,
       });
-      if (!symbolState.onBoard) {
-        symbolClone.bot = state.bot;
-      }
       if (!dragging) {
         symbolClone.selected = false;
       }
@@ -685,8 +683,11 @@ class Game extends React.Component {
           squaresUpdater = nest([y + 1, x, "cellSymbolIndex"], {$set: 1}, squaresUpdater);
         }
       } else {
+        if (!symbolState.onBoard) {
+          symbolClone.bot = state.bot;
+        }
         symbolClone.trace = ["squares", y, x, symbolType.type, symbolClone.bot];
-        squaresUpdater = nest([y, x, symbolType.type, this.state.bot], {$set: symbolClone}, squaresUpdater);
+        squaresUpdater = nest([y, x, symbolType.type, symbolClone.bot], {$set: symbolClone}, squaresUpdater);
       }
       updatedSymbolStates.add(symbolClone);
     }
@@ -742,7 +743,15 @@ class Game extends React.Component {
 
   getClearSelected = (state, props)  => {
     let delta = {};
-    state.selectedSymbolStates.forEach(symbolState => nest(symbolState.trace, {selected: {$set: false}}, delta));
+    state.selectedSymbolStates.forEach(symbolState => {
+      const symbolType = symbolTypeByState(symbolState);
+      delta = nest(symbolState.trace, {selected: {$set: false}}, delta);
+      if (symbolState.onBoard) {
+        const [y, x] = symbolState.trace.slice(1, 3);
+        if (symbolType.multi === "horizontal") delta = nest(["squares", y, x+1, ...symbolState.trace.slice(3)], {selected: {$set: false}}, delta);
+        else if (symbolType.multi === "vertical") delta = nest(["squares", y+1, x, ...symbolState.trace.slice(3)], {selected: {$set: false}}, delta);
+      }
+    });
     let newState = update(state, delta);
     newState.selectedSymbolStates.clear();
     return newState;
@@ -750,20 +759,31 @@ class Game extends React.Component {
 
   // keepOldAndToggle used for shift select
   setSelected = (symbolState, keepOldAndToggle=false) => {
+    const symbolType = symbolTypeByState(symbolState);
     this.setState((state, props) => {
       let newState = keepOldAndToggle ? state : this.getClearSelected(state, props);
       if (keepOldAndToggle && getNested(newState, symbolState.trace).selected) {
         newState.selectedSymbolStates = update(newState.selectedSymbolStates, {$remove: [getNested(newState, symbolState.trace)]});
         newState = update(newState, nest(symbolState.trace, {selected: {$set: false}}));
+        if (symbolState.onBoard) {
+          const [y, x] = symbolState.trace.slice(1, 3);
+          if (symbolType.multi === "horizontal") newState = update(newState, nest(["squares", y, x+1, ...symbolState.trace.slice(3)], {selected: {$set: false}}));
+          else if (symbolType.multi === "vertical") newState = update(newState, nest(["squares", y+1, x, ...symbolState.trace.slice(3)], {selected: {$set: false}}));
+        }
       } else {
         newState = update(newState, nest(symbolState.trace, {selected: {$set: true}}));
+        if (symbolState.onBoard) {
+          const [y, x] = symbolState.trace.slice(1, 3);
+          if (symbolType.multi === "horizontal") newState = update(newState, nest(["squares", y, x+1, ...symbolState.trace.slice(3)], {selected: {$set: true}}));
+          else if (symbolType.multi === "vertical") newState = update(newState, nest(["squares", y+1, x, ...symbolState.trace.slice(3)], {selected: {$set: true}}));
+        }
         newState.selectedSymbolStates = update(newState.selectedSymbolStates, {$add: [getNested(newState, symbolState.trace)]});
       }
       return newState;
     });
   }
 
-  botHandler = value => { this.setState({bot: value}, () => this.symbolTypeHandler("instruction")); }
+  botHandler = value => { this.setState({bot: Number(value)}, () => this.symbolTypeHandler("instruction")); }
   symbolTypeHandler = value => {
     this.setState((state, props) => {
       if (state.symbolType !== value) {
@@ -825,6 +845,7 @@ class Game extends React.Component {
 
   boardClickHandler = (event, y, x, symbolState) => {
     if (this.state.simState !== "stop") return;
+    const keepOldAndToggle = this.selectedOnBoard() && event.shiftKey;
     if (symbolState) {
       if (this.state.inputs.some(square => matchLocation(square, y, x))) {
         // inputs are fixed
@@ -833,11 +854,10 @@ class Game extends React.Component {
         // outputs are fixed
         return;
       } else {
-        const keepOldAndToggle = this.selectedOnBoard() && event.shiftKey;
         this.setSelected(symbolState, keepOldAndToggle);
       }
     } else if (this.selectedOnBoard()) {
-      this.setState(this.getClearSelected);
+      if (!keepOldAndToggle) this.setState(this.getClearSelected);
     } else {
       if (this.state.selectedSymbolStates.size === 1) {
         const selectedSymbolState = this.state.selectedSymbolStates.values().next().value;
