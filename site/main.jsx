@@ -169,19 +169,62 @@ function SymbolState(props) {
 }
 const nullSymbolState = SymbolState();
 
-class Symbol extends React.PureComponent {
-  constructor(props) {
-    super(props);
-    this.clickHandler = this.clickHandler.bind(this);
-    this.dragHandler = this.dragHandler.bind(this);
+function makeEmptySquare() {
+  return {
+    cellSymbol: nullSymbolState,
+    cellSymbolIndex: null,
+    direction: [nullSymbolState, nullSymbolState],
+    operation: [nullSymbolState, nullSymbolState],
   }
+}
 
-  clickHandler(event) {
+function makeFixedCell(...args) {
+  let square = makeEmptySquare();
+  let [xSymbolValue] = makeSymbolState(...args);
+  square.cellSymbol = xSymbolValue;
+  square.cellSymbolIndex = 0;
+  return square;
+}
+
+function makeSymbolState(type, c, y, x, bot) {
+  if ("._ ".includes(c)) return [nullSymbolState];
+  let symbols = symbolTypesByValue[type];
+  for (let symbolValue in symbols) {
+    if (symbolValue.includes(c)) {
+      if (type == "cellSymbol") {
+        var symbolState = SymbolState({type:type, value:symbolValue, onBoard:true, trace:["squares", y, x, type]});
+      } else {
+        var symbolState = SymbolState({type:type, value:symbolValue, onBoard:true, trace:["squares", y, x, type, bot]});
+      }
+      if (symbols[symbolValue].multi === "horizontal") return [symbolState, 0, c === ">" ? -1 : 1];
+      else if (symbols[symbolValue].multi === "vertical") return [symbolState, c === "v" ? -1 : 1, 0];
+      else return [symbolState];
+    }
+  }
+  return [];
+}
+
+function makeSubmission(squares, m, n) {
+  let join = func => squares.slice(0, m).map(row => row.slice(0, n).map(square => {
+    let [symbolState, index] = func(square);
+    return ((symbolState || {}).value || "")[index] || "_";
+  }).join("")).join("\n");
+  let cellSymbol = join(square => [square.cellSymbol, square.cellSymbolIndex])
+  let direction0 = join(square => [square.direction[0], 0])
+  let operation0 = join(square => [square.operation[0], 0])
+  let direction1 = join(square => [square.direction[1], 0])
+  let operation1 = join(square => [square.operation[1], 0])
+  return [cellSymbol, direction0, operation0, direction1, operation1].join("\n\n");
+}
+
+
+class Symbol extends React.PureComponent {
+  clickHandler = event => {
     event.stopPropagation();
     this.props.clickHandler(this.props.y, this.props.x, this.props.symbolState);
   }
 
-  dragHandler(event) {
+  dragHandler = event => {
     event.stopPropagation();
     this.props.dragHandler(event, this.props.symbolState);
   }
@@ -237,17 +280,11 @@ class Symbol extends React.PureComponent {
 }
 
 class Square extends React.PureComponent {
-  constructor(props) {
-    super(props);
-    this.clickHandler = this.clickHandler.bind(this);
-    this.dragOverHandler = this.dragOverHandler.bind(this);
-  }
-
-  clickHandler() {
+  clickHandler = () => {
     this.props.clickHandler(this.props.y, this.props.x, null, null);
   }
 
-  dragOverHandler(event) {
+  dragOverHandler = event => {
     this.props.dragOverHandler(event, this.props.y, this.props.x);
   }
 
@@ -353,29 +390,10 @@ class Board extends React.PureComponent {
 class Game extends React.Component {
   constructor(props) {
     super(props);
-    this.dragHandler = this.dragHandler.bind(this);
-    this.dragOverHandler = this.dragOverHandler.bind(this);
-    this.symbolClickHandler = this.symbolClickHandler.bind(this);
-    this.boardClickHandler = this.boardClickHandler.bind(this);
-    this.changeSymbolOption = this.changeSymbolOption.bind(this);
-    this.symbolTypeHandler = this.symbolTypeHandler.bind(this);
-    this.botHandler = this.botHandler.bind(this);
-    this.simHandler = this.simHandler.bind(this);
-    this.keyboardHandler = this.keyboardHandler.bind(this);
-    this.resetBoard = this.resetBoard.bind(this);
-    this.resetCells = this.resetCells.bind(this);
-    this.trash = this.trash.bind(this);
-    this.setLevelHandler = this.setLevelHandler.bind(this);
-    this.setBoardHandler = this.setBoardHandler.bind(this);
-    this.loadSubmission = this.loadSubmission.bind(this);
-    this.setSubmission = this.setSubmission.bind(this);
-    this.makeEmptySquare = this.makeEmptySquare.bind(this);
-    this.setSelected = this.setSelected.bind(this);
-    this.getClearSelected = this.getClearSelected.bind(this);
     this.state = {
       levelName: Object.keys(levels)[0],
       levelData: null,
-      squares: Array.from({length: this.props.m}, e => Array.from({length: this.props.n}, this.makeEmptySquare)),
+      squares: Array.from({length: this.props.m}, e => Array.from({length: this.props.n}, makeEmptySquare)),
       submission: "",
       submissionHistory: [],
       submissionFuture: [],
@@ -424,19 +442,6 @@ class Game extends React.Component {
     window.removeEventListener("keydown", this.keyboardHandler)
   }
 
-  makeSubmission(squares, m, n) {
-    let join = func => squares.slice(0, m).map(row => row.slice(0, n).map(square => {
-      let [symbolState, index] = func(square);
-      return ((symbolState || {}).value || "")[index] || "_";
-    }).join("")).join("\n");
-    let cellSymbol = join(square => [square.cellSymbol, square.cellSymbolIndex])
-    let direction0 = join(square => [square.direction[0], 0])
-    let operation0 = join(square => [square.operation[0], 0])
-    let direction1 = join(square => [square.direction[1], 0])
-    let operation1 = join(square => [square.operation[1], 0])
-    return [cellSymbol, direction0, operation0, direction1, operation1].join("\n\n");
-  }
-
   renderSymbolGroup(type, symbolState) {
     return (
       <SymbolGroup
@@ -448,41 +453,6 @@ class Game extends React.Component {
         symbolState={symbolState}
       />
     );
-  }
-
-  makeEmptySquare() {
-    return {
-      cellSymbol: nullSymbolState,
-      cellSymbolIndex: null,
-      direction: [nullSymbolState, nullSymbolState],
-      operation: [nullSymbolState, nullSymbolState],
-    }
-  }
-
-  makeFixedCell(...args) {
-    let square = this.makeEmptySquare();
-    let [xSymbolValue] = this.makeSymbolState(...args);
-    square.cellSymbol = xSymbolValue;
-    square.cellSymbolIndex = 0;
-    return square;
-  }
-
-  makeSymbolState(type, c, y, x, bot) {
-    if ("._ ".includes(c)) return [nullSymbolState];
-    let symbols = symbolTypesByValue[type];
-    for (let symbolValue in symbols) {
-      if (symbolValue.includes(c)) {
-        if (type == "cellSymbol") {
-          var symbolState = SymbolState({type:type, value:symbolValue, onBoard:true, trace:["squares", y, x, type]});
-        } else {
-          var symbolState = SymbolState({type:type, value:symbolValue, onBoard:true, trace:["squares", y, x, type, bot]});
-        }
-        if (symbols[symbolValue].multi === "horizontal") return [symbolState, 0, c === ">" ? -1 : 1];
-        else if (symbols[symbolValue].multi === "vertical") return [symbolState, c === "v" ? -1 : 1, 0];
-        else return [symbolState];
-      }
-    }
-    return [];
   }
 
   loadSubmission(submission, {undoredo}={}) {
@@ -502,7 +472,7 @@ class Game extends React.Component {
         for (let y=0; y<grid.length; ++y) {
           if (lines[y].length !== state.board.n) return false;
           for (let x=0; x<grid[y].length; ++x) if (!grid[y][x].value) {
-            let [value, dy, dx] = this.makeSymbolState(type, lines[y][x], y, x, bot);
+            let [value, dy, dx] = makeSymbolState(type, lines[y][x], y, x, bot);
             if (value === undefined) return false;
             grid[y][x] = value;
             indices[y][x] = 0;
@@ -638,7 +608,7 @@ class Game extends React.Component {
     );
   }
 
-  getClearSelected(state, props) {
+  getClearSelected = (state, props)  => {
     let delta = {};
     state.selectedSymbolStates.map(symbolState => nest(symbolState.trace, {selected: {$set: false}}, delta));
     let newState = update(state, delta);
@@ -646,7 +616,7 @@ class Game extends React.Component {
     return newState;
   }
 
-  setSelected(symbolState) {
+  setSelected = (symbolState) => {
     this.setState((state, props) => {
       let newState = this.getClearSelected(state, props);
       newState = update(newState, nest(symbolState.trace, {selected: {$set: true}}));
@@ -656,8 +626,8 @@ class Game extends React.Component {
     });
   }
 
-  botHandler(value) { this.setState({bot: value}, () => this.symbolTypeHandler("instruction")); }
-  symbolTypeHandler(value) {
+  botHandler = value => { this.setState({bot: value}, () => this.symbolTypeHandler("instruction")); }
+  symbolTypeHandler = value => {
     this.setState((state, props) => {
       if (state.symbolType !== value) {
         if (state.selectedSymbolStates.length === 1 && !state.selectedSymbolStates[0].onBoard) {
@@ -668,39 +638,40 @@ class Game extends React.Component {
       }
     });
   }
-  simHandler(value) {
+  simHandler = value => {
     const INITIAL_DELAY = 200; // ms
     const PLAY_INTERVAL = 1000; // ms
     const FAST_INTERVAL = 100; // ms
     const NONSTOP_INTERVAL = 0; // ms
     var self = this;
     var needsToResetCells = false;
-    this.setState((state, props) => {
-      if (state.simState === value) return null;
-      var newState = Object.assign(this.getClearSelected(state, props), {simState: value});
-      clearTimeout(state.simTimeout);
-      var makeRepeat = (interval, steps=1) => {
-        return setTimeout(
-          function callOnce() {
-            self.move(steps);
-            self.setState((state, props) => {
-              clearTimeout(state.simTimeout);
-              if (state.board.check_status() !== Module.Status.RUNNING) return {simState: "pause"};
-              else return {simTimeout: setTimeout(callOnce, interval)};
-            });
-          },
-          INITIAL_DELAY);
-      }
-      if (value === "step") newState.simTimeout = setTimeout(() => { this.move(); this.simHandler("pause"); }, INITIAL_DELAY);
-      else if (value === "play") newState.simTimeout = makeRepeat(PLAY_INTERVAL);
-      else if (value === "fast") newState.simTimeout = makeRepeat(FAST_INTERVAL);
-      else if (value === "nonstop") newState.simTimeout = makeRepeat(NONSTOP_INTERVAL);
-      else if (value === "batch") newState.simTimeout = makeRepeat(NONSTOP_INTERVAL, 10);
-      else if (value === "stop") {
-        needsToResetCells = true;
-      }
-      return newState;
-    },
+    this.setState(
+      (state, props) => {
+        if (state.simState === value) return null;
+        var newState = Object.assign(this.getClearSelected(state, props), {simState: value});
+        clearTimeout(state.simTimeout);
+        var makeRepeat = (interval, steps=1) => {
+          return setTimeout(
+            function callOnce() {
+              self.move(steps);
+              self.setState((state, props) => {
+                clearTimeout(state.simTimeout);
+                if (state.board.check_status() !== Module.Status.RUNNING) return {simState: "pause"};
+                else return {simTimeout: setTimeout(callOnce, interval)};
+              });
+            },
+            INITIAL_DELAY);
+        }
+        if (value === "step") newState.simTimeout = setTimeout(() => { this.move(); this.simHandler("pause"); }, INITIAL_DELAY);
+        else if (value === "play") newState.simTimeout = makeRepeat(PLAY_INTERVAL);
+        else if (value === "fast") newState.simTimeout = makeRepeat(FAST_INTERVAL);
+        else if (value === "nonstop") newState.simTimeout = makeRepeat(NONSTOP_INTERVAL);
+        else if (value === "batch") newState.simTimeout = makeRepeat(NONSTOP_INTERVAL, 10);
+        else if (value === "stop") {
+          needsToResetCells = true;
+        }
+        return newState;
+      },
       () => {
         if(needsToResetCells) {
           this.setState(
@@ -711,10 +682,11 @@ class Game extends React.Component {
             },
             this.resetCells);
         }
-      });
+      }
+    );
   }
 
-  boardClickHandler(y, x, symbolState) {
+  boardClickHandler = (y, x, symbolState) => {
     if (this.state.simState !== "stop") return;
     if (symbolState) {
       if (this.state.inputs.some(square => matchLocation(square, y, x))) {
@@ -747,7 +719,7 @@ class Game extends React.Component {
           } else {
             var partner = nullSymbolState;
           }
-          var selectedSymbolClone  = Object.assign({}, selectedSymbolState, {
+          var selectedSymbolClone = Object.assign({}, selectedSymbolState, {
             onBoard: true,
             trace: ["squares", y, x, symbolType.type],
             selected: false,
@@ -800,7 +772,7 @@ class Game extends React.Component {
     }
   }
 
-  keyboardHandler(event) {
+  keyboardHandler = event => {
     if (isTextBox(event.target)) return;
     if (event.ctrlKey) {
       switch (event.key) {
@@ -810,7 +782,7 @@ class Game extends React.Component {
     }
   }
 
-  undo() {
+  undo = () => {
     if (this.state.submissionHistory.length > 1) {
       let item = this.state.submissionHistory.pop();
       this.state.submissionFuture.push(item);
@@ -819,7 +791,7 @@ class Game extends React.Component {
     }
   }
 
-  redo() {
+  redo = () => {
     if (this.state.submissionFuture.length) {
       let item = this.state.submissionFuture.pop();
       this.state.submissionHistory.push(item);
@@ -827,7 +799,7 @@ class Game extends React.Component {
     }
   }
 
-  resetBoard({...args}) {
+  resetBoard = ({...args}) => {
     this.setState((state, props) => {
       if (args.makeNewState) {
         var [error, newState] = args.makeNewState(state, props);
@@ -835,7 +807,7 @@ class Game extends React.Component {
       } else var newState = {};
       if (state.board) state.board.delete();
       let stateGet = key => newState[key] || state[key];
-      newState.submission = this.makeSubmission(stateGet("squares"), props.m, props.n);
+      newState.submission = makeSubmission(stateGet("squares"), props.m, props.n);
       if (args.undoredo) {
         // don't have to reset each square's selected field because they were newly created by undo/redo
         if (state.selectedOnBoard) newState.selectedSymbolStates = [];
@@ -891,7 +863,7 @@ class Game extends React.Component {
       this.resetCells);
   }
 
-  resetCells() {
+  resetCells = () => {
     this.setState((state, props) => {
       var newState = {};
       newState.wasNext = state.board.was_next;
@@ -925,14 +897,14 @@ class Game extends React.Component {
     });
   }
 
-  move(steps=1) {
+  move = (steps=1) => {
     for (let i=0; i<steps; ++i) {
       this.state.board.move();
     }
     this.resetCells();
   }
 
-  trash() {
+  trash = () => {
     if (this.state.selectedOnBoard) {
       this.setState((state, props) => {
         let removeSelected = symbolState => symbolState.selected ? nullSymbolState : symbolState;
@@ -949,11 +921,11 @@ class Game extends React.Component {
     }
   }
 
-  setSubmission(event) {
+  setSubmission = event => {
     this.setState({submission: event.target.value});
   }
 
-  setLevelHandler(event) {
+  setLevelHandler = event => {
     var value = event.target.value;
     if (this.state.levelData == null || value !== this.state.levelName) {
       var path = levels[value];
@@ -966,7 +938,7 @@ class Game extends React.Component {
             submissionHistory: [],
             submissionFuture: [],
           }
-          var submission = this.makeSubmission(this.state.squares, this.props.m, this.props.n);
+          var submission = makeSubmission(this.state.squares, this.props.m, this.props.n);
           var board = Module.LoadBoard(text, submission);
           var inputs = board.get_inputs();
           var inputLocations = Array.from({length: inputs.size()}).map((_, i) => inputs.get(i).location);
@@ -974,9 +946,9 @@ class Game extends React.Component {
           let levelGrid = board.get_level();
           newState.squares = this.state.squares.map((row, y) => row.map((square, x) => {
             let levelValue = String.fromCharCode(levelGrid.at(y, x));
-            if (levelValue === "x") return this.makeFixedCell("cellSymbol", "x", y, x);
-            if (levelValue === "+") return this.makeFixedCell("cellSymbol", "+", y, x);
-            if (y < board.m && x < board.n && !cellAllowed(levelValue)) return this.makeEmptySquare();
+            if (levelValue === "x") return makeFixedCell("cellSymbol", "x", y, x);
+            if (levelValue === "+") return makeFixedCell("cellSymbol", "+", y, x);
+            if (y < board.m && x < board.n && !cellAllowed(levelValue)) return makeEmptySquare();
             return {...square};
           }));
           levelGrid.delete();
@@ -987,17 +959,17 @@ class Game extends React.Component {
     }
   }
 
-  setBoardHandler(event) {
+  setBoardHandler = event => {
     if (this.state.simState !== "stop") this.simHandler("stop");
     this.loadSubmission(this.state.submission);
   }
 
-  symbolClickHandler(symbolState) {
+  symbolClickHandler = symbolState => {
     if (this.state.simState !== "stop") return;
     this.setSelected(symbolState);
   }
 
-  changeSymbolOption(event) {
+  changeSymbolOption = event => {
     if (this.state.selectedSymbolStates.length === 1) {
       const value = event.target.value;
       this.setState((state, props) => {
@@ -1010,7 +982,8 @@ class Game extends React.Component {
     }
   }
 
-  dragHandler(event, symbolState) {
+  dragHandler = (event, symbolState) => {
+    console.log(event.type, {...event});
     switch (event.type) {
     case "dragstart":
       let symbolType = symbolTypeByState(symbolState);
@@ -1028,7 +1001,8 @@ class Game extends React.Component {
     }
   }
 
-  dragOverHandler(event, y, x) {
+  dragOverHandler = (event, y, x) => {
+    console.log(event.type, y, x, {...event});
     switch (event.type) {
     case "dragenter":
       event.dataTransfer.dropEffect = event.dataTransfer.effectAllowed;
