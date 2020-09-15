@@ -1,5 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom";
+import update from "immutability-helper";
 
 import "./main.css";
 import * as Svgs from "./svgs.jsx";
@@ -7,6 +8,16 @@ import Embindings from "./embindings.js";
 import EmbindingsWASM from "./embindings.wasm";
 
 const MAX_HISTORY = 1000;
+
+function nest(seq, value, obj={}, start=0) {
+  if (start === seq.length) return value;
+  obj[seq[start]] = nest(seq, value, obj[seq[start]] || {}, start + 1);
+  return obj;
+}
+function getNested(obj, seq, start=0) {
+  if (start === seq.length) return obj;
+  return getNested(obj[seq[start]], seq, start + 1);
+}
 
 var Module;
 const EmbindingsLoader = Embindings({
@@ -152,7 +163,8 @@ function SymbolState(props) {
     onBoard: false,
     bot: null,
     trace: [],
-    additionalClassNames: "",
+    selected: false,
+    dragged: false,
   }, props);
 }
 const nullSymbolState = SymbolState();
@@ -176,11 +188,10 @@ class Symbol extends React.PureComponent {
 
   render() {
     var classNames = []
-    classNames.push(this.props.symbolState.additionalClassNames);
     classNames.push("symbol");
     classNames.push("image-container");
-    if (this.props.selectedSymbolState === this.props.symbolState) classNames.push("selected");
-    if (this.props.draggedSymbolState === this.props.symbolState) classNames.push("dragged");
+    if (this.props.symbolState.selected) classNames.push("selected");
+    if (this.props.symbolState.dragged) classNames.push("dragged");
     let props = {
       onClick: this.clickHandler,
       onDragStart: this.dragHandler,
@@ -241,12 +252,10 @@ class Square extends React.PureComponent {
   }
 
   renderSymbol(props) {
-    const selected = this.props.selectedSymbolState === props.symbolState;
-    const dragged = this.props.draggedSymbolState === props.symbolState;
+    const selected = props.symbolState.selected;
+    const dragged = props.symbolState.dragged;
     return (
       <Symbol
-        selectedSymbolState={selected ? this.props.selectedSymbolState : nullSymbolState}
-        draggedSymbolState={dragged ? this.props.draggedSymbolState : nullSymbolState}
         y={this.props.y}
         x={this.props.x}
         index={0}
@@ -301,21 +310,16 @@ class Square extends React.PureComponent {
 
 class Board extends React.PureComponent {
   renderSquare(props) {
-    const selected = this.props.selectedSymbolState && this.props.selectedSymbolState.onBoard && this.props.selectedSymbolState.trace.includes(props.y) && this.props.selectedSymbolState.trace.includes(props.x);
-    const dragged = this.props.draggedSymbolState && this.props.draggedSymbolState.onBoard && this.props.draggedSymbolState.trace.includes(props.y) && this.props.draggedSymbolState.trace.includes(props.x);
-    const draggedSymbolType = symbolTypeByState(this.props.draggedSymbolState) || {};
-    const dragOver = this.props.dragOverPosition && [JSON.stringify([props.y, props.x]), JSON.stringify([props.y - (draggedSymbolType.multi === "vertical"), props.x - (draggedSymbolType.multi === "horizontal")])].includes(JSON.stringify(this.props.dragOverPosition));
+    const dragOver = this.props.dragOverRange && this.props.dragOverRange[0] <= props.y && this.props.dragOverRange[1] <= props.x  && props.y < this.props.dragOverRange[2] && props.x < this.props.dragOverRange[3];
     return (<Square
       key={props.y,props.x}
       clickHandler={this.props.clickHandler}
       dragHandler={this.props.dragHandler}
       dragOverHandler={this.props.dragOverHandler}
       simBoard={this.props.simBoard}
-      selectedSymbolState={selected ? this.props.selectedSymbolState : nullSymbolState}
-      draggedSymbolState={dragged ? this.props.draggedSymbolState : nullSymbolState}
       dragOver={dragOver}
       stopped={this.props.stopped}
-      flipflop={(selected || dragged || dragOver) && this.props.flipflop}
+      flipflop={dragOver && this.props.flipflop}
       {...props}
     />);
   }
@@ -366,6 +370,8 @@ class Game extends React.Component {
     this.loadSubmission = this.loadSubmission.bind(this);
     this.setSubmission = this.setSubmission.bind(this);
     this.makeEmptySquare = this.makeEmptySquare.bind(this);
+    this.setSelected = this.setSelected.bind(this);
+    this.getClearSelected = this.getClearSelected.bind(this);
     this.state = {
       levelName: Object.keys(levels)[0],
       levelData: null,
@@ -398,11 +404,12 @@ class Game extends React.Component {
       // selection
       symbolType: "cellSymbol",
       bot: 0,
-      selectedSymbolState: nullSymbolState,
+      selectedSymbolStates: [],
+      selectedOnBoard: false,
       selectionSymbolStateCellSymbols: initialSelectionSymbolStates("selectionSymbolStateCellSymbols", symbolTypesCellSymbol),
       selectionSymbolStateInstructions: initialSelectionSymbolStates("selectionSymbolStateInstructions", [...symbolTypesDirection, ...symbolTypesOperation]),
-      draggedSymbolState: nullSymbolState,
-      dragOverPosition: null,
+      draggedSymbolStates: [],
+      dragOverRange: null,
       // state change indicator alternate between +/-1
       flipflop: 1,
     };
@@ -431,29 +438,24 @@ class Game extends React.Component {
   }
 
   renderSymbolGroup(type, symbolState) {
-    const selected = this.state.selectedSymbolState && !this.state.selectedSymbolState.onBoard;
-    const dragged = this.state.draggedSymbolState && !this.state.draggedSymbolState.onBoard;
     return (
       <SymbolGroup
         key={symbolTypeByState(symbolState).subtype}
         active={this.state.symbolType===type}
         dragHandler={this.dragHandler}
         clickHandler={this.symbolClickHandler}
-        selectedSymbolState={selected ? this.state.selectedSymbolState : nullSymbolState}
-        draggedSymbolState={dragged ? this.state.draggedSymbolState : nullSymbolState}
         bot={this.state.bot}
         symbolState={symbolState}
-        flipflop={(selected || dragged) && this.state.flipflop}
       />
     );
   }
 
   makeEmptySquare() {
     return {
-      cellSymbol: SymbolState({onBoard: true}),
+      cellSymbol: nullSymbolState,
       cellSymbolIndex: null,
-      direction: [SymbolState({onBoard: true}), SymbolState({onBoard: true})],
-      operation: [SymbolState({onBoard: true}), SymbolState({onBoard: true})],
+      direction: [nullSymbolState, nullSymbolState],
+      operation: [nullSymbolState, nullSymbolState],
     }
   }
 
@@ -555,9 +557,7 @@ class Game extends React.Component {
               clickHandler={this.boardClickHandler}
               dragHandler={this.dragHandler}
               dragOverHandler={this.dragOverHandler}
-              selectedSymbolState={this.state.selectedSymbolState}
-              draggedSymbolState={this.state.draggedSymbolState}
-              dragOverPosition={this.state.dragOverPosition}
+              dragOverRange={this.state.dragOverRange}
               simBoard={this.state.validBoard || this.state.cycle}
               stopped={this.state.simState==="stop"}
               m={this.props.m}
@@ -578,7 +578,7 @@ class Game extends React.Component {
               <Toggle handler={this.botHandler} selected={this.state.bot} name="bot" options={["Red", "Blue"]} colors={botColors}/>
               <Toggle handler={this.simHandler} selected={this.state.simState} name="sim" options={{stop:"⏹", pause:"⏸", step:"⧐", play:"▶", fast:"⏩", nonstop:"⏩", batch:"⏭"}}/>
               <div style={{flex:1}}></div>
-              <div className={`trash ${this.state.selectedSymbolState.onBoard ? "active" : "inactive"}`} onClick={this.trash}>🗑</div>
+              <div className={`trash ${this.state.selectedSymbolStates.length && this.state.selectedOnBoard ? "active" : "inactive"}`} onClick={this.trash}>🗑</div>
             </div>
             <div className={`symbol-bar bot${this.state.bot}`} style={{display:"flex", flexDirection:"row"}}>
               <div className="symbol-grid-bar grid-layout" style={{flex:3}}>
@@ -586,7 +586,7 @@ class Game extends React.Component {
                 {this.state.selectionSymbolStateInstructions.map(symbolState => this.renderSymbolGroup("instruction", symbolState))}
               </div>
               <div className="symbol-options-bar" style={{flex:1, display:"flex", flexDirection:"column"}}>
-                <SymbolOptions changeOption={this.changeSymbolOption} selectedSymbolState={this.state.selectedSymbolState} flipflop={(symbolTypeByState(this.state.selectedSymbolState)||{}).options && this.state.flipflop}/>
+                <SymbolOptions changeOption={this.changeSymbolOption} selectedSymbolState={this.state.selectedSymbolStates.length === 1 && this.state.selectedSymbolStates[0]}/>
               </div>
             </div>
           </div>
@@ -638,14 +638,32 @@ class Game extends React.Component {
     );
   }
 
+  getClearSelected(state, props) {
+    let delta = {};
+    state.selectedSymbolStates.map(symbolState => nest(symbolState.trace, {selected: {$set: false}}, delta));
+    let newState = update(state, delta);
+    newState.selectedSymbolStates = [];
+    return newState;
+  }
+
+  setSelected(symbolState) {
+    this.setState((state, props) => {
+      let newState = this.getClearSelected(state, props);
+      newState = update(newState, nest(symbolState.trace, {selected: {$set: true}}));
+      newState.selectedSymbolStates = [getNested(newState, symbolState.trace)];
+      newState.selectedOnBoard = newState.selectedSymbolStates[0].onBoard;
+      return newState;
+    });
+  }
+
   botHandler(value) { this.setState({bot: value}, () => this.symbolTypeHandler("instruction")); }
   symbolTypeHandler(value) {
     this.setState((state, props) => {
       if (state.symbolType !== value) {
-        if (state.selectedSymbolState.onBoard) {
-          return {symbolType: value};
+        if (state.selectedSymbolStates.length === 1 && !state.selectedSymbolStates[0].onBoard) {
+          return Object.assign(this.getClearSelected(state, props), {symbolType: value});
         } else {
-          return {symbolType: value, selectedSymbolState: nullSymbolState};
+          return {symbolType: value};
         }
       }
     });
@@ -659,7 +677,7 @@ class Game extends React.Component {
     var needsToResetCells = false;
     this.setState((state, props) => {
       if (state.simState === value) return null;
-      var newState = {simState: value, selectedSymbolState: nullSymbolState};
+      var newState = Object.assign(this.getClearSelected(state, props), {simState: value});
       clearTimeout(state.simTimeout);
       var makeRepeat = (interval, steps=1) => {
         return setTimeout(
@@ -706,13 +724,14 @@ class Game extends React.Component {
         // outputs are fixed
         return;
       } else {
-        this.setState({selectedSymbolState: symbolState});
+        this.setSelected(symbolState);
       }
-    } else if (this.state.selectedSymbolState.onBoard) {
-      this.setState({selectedSymbolState: SymbolState({onBoard: true})});
+    } else if (this.state.selectedOnBoard) {
+      this.setState(this.getClearSelected);
     } else {
-      if (this.state.selectedSymbolState.value) {
-        const symbolType = symbolTypeByState(this.state.selectedSymbolState);
+      if (this.state.selectedSymbolStates.length === 1) {
+        const selectedSymbolState = this.state.selectedSymbolStates[0];
+        const symbolType = symbolTypeByState(selectedSymbolState);
         var locs = [[y, x]];
         // js doesn't have references...
         if (symbolType.type === "cellSymbol") {
@@ -728,11 +747,22 @@ class Game extends React.Component {
           } else {
             var partner = nullSymbolState;
           }
-          var selectedSymbolClone  = Object.assign({}, this.state.selectedSymbolState, {onBoard: true, trace: ["squares", y, x, symbolType.type]});
+          var selectedSymbolClone  = Object.assign({}, selectedSymbolState, {
+            onBoard: true,
+            trace: ["squares", y, x, symbolType.type],
+            selected: false,
+            dragged: false,
+          });
         } else {
           var current = this.state.squares[y][x][symbolType.type][this.state.bot];
           var partner = nullSymbolState;
-          var selectedSymbolClone  = Object.assign({}, this.state.selectedSymbolState, {onBoard: true, bot: this.state.bot, trace: ["squares", y, x, symbolType.type, this.state.bot]});
+          var selectedSymbolClone  = Object.assign({}, selectedSymbolState, {
+            onBoard: true,
+            bot: this.state.bot,
+            trace: ["squares", y, x, symbolType.type, this.state.bot],
+            selected: false,
+            dragged: false,
+          });
         }
         for (let loc of locs) {
           let [_y, _x] = loc;
@@ -744,7 +774,7 @@ class Game extends React.Component {
             return;
           } else if (this.state.outputs.some(square => matchLocation(square, _y, _x))) {
             // TODO: this check is not necessary if outputs are fixed
-            let value = this.state.selectedSymbolState.value;
+            let value = selectedSymbolState.value;
             // outputs can only be unlatched 1x1 cells
             if (value !== "x" && value !== "+") return;
           } else if (!((this.state.trespassable || {})[_y] || {})[_x]) return;
@@ -807,7 +837,8 @@ class Game extends React.Component {
       let stateGet = key => newState[key] || state[key];
       newState.submission = this.makeSubmission(stateGet("squares"), props.m, props.n);
       if (args.undoredo) {
-        if (state.selectedSymbolState.onBoard) newState.selectedSymbolState = nullSymbolState;
+        // don't have to reset each square's selected field because they were newly created by undo/redo
+        if (state.selectedOnBoard) newState.selectedSymbolStates = [];
       } else {
         if (newState.submission !== state.submissionHistory[state.submissionHistory.length-1]) {
           state.submissionHistory.push(newState.submission);
@@ -902,9 +933,19 @@ class Game extends React.Component {
   }
 
   trash() {
-    if (this.state.selectedSymbolState.onBoard) {
-      this.state.selectedSymbolState.value = null;
-      this.setState({selectedSymbolState: nullSymbolState}, this.resetBoard);
+    if (this.state.selectedOnBoard) {
+      this.setState((state, props) => {
+        let removeSelected = symbolState => symbolState.selected ? nullSymbolState : symbolState;
+        let newState = {};
+        newState.squares  = state.squares.map(row => row.map(square => ({
+          cellSymbol: removeSelected(square.cellSymbol),
+          cellSymbolIndex: square.cellSymbolIndex,
+          direction: square.direction.map(removeSelected),
+          operation: square.operation.map(removeSelected),
+        })));
+        newState.selectedSymbolStates = [];
+        return newState;
+      }, this.resetBoard);
     }
   }
 
@@ -953,20 +994,23 @@ class Game extends React.Component {
 
   symbolClickHandler(symbolState) {
     if (this.state.simState !== "stop") return;
-    this.setState({selectedSymbolState: symbolState});
+    this.setSelected(symbolState);
   }
 
   changeSymbolOption(event) {
-    const value = event.target.value;
-    let state = this.state;
-    const trace = this.state.selectedSymbolState.trace;
-    for (let i=0; i<trace.length; ++i) state = state[trace[i]];
-    state.value = value;
-    this.setState((state, props) => ({flipflop: -state.flipflop}))
+    if (this.state.selectedSymbolStates.length === 1) {
+      const value = event.target.value;
+      this.setState((state, props) => {
+        const selectedSymbolState = this.state.selectedSymbolStates[0];
+        let newState = update(state, nest(selectedSymbolState.trace, {value: {$set: value}}));
+        newState.selectedSymbolStates = [getNested(newState, selectedSymbolState.trace)];
+        newState.flipflop = -state.flipflop;
+        return newState;
+      });
+    }
   }
 
   dragHandler(event, symbolState) {
-    console.log(event.type, {...event});
     switch (event.type) {
     case "dragstart":
       let symbolType = symbolTypeByState(symbolState);
@@ -985,7 +1029,6 @@ class Game extends React.Component {
   }
 
   dragOverHandler(event, y, x) {
-    console.log(event.type, y, x, {...event});
     switch (event.type) {
     case "dragenter":
       event.dataTransfer.dropEffect = event.dataTransfer.effectAllowed;
@@ -1038,11 +1081,10 @@ class SymbolGroup extends React.PureComponent {
     classNames.push("symbolgroup");
     classNames.push(symbolState.type);
     classNames.push(`symbol-${symbolState.value}`);
-    if (this.props.selectedSymbolState === this.props.symbolState) classNames.push("selected");
-    if (this.props.draggedSymbolState === this.props.symbolState) classNames.push("dragged");
+    if (this.props.symbolState.selected) classNames.push("selected");
+    if (this.props.symbolState.dragged) classNames.push("dragged");
     classNames.push(symbolType.className || "");
     classNames.push(symbolType.multi || "");
-    classNames.push(this.props.symbolState.additionalClassNames);
     classNames = classNames.join(" ");
     return (
       <div className={classNames} onClick={this.clickHandler} onDrag={this.dragHandler} onDragStart={this.dragHandler} onDragEnd={this.dragHandler} draggable>
@@ -1056,10 +1098,10 @@ class SymbolGroup extends React.PureComponent {
 
 class SymbolOptions extends React.PureComponent {
   render() {
-    const symbolType = symbolTypeByState(this.props.selectedSymbolState);
+    const symbolType = this.props.selectedSymbolState ? symbolTypeByState(this.props.selectedSymbolState) : {};
     return (
       <div className="symbol-options">
-        {symbolType && Object.entries(symbolType.options || []).map(([value, [option, svg]]) =>
+        {Object.entries(symbolType.options || []).map(([value, [option, svg]]) =>
         <OptionItem key={value} value={value} option={option} subtype={symbolType.subtype} {...this.props}/>
         )}
       </div>
@@ -1072,7 +1114,7 @@ class OptionItem extends React.PureComponent {
     return (
       <div style={{display:"flex", alignItems:"center"}} key={`radio-option-${this.props.option}`}>
         <input type="radio" id={`radio-${this.props.value}`} value={this.props.value} name={`radio-for-${this.props.subtype}`}
-          checked={this.props.value === this.props.selectedSymbolState.value}
+          checked={this.props.selectedSymbolState && this.props.selectedSymbolState.value === this.props.value}
           onChange={this.props.changeOption}
         />
         <label htmlFor={`radio-${this.props.value}`}>{this.props.option}</label>
