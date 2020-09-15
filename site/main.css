@@ -208,9 +208,10 @@ body {
 .trash {
   font-size: 30px;
   margin: 0 3%;
+  user-select: none;
 }
 .trash.inactive { visibility: hidden; }
-.trash:hover {
+.trash:hover,.trash.dragover {
   text-shadow:
     -1px -1px 0 red,
     1px -1px 0 red,
@@ -311,9 +312,12 @@ body {
 }
 
 /* drag n drop */
-.dragged .selected {
+.dragging .selected {
   opacity: 0.5;
 }
-.dragover {
+.square .dragover {
+  background-color: red;
+}
+.dragover-fits .square .dragover {
   background-color: green;
 }

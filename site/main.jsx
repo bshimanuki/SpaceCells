@@ -9,9 +9,13 @@ import EmbindingsWASM from "./embindings.wasm";
 
 const MAX_HISTORY = 1000;
 
-function nest(seq, value, obj={}, start=0) {
-  if (start === seq.length) return value;
-  obj[seq[start]] = nest(seq, value, obj[seq[start]] || {}, start + 1);
+function nest(seq, value, obj={}, overwrite=true, start=0) {
+  if (start === seq.length) {
+    if (overwrite || JSON.stringify(obj) === JSON.stringify({})) return value;
+    return undefined;
+  }
+  let newValue = nest(seq, value, obj[seq[start]] || {}, overwrite, start + 1);
+  if (newValue !== undefined) obj[seq[start]] = newValue;
   return obj;
 }
 function getNested(obj, seq, start=0) {
@@ -283,7 +287,7 @@ class Square extends React.PureComponent {
   }
 
   dragOverHandler = event => {
-    this.props.dragOverHandler(event, this.props.y, this.props.x);
+    this.props.dragOverHandler(event, {y: this.props.y, x: this.props.x});
   }
 
   renderSymbol(props) {
@@ -419,12 +423,13 @@ class Game extends React.Component {
       symbolType: "cellSymbol",
       bot: 0,
       selectedSymbolStates: new Set(),
-      selectedOnBoard: false,
       selectionSymbolStateCellSymbols: initialSelectionSymbolStates("selectionSymbolStateCellSymbols", symbolTypesCellSymbol),
       selectionSymbolStateInstructions: initialSelectionSymbolStates("selectionSymbolStateInstructions", [...symbolTypesDirection, ...symbolTypesOperation]),
       draggedSymbolState: nullSymbolState,
       dragOverPosition: null,
+      dragOverPositionSemaphore: 0, // count dragenter vs dragleave (for children)
       dragOverSet: null,
+      dragOverFits: false,
       // state change indicator alternate between +/-1
       flipflop: 1,
     };
@@ -507,7 +512,8 @@ class Game extends React.Component {
 
   render() {
     let classNames = [];
-    if (this.state.draggedSymbolState.value) classNames.push("dragged");
+    if (this.state.draggedSymbolState.value) classNames.push("dragging");
+    if (this.state.dragOverFits) classNames.push("dragover-fits");
     classNames = classNames.join(" ");
     return (
       <div id="main-content" style={{display:"flex"}} className={classNames}>
@@ -548,7 +554,7 @@ class Game extends React.Component {
               <Toggle handler={this.botHandler} selected={this.state.bot} name="bot" options={["Red", "Blue"]} colors={botColors}/>
               <Toggle handler={this.simHandler} selected={this.state.simState} name="sim" options={{stop:"⏹", pause:"⏸", step:"⧐", play:"▶", fast:"⏩", nonstop:"⏩", batch:"⏭"}}/>
               <div style={{flex:1}}></div>
-              <div className={`trash ${this.state.selectedSymbolStates.size && this.state.selectedOnBoard ? "active" : "inactive"}`} onClick={this.trash}>🗑</div>
+              <div className={`trash ${this.state.selectedSymbolStates.size && this.selectedOnBoard() ? "active" : "inactive"} ${this.state.dragOverPosition === "trash" && "dragover"}`} onClick={this.trash} onDragEnter={this.trashDragOver} onDragOver={this.trashDragOver} onDragLeave={this.trashDragOver} onDrop={this.trashDragOver}>🗑</div>
             </div>
             <div className={`symbol-bar bot${this.state.bot}`} style={{display:"flex", flexDirection:"row"}}>
               <div className="symbol-grid-bar grid-layout" style={{flex:3}}>
@@ -608,74 +614,130 @@ class Game extends React.Component {
     );
   }
 
-  fits = (symbolState, y, x, dragging=false) => {
+  selectedOnBoard = (state=this.state, props=this.props) => state.selectedSymbolStates.size && state.selectedSymbolStates.values().next().value.onBoard;
+
+  fits = (state, props, symbolState, y, x, ignoreSelected=true) => {
     const symbolType = symbolTypeByState(symbolState);
+    if (y < 0 || x < 0 || y >= props.m || x >= props.n) return false;
     var locs = [[y, x]];
     var destSymbolStates = [];
     // js doesn't have references...
     if (symbolType.type === "cellSymbol") {
-      destSymbolStates.push(this.state.squares[y][x].cellSymbol);
+      destSymbolStates.push(state.squares[y][x].cellSymbol);
       switch (symbolType.multi) {
       case "horizontal":
-        if (x + 1 >= this.props.n) return false;
+        if (x + 1 >= props.n) return false;
         locs.push([y, x + 1]);
-        destSymbolStates.push(this.state.squares[y][x + 1].cellSymbol);
+        destSymbolStates.push(state.squares[y][x + 1].cellSymbol);
         break;
       case "vertical":
-        if (y + 1 >= this.props.m) return false;
+        if (y + 1 >= props.m) return false;
         locs.push([y + 1, x]);
-        destSymbolStates.push(this.state.squares[y + 1][x].cellSymbol);
+        destSymbolStates.push(state.squares[y + 1][x].cellSymbol);
         break;
       default:
         break;
       }
     } else {
-      destSymbolStates.push(this.state.squares[y][x][symbolType.type][this.state.bot]);
+      destSymbolStates.push(state.squares[y][x][symbolType.type][state.bot]);
     }
     for (let loc of locs) {
       let [_y, _x] = loc;
-      if (!((this.state.trespassable || {})[_y] || {})[_x]) return false;
+      if (!((state.trespassable || {})[_y] || {})[_x]) return false;
     }
     for (let destSymbolState of destSymbolStates) {
-      if (destSymbolState.value && !(dragging && destSymbolState.dragging)) return false;
+      if (destSymbolState.value && !(ignoreSelected && destSymbolState.selected)) {
+        return false;
+      }
     }
     return true;
   }
 
-  getCopySymbolsUpdater = (state, props, symbolState, position, symbolStates=[symbolState]) => {
+  getCopySymbolsUpdater = (state, props, symbolState, position, symbolStates=[symbolState], dragging=false) => {
     let squaresUpdater = {};
+    let updatedSymbolStates = new Set();
     for (const _symbolState of symbolStates) {
-      const symbolType = symbolTypeByState(symbolState);
+      const symbolType = symbolTypeByState(_symbolState);
       if (symbolState.onBoard) {
         var y =  _symbolState.trace[1]  + position[0] - symbolState.trace[1];
         var x =  _symbolState.trace[2]  + position[1] - symbolState.trace[2];
       } else {
         var [y, x] = position;
       }
-      let symbolClone = Object.assign({}, symbolState, {
+      let symbolClone = Object.assign({}, _symbolState, {
         onBoard: true,
       });
       if (!symbolState.onBoard) {
         symbolClone.bot = state.bot;
+      }
+      if (!dragging) {
         symbolClone.selected = false;
       }
       if (symbolType.type === "cellSymbol") {
         symbolClone.trace = ["squares", y, x, symbolType.type];
-        nest([y, x, "cellSymbol"], {$set: symbolClone}, squaresUpdater);
-        nest([y, x, "cellSymbolIndex"], {$set: 0}, squaresUpdater);
+        squaresUpdater = nest([y, x, "cellSymbol"], {$set: symbolClone}, squaresUpdater);
+        squaresUpdater = nest([y, x, "cellSymbolIndex"], {$set: 0}, squaresUpdater);
         if (symbolType.multi === "horizontal") {
-          nest([y, x + 1, "cellSymbol"], {$set: symbolClone}, squaresUpdater);
-          nest([y, x + 1, "cellSymbolIndex"], {$set: 1}, squaresUpdater);
+          squaresUpdater = nest([y, x + 1, "cellSymbol"], {$set: symbolClone}, squaresUpdater);
+          squaresUpdater = nest([y, x + 1, "cellSymbolIndex"], {$set: 1}, squaresUpdater);
         } else if (symbolType.multi === "vertical") {
-          nest([y + 1, x, "cellSymbol"], {$set: symbolClone}, squaresUpdater);
-          nest([y + 1, x, "cellSymbolIndex"], {$set: 1}, squaresUpdater);
+          squaresUpdater = nest([y + 1, x, "cellSymbol"], {$set: symbolClone}, squaresUpdater);
+          squaresUpdater = nest([y + 1, x, "cellSymbolIndex"], {$set: 1}, squaresUpdater);
         }
       } else {
         symbolClone.trace = ["squares", y, x, symbolType.type, symbolClone.bot];
-        nest([y, x, symbolType.type, this.state.bot], {$set: symbolClone}, squaresUpdater);
+        squaresUpdater = nest([y, x, symbolType.type, this.state.bot], {$set: symbolClone}, squaresUpdater);
       }
+      updatedSymbolStates.add(symbolClone);
     }
-    return squaresUpdater;
+    return [squaresUpdater, updatedSymbolStates];
+  }
+
+  copyOrMoveSelectedSymbols = (symbolState, position, dragging=false) => {
+    this.setState((state, props) => {
+      if (state.selectedSymbolStates.size === 0) return null;
+      let newState = {...state};
+      let fits = true;
+      state.selectedSymbolStates.forEach(_symbolState => {
+        if (_symbolState.onBoard) {
+          var y =  _symbolState.trace[1]  + position[0] - symbolState.trace[1];
+          var x =  _symbolState.trace[2]  + position[1] - symbolState.trace[2];
+        } else {
+          var [y, x] = position;
+        }
+        fits &= this.fits(state, props, _symbolState, y, x);
+      });
+      if (!fits) return null;
+      let [squaresUpdater, updatedSymbolStates] = this.getCopySymbolsUpdater(state, props, symbolState, position, state.selectedSymbolStates, dragging);
+      state.selectedSymbolStates.forEach(_symbolState => {
+        if (_symbolState.onBoard) {
+          const symbolType = symbolTypeByState(_symbolState);
+          const [y, x] = _symbolState.trace.slice(1, 3);
+          squaresUpdater = nest(_symbolState.trace.slice(1), {$set: nullSymbolState}, squaresUpdater, false);
+          if (symbolType.type === "cellSymbol") {
+            squaresUpdater = nest([y, x, "cellSymbolIndex"], {$set: null}, squaresUpdater, false);
+            if (symbolType.multi === "horizontal") {
+              squaresUpdater = nest([y, x + 1, "cellSymbol"], {$set: nullSymbolState}, squaresUpdater, false);
+              squaresUpdater = nest([y, x + 1, "cellSymbolIndex"], {$set: null}, squaresUpdater, false);
+            } else if (symbolType.multi === "vertical") {
+              squaresUpdater = nest([y + 1, x, "cellSymbol"], {$set: nullSymbolState}, squaresUpdater, false);
+              squaresUpdater = nest([y + 1, x, "cellSymbolIndex"], {$set: null}, squaresUpdater, false);
+            }
+          }
+        }
+      });
+      newState.squares = update(state.squares, squaresUpdater);
+      if (dragging) {
+        newState.selectedSymbolStates = updatedSymbolStates;
+        state.selectedSymbolStates.forEach(_symbolState => {
+          if (!_symbolState.onBoard) {
+            // just remove selected
+            newState = update(newState, nest(_symbolState.trace, {selected: {$set: false}}));
+          }
+        });
+      }
+      return newState;
+    }, this.resetBoard);
   }
 
   getClearSelected = (state, props)  => {
@@ -696,7 +758,6 @@ class Game extends React.Component {
       } else {
         newState = update(newState, nest(symbolState.trace, {selected: {$set: true}}));
         newState.selectedSymbolStates = update(newState.selectedSymbolStates, {$add: [getNested(newState, symbolState.trace)]});
-        newState.selectedOnBoard = newState.selectedSymbolStates.values().next().value.onBoard;
       }
       return newState;
     });
@@ -772,22 +833,15 @@ class Game extends React.Component {
         // outputs are fixed
         return;
       } else {
-        const keepOldAndToggle = this.state.selectedOnBoard && event.shiftKey;
+        const keepOldAndToggle = this.selectedOnBoard() && event.shiftKey;
         this.setSelected(symbolState, keepOldAndToggle);
       }
-    } else if (this.state.selectedOnBoard) {
+    } else if (this.selectedOnBoard()) {
       this.setState(this.getClearSelected);
     } else {
       if (this.state.selectedSymbolStates.size === 1) {
         const selectedSymbolState = this.state.selectedSymbolStates.values().next().value;
-        const symbolType = symbolTypeByState(selectedSymbolState);
-        if (this.fits(selectedSymbolState, y, x)) {
-          this.setState((state, props) => {
-            const squaresUpdater = this.getCopySymbolsUpdater(state, props, selectedSymbolState, [y, x]);
-            let newState = {squares: update(state.squares, squaresUpdater)};
-            return newState;
-          }, this.resetBoard);
-        }
+        this.copyOrMoveSelectedSymbols(selectedSymbolState, [y, x]);
       }
     }
   }
@@ -830,7 +884,7 @@ class Game extends React.Component {
       newState.submission = makeSubmission(stateGet("squares"), props.m, props.n);
       if (args.undoredo) {
         // don't have to reset each square's selected field because they were newly created by undo/redo
-        if (state.selectedOnBoard) newState.selectedSymbolStates.clear();
+        if (this.selectedOnBoard(state, props)) newState.selectedSymbolStates.clear();
       } else {
         if (newState.submission !== state.submissionHistory[state.submissionHistory.length-1]) {
           state.submissionHistory.push(newState.submission);
@@ -925,7 +979,7 @@ class Game extends React.Component {
   }
 
   trash = () => {
-    if (this.state.selectedOnBoard) {
+    if (this.selectedOnBoard()) {
       this.setState((state, props) => {
         let removeSelected = symbolState => symbolState.selected ? nullSymbolState : symbolState;
         let newState = {};
@@ -939,6 +993,10 @@ class Game extends React.Component {
         return newState;
       }, this.resetBoard);
     }
+  }
+
+  trashDragOver = event => {
+    this.dragOverHandler(event, {special: "trash", onDrop: this.trash});
   }
 
   setSubmission = event => {
@@ -1006,49 +1064,102 @@ class Game extends React.Component {
     switch (event.type) {
     case "dragstart":
       let symbolType = symbolTypeByState(symbolState);
-      symbolState.classNames = "drag";
       if (symbolState.onBoard) event.dataTransfer.effectAllowed = "move";
       else event.dataTransfer.effectAllowed = "copy";
-      this.setSelected(symbolState);
+      if (!symbolState.selected) this.setSelected(symbolState);
       this.setState({draggedSymbolState: symbolState});
       break;
     case "drag":
       break;
+    case "drop": // control received from dragOverHandler
     case "dragend":
-      symbolState.classNames = "";
       this.setState({draggedSymbolState: nullSymbolState});
       break;
     }
   }
 
-  dragOverHandler = (event, y, x) => {
-    switch (event.type) {
-    case "dragenter":
-      event.dataTransfer.dropEffect = event.dataTransfer.effectAllowed;
-      this.setState((state, props) => {
-        const draggedSymbolStates = state.draggedSymbolState.onBoard ? state.selectedSymbolStates : new Set([state.draggedSymbolState]);
-        return {
-          dragOverPosition: [y, x],
-          dragOverSet: this.getCopySymbolsUpdater(state, props, state.draggedSymbolState, [y, x], draggedSymbolStates),
-        };
-      });
-      break;
-    case "dragover":
-      event.dataTransfer.dropEffect = event.dataTransfer.effectAllowed;
-      break;
-    case "dragleave":
-      this.setState((state, props) => {
-        if (JSON.stringify(state.dragOverPosition) === JSON.stringify([y, x])) {
+  dragOverHandler = (event, {y, x, special, onDrop}) => {
+    if (special) {
+      switch (event.type) {
+      case "dragenter":
+        event.preventDefault(); // allow drop
+        this.setState((state, props) => {
+          const semaphore = state.dragOverPosition === special ? state.dragOverPositionSemaphore + 1 : 1;
           return {
-            dragOverPosition: null,
+            dragOverPosition: special,
+            dragOverPositionSemaphore: semaphore,
             dragOverSet: null,
+            dragOverFits: false,
           };
+        });
+        break;
+      case "dragover":
+        event.preventDefault(); // allow drop
+        break;
+      case "drop":
+        if (onDrop) onDrop();
+        // dragend doesn't trigger, so trigger it manually
+        this.dragHandler(event, this.state.draggedSymbolState);
+        // waterfall
+      case "dragleave":
+        this.setState((state, props) => {
+          if (state.dragOverPosition !== special) return null;
+          const semaphore = state.dragOverPositionSemaphore - 1;
+          let newState = {}
+          newState.dragOverPositionSemaphore = semaphore;
+          if (semaphore === 0) newState.dragOverPosition = null;
+          return newState;
+        });
+        break;
+      }
+    } else {
+      let fits = true;
+      this.state.selectedSymbolStates.forEach(symbolState => {
+        if (symbolState.onBoard) {
+          var _y =  symbolState.trace[1]  + y - this.state.draggedSymbolState.trace[1];
+          var _x =  symbolState.trace[2]  + x - this.state.draggedSymbolState.trace[2];
+        } else {
+          var [_y, _x] = [y, x];
         }
-        return null;
+        fits &= this.fits(this.state, this.props, symbolState, _y, _x);
       });
-      break;
-    case "drop":
-      break;
+      switch (event.type) {
+      case "dragenter":
+        if (fits) event.preventDefault(); // allow drop
+        this.setState((state, props) => {
+          const draggedSymbolStates = state.draggedSymbolState.onBoard ? state.selectedSymbolStates : new Set([state.draggedSymbolState]);
+          const semaphore = JSON.stringify(state.dragOverPosition) === JSON.stringify([y, x]) ? state.dragOverPositionSemaphore + 1 : 1;
+          return {
+            dragOverPosition: [y, x],
+            dragOverPositionSemaphore: semaphore,
+            dragOverSet: this.getCopySymbolsUpdater(state, props, state.draggedSymbolState, [y, x], draggedSymbolStates, true)[0],
+            dragOverFits: fits,
+          };
+        });
+        break;
+      case "dragover":
+        if (fits) event.preventDefault(); // allow drop
+        break;
+      case "drop":
+        // dragend doesn't trigger, so trigger it manually
+        this.copyOrMoveSelectedSymbols(this.state.draggedSymbolState, [y, x], true);
+        this.dragHandler(event, this.state.draggedSymbolState);
+        // waterfall
+      case "dragleave":
+        this.setState((state, props) => {
+          if (JSON.stringify(state.dragOverPosition) !== JSON.stringify([y, x])) return null;
+          const semaphore = state.dragOverPositionSemaphore - 1;
+          let newState = {}
+          newState.dragOverPositionSemaphore = semaphore;
+          if (semaphore === 0) {
+            newState.dragOverPosition = null;
+            newState.dragOverSet = null;
+            newState.dragOverFits = false;
+          }
+          return newState;
+        });
+        break;
+      }
     }
   }
 }
