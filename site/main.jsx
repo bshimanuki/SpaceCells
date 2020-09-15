@@ -164,7 +164,6 @@ function SymbolState(props) {
     bot: null,
     trace: [],
     selected: false,
-    dragged: false,
   }, props);
 }
 const nullSymbolState = SymbolState();
@@ -221,7 +220,7 @@ function makeSubmission(squares, m, n) {
 class Symbol extends React.PureComponent {
   clickHandler = event => {
     event.stopPropagation();
-    this.props.clickHandler(this.props.y, this.props.x, this.props.symbolState);
+    this.props.clickHandler(event, this.props.y, this.props.x, this.props.symbolState);
   }
 
   dragHandler = event => {
@@ -234,7 +233,6 @@ class Symbol extends React.PureComponent {
     classNames.push("symbol");
     classNames.push("image-container");
     if (this.props.symbolState.selected) classNames.push("selected");
-    if (this.props.symbolState.dragged) classNames.push("dragged");
     let props = {
       onClick: this.clickHandler,
       onDragStart: this.dragHandler,
@@ -280,8 +278,8 @@ class Symbol extends React.PureComponent {
 }
 
 class Square extends React.PureComponent {
-  clickHandler = () => {
-    this.props.clickHandler(this.props.y, this.props.x, null, null);
+  clickHandler = event => {
+    this.props.clickHandler(event, this.props.y, this.props.x, null, null);
   }
 
   dragOverHandler = event => {
@@ -290,7 +288,6 @@ class Square extends React.PureComponent {
 
   renderSymbol(props) {
     const selected = props.symbolState.selected;
-    const dragged = props.symbolState.dragged;
     return (
       <Symbol
         y={this.props.y}
@@ -298,7 +295,6 @@ class Square extends React.PureComponent {
         index={0}
         simBoard={this.props.simBoard}
         stopped={this.props.stopped}
-        flipflop={(dragged || selected) && this.props.flipflop}
         {...props}
         clickHandler={this.props.clickHandler}
         dragHandler={this.props.dragHandler}
@@ -347,7 +343,7 @@ class Square extends React.PureComponent {
 
 class Board extends React.PureComponent {
   renderSquare(props) {
-    const dragOver = this.props.dragOverRange && this.props.dragOverRange[0] <= props.y && this.props.dragOverRange[1] <= props.x  && props.y < this.props.dragOverRange[2] && props.x < this.props.dragOverRange[3];
+    const dragOver = ((this.props.dragOverSet || {})[props.y] || {})[props.x];
     return (<Square
       key={props.y,props.x}
       clickHandler={this.props.clickHandler}
@@ -422,12 +418,13 @@ class Game extends React.Component {
       // selection
       symbolType: "cellSymbol",
       bot: 0,
-      selectedSymbolStates: [],
+      selectedSymbolStates: new Set(),
       selectedOnBoard: false,
       selectionSymbolStateCellSymbols: initialSelectionSymbolStates("selectionSymbolStateCellSymbols", symbolTypesCellSymbol),
       selectionSymbolStateInstructions: initialSelectionSymbolStates("selectionSymbolStateInstructions", [...symbolTypesDirection, ...symbolTypesOperation]),
-      draggedSymbolStates: [],
-      dragOverRange: null,
+      draggedSymbolState: nullSymbolState,
+      dragOverPosition: null,
+      dragOverSet: null,
       // state change indicator alternate between +/-1
       flipflop: 1,
     };
@@ -509,8 +506,11 @@ class Game extends React.Component {
   }
 
   render() {
+    let classNames = [];
+    if (this.state.draggedSymbolState.value) classNames.push("dragged");
+    classNames = classNames.join(" ");
     return (
-      <div id="main-content" style={{display:"flex"}}>
+      <div id="main-content" style={{display:"flex"}} className={classNames}>
         <div className="level-selector-sidebar" style={{display:"flex", flexDirection:"column"}}>
           <div>
             <label htmlFor="level_select">Choose level:</label>
@@ -527,7 +527,7 @@ class Game extends React.Component {
               clickHandler={this.boardClickHandler}
               dragHandler={this.dragHandler}
               dragOverHandler={this.dragOverHandler}
-              dragOverRange={this.state.dragOverRange}
+              dragOverSet={this.state.dragOverSet}
               simBoard={this.state.validBoard || this.state.cycle}
               stopped={this.state.simState==="stop"}
               m={this.props.m}
@@ -548,7 +548,7 @@ class Game extends React.Component {
               <Toggle handler={this.botHandler} selected={this.state.bot} name="bot" options={["Red", "Blue"]} colors={botColors}/>
               <Toggle handler={this.simHandler} selected={this.state.simState} name="sim" options={{stop:"⏹", pause:"⏸", step:"⧐", play:"▶", fast:"⏩", nonstop:"⏩", batch:"⏭"}}/>
               <div style={{flex:1}}></div>
-              <div className={`trash ${this.state.selectedSymbolStates.length && this.state.selectedOnBoard ? "active" : "inactive"}`} onClick={this.trash}>🗑</div>
+              <div className={`trash ${this.state.selectedSymbolStates.size && this.state.selectedOnBoard ? "active" : "inactive"}`} onClick={this.trash}>🗑</div>
             </div>
             <div className={`symbol-bar bot${this.state.bot}`} style={{display:"flex", flexDirection:"row"}}>
               <div className="symbol-grid-bar grid-layout" style={{flex:3}}>
@@ -556,7 +556,7 @@ class Game extends React.Component {
                 {this.state.selectionSymbolStateInstructions.map(symbolState => this.renderSymbolGroup("instruction", symbolState))}
               </div>
               <div className="symbol-options-bar" style={{flex:1, display:"flex", flexDirection:"column"}}>
-                <SymbolOptions changeOption={this.changeSymbolOption} selectedSymbolState={this.state.selectedSymbolStates.length === 1 && this.state.selectedSymbolStates[0]}/>
+                <SymbolOptions changeOption={this.changeSymbolOption} selectedSymbolState={this.state.selectedSymbolStates.size === 1 && this.state.selectedSymbolStates.values().next().value}/>
               </div>
             </div>
           </div>
@@ -642,57 +642,62 @@ class Game extends React.Component {
     return true;
   }
 
-  getMoveSymbols = (state, props, symbolState, position, dragging=false) => {
-    const symbolType = symbolTypeByState(symbolState);
-    const [y, x] = position;
-    let updater = {};
-    let symbolClone = Object.assign({}, symbolState, {
-      onBoard: true,
-    });
-    if (!symbolState.onBoard) {
-      symbolClone.bot = state.bot;
-      symbolClone.selected = false;
-      symbolClone.dragged = false;
-    }
-    if (symbolType.type === "cellSymbol") {
-      symbolClone.trace = ["squares", y, x, symbolType.type];
-      nest([y, x], {
-        cellSymbol: {$set: symbolClone},
-        cellSymbolIndex: {$set: 0},
-      }, updater);
-      if (symbolType.multi === "horizontal") {
-        nest([y, x + 1], {
-          cellSymbol: {$set: symbolClone},
-          cellSymbolIndex: {$set: 1},
-        }, updater);
-      } else if (symbolType.multi === "vertical") {
-        nest([y + 1, x], {
-          cellSymbol: {$set: symbolClone},
-          cellSymbolIndex: {$set: 1},
-        }, updater);
+  getCopySymbolsUpdater = (state, props, symbolState, position, symbolStates=[symbolState]) => {
+    let squaresUpdater = {};
+    for (const _symbolState of symbolStates) {
+      const symbolType = symbolTypeByState(symbolState);
+      if (symbolState.onBoard) {
+        var y =  _symbolState.trace[1]  + position[0] - symbolState.trace[1];
+        var x =  _symbolState.trace[2]  + position[1] - symbolState.trace[2];
+      } else {
+        var [y, x] = position;
       }
-    } else {
-      symbolClone.trace = ["squares", y, x, symbolType.type, symbolClone.bot];
-      nest([y, x, symbolType.type, this.state.bot], {$set: symbolClone}, updater);
+      let symbolClone = Object.assign({}, symbolState, {
+        onBoard: true,
+      });
+      if (!symbolState.onBoard) {
+        symbolClone.bot = state.bot;
+        symbolClone.selected = false;
+      }
+      if (symbolType.type === "cellSymbol") {
+        symbolClone.trace = ["squares", y, x, symbolType.type];
+        nest([y, x, "cellSymbol"], {$set: symbolClone}, squaresUpdater);
+        nest([y, x, "cellSymbolIndex"], {$set: 0}, squaresUpdater);
+        if (symbolType.multi === "horizontal") {
+          nest([y, x + 1, "cellSymbol"], {$set: symbolClone}, squaresUpdater);
+          nest([y, x + 1, "cellSymbolIndex"], {$set: 1}, squaresUpdater);
+        } else if (symbolType.multi === "vertical") {
+          nest([y + 1, x, "cellSymbol"], {$set: symbolClone}, squaresUpdater);
+          nest([y + 1, x, "cellSymbolIndex"], {$set: 1}, squaresUpdater);
+        }
+      } else {
+        symbolClone.trace = ["squares", y, x, symbolType.type, symbolClone.bot];
+        nest([y, x, symbolType.type, this.state.bot], {$set: symbolClone}, squaresUpdater);
+      }
     }
-    let newState = {squares: update(state.squares, updater)};
-    return newState;
+    return squaresUpdater;
   }
 
   getClearSelected = (state, props)  => {
     let delta = {};
-    state.selectedSymbolStates.map(symbolState => nest(symbolState.trace, {selected: {$set: false}}, delta));
+    state.selectedSymbolStates.forEach(symbolState => nest(symbolState.trace, {selected: {$set: false}}, delta));
     let newState = update(state, delta);
-    newState.selectedSymbolStates = [];
+    newState.selectedSymbolStates.clear();
     return newState;
   }
 
-  setSelected = (symbolState) => {
+  // keepOldAndToggle used for shift select
+  setSelected = (symbolState, keepOldAndToggle=false) => {
     this.setState((state, props) => {
-      let newState = this.getClearSelected(state, props);
-      newState = update(newState, nest(symbolState.trace, {selected: {$set: true}}));
-      newState.selectedSymbolStates = [getNested(newState, symbolState.trace)];
-      newState.selectedOnBoard = newState.selectedSymbolStates[0].onBoard;
+      let newState = keepOldAndToggle ? state : this.getClearSelected(state, props);
+      if (keepOldAndToggle && getNested(newState, symbolState.trace).selected) {
+        newState.selectedSymbolStates = update(newState.selectedSymbolStates, {$remove: [getNested(newState, symbolState.trace)]});
+        newState = update(newState, nest(symbolState.trace, {selected: {$set: false}}));
+      } else {
+        newState = update(newState, nest(symbolState.trace, {selected: {$set: true}}));
+        newState.selectedSymbolStates = update(newState.selectedSymbolStates, {$add: [getNested(newState, symbolState.trace)]});
+        newState.selectedOnBoard = newState.selectedSymbolStates.values().next().value.onBoard;
+      }
       return newState;
     });
   }
@@ -701,7 +706,7 @@ class Game extends React.Component {
   symbolTypeHandler = value => {
     this.setState((state, props) => {
       if (state.symbolType !== value) {
-        if (state.selectedSymbolStates.length === 1 && !state.selectedSymbolStates[0].onBoard) {
+        if (state.selectedSymbolStates.size === 1 && !state.selectedSymbolStates.values().next().value.onBoard) {
           return Object.assign(this.getClearSelected(state, props), {symbolType: value});
         } else {
           return {symbolType: value};
@@ -757,7 +762,7 @@ class Game extends React.Component {
     );
   }
 
-  boardClickHandler = (y, x, symbolState) => {
+  boardClickHandler = (event, y, x, symbolState) => {
     if (this.state.simState !== "stop") return;
     if (symbolState) {
       if (this.state.inputs.some(square => matchLocation(square, y, x))) {
@@ -767,17 +772,20 @@ class Game extends React.Component {
         // outputs are fixed
         return;
       } else {
-        this.setSelected(symbolState);
+        const keepOldAndToggle = this.state.selectedOnBoard && event.shiftKey;
+        this.setSelected(symbolState, keepOldAndToggle);
       }
     } else if (this.state.selectedOnBoard) {
       this.setState(this.getClearSelected);
     } else {
-      if (this.state.selectedSymbolStates.length === 1) {
-        const selectedSymbolState = this.state.selectedSymbolStates[0];
+      if (this.state.selectedSymbolStates.size === 1) {
+        const selectedSymbolState = this.state.selectedSymbolStates.values().next().value;
         const symbolType = symbolTypeByState(selectedSymbolState);
         if (this.fits(selectedSymbolState, y, x)) {
           this.setState((state, props) => {
-            return this.getMoveSymbols(state, props, selectedSymbolState, [y, x]);
+            const squaresUpdater = this.getCopySymbolsUpdater(state, props, selectedSymbolState, [y, x]);
+            let newState = {squares: update(state.squares, squaresUpdater)};
+            return newState;
           }, this.resetBoard);
         }
       }
@@ -822,7 +830,7 @@ class Game extends React.Component {
       newState.submission = makeSubmission(stateGet("squares"), props.m, props.n);
       if (args.undoredo) {
         // don't have to reset each square's selected field because they were newly created by undo/redo
-        if (state.selectedOnBoard) newState.selectedSymbolStates = [];
+        if (state.selectedOnBoard) newState.selectedSymbolStates.clear();
       } else {
         if (newState.submission !== state.submissionHistory[state.submissionHistory.length-1]) {
           state.submissionHistory.push(newState.submission);
@@ -927,7 +935,7 @@ class Game extends React.Component {
           direction: square.direction.map(removeSelected),
           operation: square.operation.map(removeSelected),
         })));
-        newState.selectedSymbolStates = [];
+        newState.selectedSymbolStates = new Set();
         return newState;
       }, this.resetBoard);
     }
@@ -982,12 +990,12 @@ class Game extends React.Component {
   }
 
   changeSymbolOption = event => {
-    if (this.state.selectedSymbolStates.length === 1) {
+    if (this.state.selectedSymbolStates.size === 1) {
       const value = event.target.value;
       this.setState((state, props) => {
-        const selectedSymbolState = this.state.selectedSymbolStates[0];
+        const selectedSymbolState = this.state.selectedSymbolStates.values().next().value;
         let newState = update(state, nest(selectedSymbolState.trace, {value: {$set: value}}));
-        newState.selectedSymbolStates = [getNested(newState, selectedSymbolState.trace)];
+        newState.selectedSymbolStates = new Set([getNested(newState, selectedSymbolState.trace)]);
         newState.flipflop = -state.flipflop;
         return newState;
       });
@@ -995,13 +1003,13 @@ class Game extends React.Component {
   }
 
   dragHandler = (event, symbolState) => {
-    console.log(event.type, {...event});
     switch (event.type) {
     case "dragstart":
       let symbolType = symbolTypeByState(symbolState);
       symbolState.classNames = "drag";
       if (symbolState.onBoard) event.dataTransfer.effectAllowed = "move";
       else event.dataTransfer.effectAllowed = "copy";
+      this.setSelected(symbolState);
       this.setState({draggedSymbolState: symbolState});
       break;
     case "drag":
@@ -1014,18 +1022,28 @@ class Game extends React.Component {
   }
 
   dragOverHandler = (event, y, x) => {
-    console.log(event.type, y, x, {...event});
     switch (event.type) {
     case "dragenter":
       event.dataTransfer.dropEffect = event.dataTransfer.effectAllowed;
-      this.setState({dragOverPosition: [y, x]});
+      this.setState((state, props) => {
+        const draggedSymbolStates = state.draggedSymbolState.onBoard ? state.selectedSymbolStates : new Set([state.draggedSymbolState]);
+        return {
+          dragOverPosition: [y, x],
+          dragOverSet: this.getCopySymbolsUpdater(state, props, state.draggedSymbolState, [y, x], draggedSymbolStates),
+        };
+      });
       break;
     case "dragover":
       event.dataTransfer.dropEffect = event.dataTransfer.effectAllowed;
       break;
     case "dragleave":
       this.setState((state, props) => {
-        if (JSON.stringify(state.dragOverPosition) === JSON.stringify([y, x])) return {dragOverPosition: null};
+        if (JSON.stringify(state.dragOverPosition) === JSON.stringify([y, x])) {
+          return {
+            dragOverPosition: null,
+            dragOverSet: null,
+          };
+        }
         return null;
       });
       break;
@@ -1068,7 +1086,6 @@ class SymbolGroup extends React.PureComponent {
     classNames.push(symbolState.type);
     classNames.push(`symbol-${symbolState.value}`);
     if (this.props.symbolState.selected) classNames.push("selected");
-    if (this.props.symbolState.dragged) classNames.push("dragged");
     classNames.push(symbolType.className || "");
     classNames.push(symbolType.multi || "");
     classNames = classNames.join(" ");
