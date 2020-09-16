@@ -199,9 +199,9 @@ export function DirectionRight(props) {
   return <Direction dx={1} dy={0} _className="direction-right" {...props}/>;
 }
 
-function Operation({texts, className, r, textAttrs, fontSize, textHeight, unicodeFontSize, unicodeTextHeight, underlay, overlay, ...props}) {
+function Operation({texts, _className, className, r, textAttrs, fontSize, textHeight, unicodeFontSize, unicodeTextHeight, underlay, overlay, ...props}) {
   if (!Array.isArray(texts)) texts = [texts];
-  return <Svg className={`operation ${className}`} {...props}>
+  return <Svg className={`operation ${_className} ${className}`} {...props}>
     {underlay}
     <circle className="operation-circle bot-fill" cx={0} cy={0} r={r}/>
     {texts.map((text, i) => {
@@ -232,52 +232,54 @@ Operation.defaultProps = {
   textHeight: 0.35,
   unicodeFontSize: 0.5,
   unicodeTextHeight: 0.45,
+  _className: "",
+  className: "",
 }
 function UnicodeOperation(props) {
   return <Operation unicodeFontSize={0.8} {...props}/>;
 }
 
 export function Start(props) {
-  return <Operation texts="START" className="start" {...props}/>
+  return <Operation texts="START" _className="start" {...props}/>
 }
 export function Next(props) {
-  return <Operation texts="NEXT" className="next" {...props}/>
+  return <Operation texts="NEXT" _className="next" {...props}/>
 }
 export function Grab(props) {
-  return <Operation texts="GRAB" className="grab" {...props}/>
+  return <Operation texts="GRAB" _className="grab" {...props}/>
 }
 export function Drop(props) {
-  return <Operation texts="DROP" className="drop" {...props}/>
+  return <Operation texts="DROP" _className="drop" {...props}/>
 }
 export function Swap(props) {
-  return <Operation texts={["GRAB", "DROP"]} className="swap" {...props}/>
+  return <Operation texts={["GRAB", "DROP"]} _className="swap" {...props}/>
 }
 export function Latch(props) {
-  return <Operation texts="LOCK" className="latch" {...props}/>
+  return <Operation texts="LOCK" _className="latch" {...props}/>
 }
 export function Unlatch(props) {
-  return <Operation texts="FREE" className="latch" {...props}/>
+  return <Operation texts="FREE" _className="latch" {...props}/>
 }
 export function ToggleLatch(props) {
-  return <Operation texts={["LOCK", "FREE"]} className="togglelatch" {...props}/>
+  return <Operation texts={["LOCK", "FREE"]} _className="togglelatch" {...props}/>
 }
 export function Relatch(props) {
-  return <Operation texts="RESET" className="relatch" {...props}/>
+  return <Operation texts="RESET" _className="relatch" {...props}/>
 }
 // export function Relatch(props) {
-  // return <UnicodeOperation texts="💥" className="relatch" {...props}/>
+  // return <UnicodeOperation texts="💥" _className="relatch" {...props}/>
 // }
 export function Sync(props) {
-  return <UnicodeOperation texts="🗘" className="sync" {...props}/>
+  return <UnicodeOperation texts="🗘" _className="sync" {...props}/>
 }
 export function Rotate(props) {
-  return <UnicodeOperation texts="⭮" className="rotate" {...props}/>
+  return <UnicodeOperation texts="⭮" _className="rotate" {...props}/>
 }
 export function Power0(props) {
-  return <Operation texts={["PWR", "ℵ"]} className="power0" {...props}/>
+  return <Operation texts={["PWR", "ℵ"]} _className="power0" {...props}/>
 }
 export function Power1(props) {
-  return <Operation texts={["PWR", "ב"]} className="power1" {...props}/>
+  return <Operation texts={["PWR", "ב"]} _className="power1" {...props}/>
 }
 
 function Branch({dx, dy, children, className, arrowProps, branchRadius, ...props}) {

@@ -315,8 +315,18 @@ body {
 }
 
 /* drag n drop */
-.dragging .selected {
+.dragging .selected > * {
   opacity: 0.25;
+}
+.dragging.dragover-trash .selected > :not(.start) {
+  opacity: 0.5;
+}
+.dragging.dragover-trash .selected > :not(.start) svg .cell-border,
+.dragging.dragover-trash .selected > :not(.start) svg .bot-fill {
+  fill: red;
+}
+.dragging.dragover-trash .selected > :not(.start) svg .bot-stroke {
+  stroke: red
 }
 .square.dragover .square-drag-overlay {
   background-color: red;

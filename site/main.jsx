@@ -2,8 +2,8 @@ import React from "react";
 import ReactDOM from "react-dom";
 import update from "immutability-helper";
 
-import "./main.css";
 import * as Svgs from "./svgs.jsx";
+import "./main.css"; // after svgs with its own css
 import Embindings from "./embindings.js";
 import EmbindingsWASM from "./embindings.wasm";
 
@@ -36,7 +36,7 @@ EmbindingsLoader.then((core) => {
   console.log("loaded");
 });
 
-var levels = {
+const levels = {
   "not": "../examples/not.lvl",
   "and": "../examples/and.lvl",
   "delay": "../examples/delay.lvl",
@@ -47,6 +47,11 @@ var levels = {
   "adder": "../examples/adder.lvl",
   "stack": "../examples/stack.lvl",
 };
+
+const startSquares = [
+  [2, 5], // red
+  [7, 5], // blue
+];
 
 function getFileFromServer(url, doneCallback) {
   var xhr = new XMLHttpRequest();
@@ -153,7 +158,8 @@ function symbolTypeByState(symbolState) {
   return symbolTypesByValue[symbolState.type][symbolState.value];
 }
 function initialSelectionSymbolStates(type, symbolTypes) {
-  return symbolTypes.map((symbolType, i) => SymbolState({
+  // START starts on board and cannot be added
+  return symbolTypes.filter(symbolType => symbolType.value !== "S").map((symbolType, i) => SymbolState({
     type: symbolType.type,
     value: symbolType.value || Object.keys(symbolType.options)[0][0],
     trace: [type, i],
@@ -194,10 +200,10 @@ function makeSymbolState(type, c, y, x, bot) {
   let symbols = symbolTypesByValue[type];
   for (let symbolValue in symbols) {
     if (symbolValue.includes(c)) {
-      if (type == "cellSymbol") {
+      if (type === "cellSymbol") {
         var symbolState = SymbolState({type:type, value:symbolValue, onBoard:true, trace:["squares", y, x, type]});
       } else {
-        var symbolState = SymbolState({type:type, value:symbolValue, onBoard:true, trace:["squares", y, x, type, bot]});
+        var symbolState = SymbolState({type:type, value:symbolValue, onBoard:true, bot: bot, trace:["squares", y, x, type, bot]});
       }
       if (symbols[symbolValue].multi === "horizontal") return [symbolState, 0, c === ">" ? -1 : 1];
       else if (symbols[symbolValue].multi === "vertical") return [symbolState, c === "v" ? -1 : 1, 0];
@@ -268,7 +274,6 @@ class Symbol extends React.PureComponent {
       if (!this.props.symbolState.value) {
         return <div></div>;
       }
-      classNames.push(`bot${this.props.bot}`);
       classNames = classNames.join(" ");
       const symbolType = symbolTypeByState(this.props.symbolState);
       let Component = symbolType.svg || symbolType.options[this.props.symbolState.value][1];
@@ -438,7 +443,7 @@ class Game extends React.Component {
 
   componentDidMount() {
     window.addEventListener("keydown", this.keyboardHandler)
-    this.setLevelHandler({target: {value: this.state.levelName}});
+    this.setLevelHandler({target: {value: this.state.levelName}}, true); // clear board
   }
 
   componentWillUnmount() {
@@ -515,7 +520,10 @@ class Game extends React.Component {
     let classNames = [];
     if (this.state.draggedSymbolState.value) classNames.push("dragging");
     if (this.state.dragOverFits) classNames.push("dragover-fits");
+    if (this.state.dragOverPosition === "trash") classNames.push("dragover-trash");
     classNames = classNames.join(" ");
+    // trash is active if non-START board symbols are selected
+    let trashActive = [...this.state.selectedSymbolStates].some(symbolState => symbolState.onBoard && symbolState.value !== "S");
     return (
       <div id="main-content" style={{display:"flex"}} className={classNames}>
         <div className="level-selector-sidebar" style={{display:"flex", flexDirection:"column"}}>
@@ -527,6 +535,7 @@ class Game extends React.Component {
           </div>
           <textarea name="submission" id="submission" value={this.state.submission} onChange={this.setSubmission}/>
           <input type="button" value="Load" onClick={this.setBoardHandler}/>
+          <input type="button" value="Clear" onClick={this.clearBoardHandler}/>
         </div>
         <div className="center-content" style={{display:"flex", flexDirection:"column", alignItems:"center", width:"min-content"}}>
           <div style={{display:"flex", width:"min-content"}} className="game-board">
@@ -555,7 +564,7 @@ class Game extends React.Component {
               <Toggle handler={this.botHandler} selected={this.state.bot} name="bot" options={["Red", "Blue"]} colors={botColors}/>
               <Toggle handler={this.simHandler} selected={this.state.simState} name="sim" options={{stop:"⏹", pause:"⏸", step:"⧐", play:"▶", fast:"⏩", nonstop:"⏩", batch:"⏭"}}/>
               <div style={{flex:1}}></div>
-              <div className={`trash ${this.state.selectedSymbolStates.size && this.selectedOnBoard() ? "active" : "inactive"} ${this.state.dragOverPosition === "trash" && "dragover"}`} onClick={this.trash} onDragEnter={this.trashDragOver} onDragOver={this.trashDragOver} onDragLeave={this.trashDragOver} onDrop={this.trashDragOver}>🗑</div>
+              <div className={`trash ${trashActive ? "active" : "inactive"} ${this.state.dragOverPosition === "trash" && "dragover"}`} onClick={this.trash} onDragEnter={this.trashDragOver} onDragOver={this.trashDragOver} onDragLeave={this.trashDragOver} onDrop={this.trashDragOver}>🗑</div>
             </div>
             <div className={`symbol-bar bot${this.state.bot}`} style={{display:"flex", flexDirection:"row"}}>
               <div className="symbol-grid-bar grid-layout" style={{flex:3}}>
@@ -1002,7 +1011,14 @@ class Game extends React.Component {
   trash = () => {
     if (this.selectedOnBoard()) {
       this.setState((state, props) => {
-        let removeSelected = symbolState => symbolState.selected ? nullSymbolState : symbolState;
+        let removeSelected = symbolState => {
+          if (symbolState.selected) {
+            // don't delete START
+            if (symbolState.value === "S") return update(symbolState, {selected: {$set: false}});
+            return nullSymbolState;
+          }
+          return symbolState;
+        }
         let newState = {};
         newState.squares  = state.squares.map(row => row.map(square => ({
           cellSymbol: removeSelected(square.cellSymbol),
@@ -1024,43 +1040,60 @@ class Game extends React.Component {
     this.setState({submission: event.target.value});
   }
 
-  setLevelHandler = event => {
+  setLevelHandler = (event, clearBoard=false) => {
     var value = event.target.value;
-    if (this.state.levelData == null || value !== this.state.levelName) {
+    if (this.state.levelData === null || value !== this.state.levelName) {
       var path = levels[value];
-      getFileFromServer(path, (text) => {
-        if (text) {
-          if (this.state.simState !== "stop") this.simHandler("stop");
-          var newState = {
-            levelName: value,
-            levelData: text,
-            submissionHistory: [],
-            submissionFuture: [],
+      getFileFromServer(path, text => this.setBoardToLevel(value, text, clearBoard));
+    }
+  }
+
+  setBoardToLevel = (levelName, levelData, clearBoard=false) => {
+    if (levelData) {
+      if (this.state.simState !== "stop") this.simHandler("stop");
+      var newState = {
+        levelName: levelName,
+        levelData: levelData,
+        submissionHistory: [],
+        submissionFuture: [],
+      }
+      let squares = this.state.squares;
+      if (clearBoard) squares = squares.map(row => row.map(makeEmptySquare));
+      var submission = makeSubmission(squares, this.props.m, this.props.n);
+      var board = Module.LoadBoard(levelData, submission);
+      var inputs = board.get_inputs();
+      var inputLocations = Array.from({length: inputs.size()}).map((_, i) => inputs.get(i).location);
+      inputs.delete();
+      let levelGrid = board.get_level();
+      newState.squares = squares.map((row, y) => row.map((square, x) => {
+        if (clearBoard) {
+          for (let bot in startSquares) {
+            bot = Number(bot);
+            if (JSON.stringify(startSquares[bot]) === JSON.stringify([y, x])) {
+              let [symbolState] = makeSymbolState("operation", "S", y, x, bot);
+              return update(makeEmptySquare(), {operation: {[bot]: {$set: symbolState}}});
+            }
           }
-          var submission = makeSubmission(this.state.squares, this.props.m, this.props.n);
-          var board = Module.LoadBoard(text, submission);
-          var inputs = board.get_inputs();
-          var inputLocations = Array.from({length: inputs.size()}).map((_, i) => inputs.get(i).location);
-          inputs.delete();
-          let levelGrid = board.get_level();
-          newState.squares = this.state.squares.map((row, y) => row.map((square, x) => {
-            let levelValue = String.fromCharCode(levelGrid.at(y, x));
-            if (levelValue === "x") return makeFixedCell("cellSymbol", "x", y, x);
-            if (levelValue === "+") return makeFixedCell("cellSymbol", "+", y, x);
-            if (y < board.m && x < board.n && !cellAllowed(levelValue)) return makeEmptySquare();
-            return {...square};
-          }));
-          levelGrid.delete();
-          board.delete();
-          this.setState(newState, this.resetBoard);
         }
-      });
+        let levelValue = String.fromCharCode(levelGrid.at(y, x));
+        if (levelValue === "x") return makeFixedCell("cellSymbol", "x", y, x);
+        if (levelValue === "+") return makeFixedCell("cellSymbol", "+", y, x);
+        if (y < board.m && x < board.n && !cellAllowed(levelValue)) return makeEmptySquare();
+        return {...square};
+      }));
+      levelGrid.delete();
+      board.delete();
+      this.setState(newState, this.resetBoard);
     }
   }
 
   setBoardHandler = event => {
     if (this.state.simState !== "stop") this.simHandler("stop");
     this.loadSubmission(this.state.submission);
+  }
+
+  clearBoardHandler = event => {
+    this.setBoardToLevel(this.state.levelName, this.state.levelData, true);
   }
 
   symbolClickHandler = symbolState => {
