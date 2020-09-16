@@ -11,7 +11,8 @@ textarea {
 
 /* layout */
 body {
-  background-color: whitesmoke;
+  /* background-color: whitesmoke; */
+  background-color: gray;
 }
 #game {
 }
@@ -20,18 +21,15 @@ body {
   min-width: min-content;
 }
 .level-selector-sidebar {
-  margin: 0 1%;
+  padding: 0 1%;
   width: 15%;
 }
 .center-content {
   min-width: min-content;
   align-items: center;
-  background-color: tan;
-  border-radius: 0 0 1% 1%;
 }
-.symbol-options-bar { background: tan; }
 .stats-sidebar {
-  margin: 0 1%;
+  padding: 0 1%;
   width: 20%;
 }
 #submission {
@@ -92,8 +90,12 @@ body {
 }
 .toggle-bar {
   align-items: center;
+  background-color: tan;
 }
+.symbol-options-bar { background: tan; }
 .symbol-bar {
+  border-radius: 0 0 20px 20px;
+  overflow: hidden;
 }
 .sim-running .symbol-bar svg {
   opacity: 0.5;
@@ -211,7 +213,7 @@ body {
 .input,.output {
   background: honeydew;
 }
-.output.unpowered .cell { opacity: 0.5 }
+.output.unpowered svg { opacity: 0.75 }
 .output.powered .square-underlay {
   border-style: dashed;
   border-width: 1%;
@@ -306,6 +308,7 @@ body {
   font-weight: bold;
 }
 .colors .future {
+  opacity: 0.9;
 }
 [color=K] { color: black; }
 [color=N] { color: brown; }
@@ -318,6 +321,19 @@ body {
 [color=W] { color: white; }
 [color=C] { color: cyan; }
 [color=E] { color: orangered; }
+[color=Y],
+[color=W]
+{
+  text-shadow:
+  0.5px 0px 0.5px #888,
+  0.5px 0.5px 0.5px #888,
+  0px 0.5px 0.5px #888,
+  -0.5px 0.5px 0.5px #888,
+  -0.5px 0px 0.5px #888,
+  -0.5px -0.5px 0.5px #888,
+  0px -0.5px 0.5px #888,
+  0.5px -0.5px 0.5px #888;
+}
 .output-color-K .game-board { filter: drop-shadow(0 0 20px black); }
 .output-color-N .game-board { filter: drop-shadow(0 0 20px brown); }
 .output-color-R .game-board { filter: drop-shadow(0 0 20px red); }

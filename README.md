@@ -13,11 +13,22 @@ If you don't have python 3, you can run `python -m SimpleHTTPServer 8000` instea
 
 See the Google Drive design document for an overview of gameplay.
 
+## Interface
+
+There are 3 different ways to input symbols.
+- Click the symbol you want and then click the square you want to place in.
+- Drag and drop from the bottom.
+- Hold the key corresponding to the symbol (`Q-O` for the top row, `A-L` for the bottom) and click a square.
+
+Additionally, you can drag symbols around that are already on the board. Shift click to select multiple symbols at a time.
+
 ## Levels
 #### not
-Given a blue or green input, output the other color.
+Given a blue or green input, output the opposite color.
 #### and
 Given two inputs, output blue if they are both blue and green otherwise.
+#### crossing
+Given a red/orange input and a blue/green input, output the inputs crossing paths.
 #### delay
 Given one input, output the color of the previous input. Output blue as the first output.
 #### switch

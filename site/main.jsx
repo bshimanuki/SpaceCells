@@ -23,16 +23,6 @@ function getNested(obj, seq, start=0) {
   return getNested(obj[seq[start]], seq, start + 1);
 }
 
-function setCookie(name, value) {
-  let maxAge = 60*60*24*365; // one year
-  document.cookie = `${name}=${encodeURIComponent(value)};max-age=${maxAge};`;
-}
-function getCookie(name) {
-  let rawValues = document.cookie.match("(^|;)\\s*" + name + "\\s*=\\s*([^;]+)");
-  let rawValue = rawValues ? rawValues.pop() : "";
-  return decodeURIComponent(rawValue);
-}
-
 var Module;
 const EmbindingsLoader = Embindings({
   locateFile: () => EmbindingsWASM,
@@ -49,6 +39,7 @@ EmbindingsLoader.then((core) => {
 const levels = {
   "not": "../examples/not.lvl",
   "and": "../examples/and.lvl",
+  "crossing": "../examples/crossing.lvl",
   "delay": "../examples/delay.lvl",
   "switch": "../examples/switch.lvl",
   "xor": "../examples/xor.lvl",
@@ -552,7 +543,8 @@ class Game extends React.Component {
           </div>
           <textarea name="submission" id="submission" value={this.state.submission} onChange={this.setSubmission}/>
           <input type="button" value="Load" onClick={this.setBoardHandler}/>
-          <input type="button" value="Clear" onClick={this.clearBoardHandler}/>
+          <div style={{paddingBottom: "60px"}}/>
+          <input type="button" value="Reset Board" onClick={this.clearBoardHandler}/>
         </div>
         <div className="center-content" style={{display:"flex", flexDirection:"column", alignItems:"center", width:"min-content"}}>
           <div style={{display:"flex", width:"min-content"}} className="game-board">
@@ -601,17 +593,20 @@ class Game extends React.Component {
             <div className="test-case">
               <span className="test-case-name">Test Case</span><span><span className="test-case-value">{this.state.testCase + 1}</span> / <span className="test-case-total">{this.state.outputColors.length}</span></span>
             </div>
-            {(this.state.inputBits[this.state.testCase] || []).map((input, i) =>
-            <div key={i} className="input-colors">
-              <span className="input-name">Input{this.state.inputs.length > 1 ? ` ${i+1}` : ""}</span>
-              <span className="colors">
-                {input.map((bit, k) => {
-                    let colors = "GB";
-                    return <span key={k} className={`input-color ${k < this.state.step - this.state.wasNext ? "past" : ""} ${k === this.state.step - this.state.wasNext ? "present" : ""} ${k > this.state.step - this.state.wasNext ? "future" : ""}`} color={colors[Number(bit)]}>{colors[Number(bit)]}</span>;
-                })}
-              </span>
-            </div>
-            )}
+            {(this.state.inputBits[this.state.testCase] || []).map((input, i) => {
+              const loc = this.state.inputs[i].location;
+              const colors = getNested(this.state.squares, [loc.y, loc.x]).cellSymbol.value === "x" ? "GB" : "OR";
+              return (
+                <div key={i} className="input-colors">
+                  <span className="input-name">Input{this.state.inputs.length > 1 ? ` ${i+1}` : ""}</span>
+                  <span className="colors">
+                    {input.map((bit, k) =>
+                    <span key={k} className={`input-color ${k < this.state.step - this.state.wasNext ? "past" : ""} ${k === this.state.step - this.state.wasNext ? "present" : ""} ${k > this.state.step - this.state.wasNext ? "future" : ""}`} color={colors[Number(bit)]}>{colors[Number(bit)]}</span>
+                    )}
+                  </span>
+                </div>
+              );
+            })}
             <div className="expected-colors">
               <span className="expected-name">Expected</span>
               <span className="colors">
@@ -970,7 +965,7 @@ class Game extends React.Component {
       }
       if (state.board) state.board.delete();
       newState.board = Module.LoadBoard(stateGet("levelData"), newState.submission);
-      setCookie(`board-state-${stateGet("levelName")}`, newState.submission);
+      localStorage.setItem(`board-state-${stateGet("levelName")}`, newState.submission);
       var trespassable = newState.board.get_trespassable();
       newState.trespassable = Array.from({length: newState.board.m}).map((row, y) => Array.from({length: newState.board.n}).map((cell, x) => {
         return trespassable.at(y, x);
@@ -1110,7 +1105,7 @@ class Game extends React.Component {
       var submission = null;
       var board = null;
       if (loadCookie) {
-        submission = getCookie(`board-state-${levelName}`);
+        submission = localStorage.getItem(`board-state-${levelName}`);
         if (submission) {
           board = Module.LoadBoard(levelData, submission);
           const status = board.check_status();
