@@ -133,7 +133,7 @@ const symbolTypesOperation = [
   {type: "operation", subtype: "ROTATE", value: "r", svg: Svgs.Rotate},
   {type: "operation", subtype: "BRANCH(|/)", options: {"<": ["<", Svgs.Branch1Left], "v": ["v", Svgs.Branch1Down], ">": [">", Svgs.Branch1Right], "^": ["^", Svgs.Branch1Up]}},
   {type: "operation", subtype: "BRANCH(-\\)", options: {"[": ["<", Svgs.Branch0Left], "W": ["v", Svgs.Branch0Down], "]": [">", Svgs.Branch0Right], "M": ["^", Svgs.Branch0Up]}},
-  {type: "operation", subtype: "POWER", options: {p: ["TOGGLE POWER 1", Svgs.Power0], P: ["TOGGLE POWER 2", Svgs.Power1]}},
+  {type: "operation", subtype: "POWER", options: {p: ["TOGGLE TOP", Svgs.Power0], P: ["TOGGLE BOT", Svgs.Power1]}},
 ];
 
 function makeSymbolTypesByValue(symbolTypes) {
@@ -431,6 +431,8 @@ class Game extends React.Component {
       selectedSymbolStates: new Set(),
       selectionSymbolStateCellSymbols: initialSelectionSymbolStates("selectionSymbolStateCellSymbols", symbolTypesCellSymbol),
       selectionSymbolStateInstructions: initialSelectionSymbolStates("selectionSymbolStateInstructions", [...symbolTypesDirection, ...symbolTypesOperation]),
+      // events
+      heldKey: null,
       draggedSymbolState: nullSymbolState,
       dragOverPosition: null,
       dragOverPositionSemaphore: 0, // count dragenter vs dragleave (for children)
@@ -443,11 +445,13 @@ class Game extends React.Component {
 
   componentDidMount() {
     window.addEventListener("keydown", this.keyboardHandler)
+    window.addEventListener("keyup", this.keyboardHandler)
     this.setLevelHandler({target: {value: this.state.levelName}}, true); // clear board
   }
 
   componentWillUnmount() {
     window.removeEventListener("keydown", this.keyboardHandler)
+    window.removeEventListener("keyup", this.keyboardHandler)
   }
 
   renderSymbolGroup(type, symbolState) {
@@ -475,8 +479,8 @@ class Game extends React.Component {
       }))};
       var parse = (type, bot, lines) => {
         if (lines.length !== state.board.m) return false;
-        let grid = Array.from({length: this.state.board.m}).map(row => Array(this.state.board.n).fill(nullSymbolState));
-        let indices = Array.from({length: this.state.board.m}).map(row => Array(this.state.board.n).fill(null));
+        let grid = Array.from({length: state.board.m}).map(row => Array(state.board.n).fill(nullSymbolState));
+        let indices = Array.from({length: state.board.m}).map(row => Array(state.board.n).fill(null));
         for (let y=0; y<grid.length; ++y) {
           if (lines[y].length !== state.board.n) return false;
           for (let x=0; x<grid[y].length; ++x) if (!grid[y][x].value) {
@@ -521,6 +525,9 @@ class Game extends React.Component {
     if (this.state.draggedSymbolState.value) classNames.push("dragging");
     if (this.state.dragOverFits) classNames.push("dragover-fits");
     if (this.state.dragOverPosition === "trash") classNames.push("dragover-trash");
+    if (this.state.wasNext) classNames.push(`output-color-${this.state.lastColor}`);
+    classNames.push(`sim-${this.state.simState}`);
+    if (this.state.simState !== "stop") classNames.push("sim-running");
     classNames = classNames.join(" ");
     // trash is active if non-START board symbols are selected
     let trashActive = [...this.state.selectedSymbolStates].some(symbolState => symbolState.onBoard && symbolState.value !== "S");
@@ -566,13 +573,15 @@ class Game extends React.Component {
               <div style={{flex:1}}></div>
               <div className={`trash ${trashActive ? "active" : "inactive"} ${this.state.dragOverPosition === "trash" && "dragover"}`} onClick={this.trash} onDragEnter={this.trashDragOver} onDragOver={this.trashDragOver} onDragLeave={this.trashDragOver} onDrop={this.trashDragOver}>🗑</div>
             </div>
-            <div className={`symbol-bar bot${this.state.bot}`} style={{display:"flex", flexDirection:"row"}}>
-              <div className="symbol-grid-bar grid-layout" style={{flex:3}}>
+            <div className={`symbol-bar bot${this.state.bot}`} style={{position:"relative"}}>
+              <div className="symbol-grid-bar grid-layout" style={{position:"relative"}}>
                 {this.state.selectionSymbolStateCellSymbols.map(symbolState => this.renderSymbolGroup("cellSymbol", symbolState))}
                 {this.state.selectionSymbolStateInstructions.map(symbolState => this.renderSymbolGroup("instruction", symbolState))}
-              </div>
-              <div className="symbol-options-bar" style={{flex:1, display:"flex", flexDirection:"column"}}>
-                <SymbolOptions changeOption={this.changeSymbolOption} selectedSymbolState={this.state.selectedSymbolStates.size === 1 && this.state.selectedSymbolStates.values().next().value}/>
+                {this.state.symbolType === "instruction" &&
+                  <div className="symbol-options-bar">
+                    <SymbolOptions changeOption={this.changeSymbolOption} selectedSymbolState={this.state.selectedSymbolStates.size === 1 && this.state.selectedSymbolStates.values().next().value}/>
+                  </div>
+                }
               </div>
             </div>
           </div>
@@ -878,11 +887,23 @@ class Game extends React.Component {
 
   keyboardHandler = event => {
     if (isTextBox(event.target)) return;
-    if (event.ctrlKey) {
-      switch (event.key) {
-      case "z": return this.undo();
-      case "Z": return this.redo();
+    switch (event.type) {
+    case "keydown":
+      if (event.ctrlKey) {
+        switch (event.key) {
+        case "z": return this.undo();
+        case "Z": return this.redo();
+        }
+      } else {
+        this.setState({heldKey: event.key});
       }
+      break;
+    case "keyup":
+      this.setState((state, props) => {
+        if (state.heldKey === event.key) return {heldKey: null};
+        return null;
+      });
+      break;
     }
   }
 
@@ -909,12 +930,11 @@ class Game extends React.Component {
         var [error, newState] = args.makeNewState(state, props);
         if (error) return {error: error};
       } else var newState = {};
-      if (state.board) state.board.delete();
       let stateGet = key => newState[key] || state[key];
       newState.submission = makeSubmission(stateGet("squares"), props.m, props.n);
       if (args.undoredo) {
         // don't have to reset each square's selected field because they were newly created by undo/redo
-        if (this.selectedOnBoard(state, props)) newState.selectedSymbolStates.clear();
+        if (this.selectedOnBoard(state, props)) stateGet("selectedSymbolStates").clear();
       } else {
         if (newState.submission !== state.submissionHistory[state.submissionHistory.length-1]) {
           state.submissionHistory.push(newState.submission);
@@ -922,6 +942,7 @@ class Game extends React.Component {
           newState.submissionFuture = [];
         }
       }
+      if (state.board) state.board.delete();
       newState.board = Module.LoadBoard(stateGet("levelData"), newState.submission);
       var trespassable = newState.board.get_trespassable();
       newState.trespassable = Array.from({length: newState.board.m}).map((row, y) => Array.from({length: newState.board.n}).map((cell, x) => {
@@ -1048,14 +1069,16 @@ class Game extends React.Component {
     }
   }
 
-  setBoardToLevel = (levelName, levelData, clearBoard=false) => {
+  setBoardToLevel = (levelName, levelData, clearBoard=false, keepHistory=false) => {
     if (levelData) {
       if (this.state.simState !== "stop") this.simHandler("stop");
       var newState = {
         levelName: levelName,
         levelData: levelData,
-        submissionHistory: [],
-        submissionFuture: [],
+      }
+      if (!keepHistory) {
+        newState.submissionHistory = [];
+        newState.submissionFuture = [];
       }
       let squares = this.state.squares;
       if (clearBoard) squares = squares.map(row => row.map(makeEmptySquare));
@@ -1093,7 +1116,7 @@ class Game extends React.Component {
   }
 
   clearBoardHandler = event => {
-    this.setBoardToLevel(this.state.levelName, this.state.levelData, true);
+    this.setBoardToLevel(this.state.levelName, this.state.levelData, true, true);
   }
 
   symbolClickHandler = symbolState => {
@@ -1115,6 +1138,10 @@ class Game extends React.Component {
   }
 
   dragHandler = (event, symbolState) => {
+    if (this.state.simState !== "stop") {
+      event.preventDefault();
+      return;
+    }
     switch (event.type) {
     case "dragstart":
       let symbolType = symbolTypeByState(symbolState);

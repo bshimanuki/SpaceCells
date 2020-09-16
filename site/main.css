@@ -28,8 +28,8 @@ body {
   align-items: center;
   background-color: tan;
   border-radius: 0 0 1% 1%;
-  overflow: hidden;
 }
+.symbol-options-bar { background: tan; }
 .stats-sidebar {
   margin: 0 1%;
   width: 20%;
@@ -95,8 +95,10 @@ body {
 }
 .symbol-bar {
 }
+.sim-running .symbol-bar svg {
+  opacity: 0.5;
+}
 .symbol-grid-bar {
-  padding: 1%;
   background-color: lightgray;
 }
 .symbol-options-bar {
@@ -140,6 +142,12 @@ body {
 .symbolgroup.direction[class~="symbol-^"] {
   grid-row-start: 1;
   grid-column-start: 2;
+}
+.symbol-options-bar {
+  grid-column-start: 8;
+  grid-column-end: span 2;
+  grid-row-start: 1;
+  grid-row-end: span 2;
 }
 
 /* symbols */
@@ -307,6 +315,17 @@ body {
 [color=W] { color: white; }
 [color=C] { color: cyan; }
 [color=E] { color: orangered; }
+.output-color-K .game-board { filter: drop-shadow(0 0 20px black); }
+.output-color-N .game-board { filter: drop-shadow(0 0 20px brown); }
+.output-color-R .game-board { filter: drop-shadow(0 0 20px red); }
+.output-color-O .game-board { filter: drop-shadow(0 0 20px darkorange); }
+.output-color-Y .game-board { filter: drop-shadow(0 0 20px gold); }
+.output-color-G .game-board { filter: drop-shadow(0 0 20px green); }
+.output-color-B .game-board { filter: drop-shadow(0 0 20px blue); }
+.output-color-P .game-board { filter: drop-shadow(0 0 20px purple); }
+.output-color-W .game-board { filter: drop-shadow(0 0 20px white); }
+.output-color-C .game-board { filter: drop-shadow(0 0 20px cyan); }
+.output-color-E .game-board { filter: drop-shadow(0 0 20px orangered); }
 .cycles-value,.steps-value {
   font-weight: bold;
 }
