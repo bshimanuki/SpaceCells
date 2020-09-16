@@ -104,36 +104,36 @@ function svgForCell(c) {
 const botColors = ["red", "blue"];
 
 const symbolTypesCellSymbol = [
-  {type: "cellSymbol", subtype: "/", value: "/", svg: Svgs.XCell, className: "resolved-1 latched"},
-  {type: "cellSymbol", subtype: "\\", value: "\\", svg: Svgs.XCell, className: "resolved-0 latched"},
-  {type: "cellSymbol", subtype: "x", value: "x", svg: Svgs.XCell, className: "resolved-x unlatched"},
-  {type: "cellSymbol", subtype: "+", value: "+", svg: Svgs.PlusCell, className: "resolved-x unlatched"},
-  {type: "cellSymbol", subtype: "-", value: "-", svg: Svgs.PlusCell, className: "resolved-1 latched"},
-  {type: "cellSymbol", subtype: "|", value: "|", svg: Svgs.PlusCell, className: "resolved-0 latched"},
-  {type: "cellSymbol", subtype: "][", value: "][", svg: Svgs.HorizontalCell, multi: "horizontal"},
-  {type: "cellSymbol", subtype: "W\nM", value: "WM", svg: Svgs.VerticalCell, multi: "vertical"},
-  {type: "cellSymbol", subtype: "<x", value: "<x", svg: Svgs.DiodeLeft, multi: "horizontal"},
-  {type: "cellSymbol", subtype: "x\nv", value: "xv", svg: Svgs.DiodeDown, multi: "vertical"},
-  {type: "cellSymbol", subtype: "^\nx", value: "^x", svg: Svgs.DiodeUp, multi: "vertical"},
-  {type: "cellSymbol", subtype: "x>", value: "x>", svg: Svgs.DiodeRight, multi: "horizontal"},
+  {type: "cellSymbol", keyboard: "q", subtype: "/", value: "/", svg: Svgs.XCell, className: "resolved-1 latched"},
+  {type: "cellSymbol", keyboard: "w", subtype: "\\", value: "\\", svg: Svgs.XCell, className: "resolved-0 latched"},
+  {type: "cellSymbol", keyboard: "e", subtype: "x", value: "x", svg: Svgs.XCell, className: "resolved-x unlatched"},
+  {type: "cellSymbol", keyboard: "r", subtype: "+", value: "+", svg: Svgs.PlusCell, className: "resolved-x unlatched"},
+  {type: "cellSymbol", keyboard: "a", subtype: "-", value: "-", svg: Svgs.PlusCell, className: "resolved-1 latched"},
+  {type: "cellSymbol", keyboard: "s", subtype: "|", value: "|", svg: Svgs.PlusCell, className: "resolved-0 latched"},
+  {type: "cellSymbol", keyboard: "df", subtype: "][", value: "][", svg: Svgs.HorizontalCell, multi: "horizontal"},
+  {type: "cellSymbol", keyboard: "tg", subtype: "W\nM", value: "WM", svg: Svgs.VerticalCell, multi: "vertical"},
+  {type: "cellSymbol", keyboard: "yu", subtype: "<x", value: "<x", svg: Svgs.DiodeLeft, multi: "horizontal"},
+  {type: "cellSymbol", keyboard: "ik", subtype: "x\nv", value: "xv", svg: Svgs.DiodeDown, multi: "vertical"},
+  {type: "cellSymbol", keyboard: "ol", subtype: "^\nx", value: "^x", svg: Svgs.DiodeUp, multi: "vertical"},
+  {type: "cellSymbol", keyboard: "hj", subtype: "x>", value: "x>", svg: Svgs.DiodeRight, multi: "horizontal"},
 ];
 const symbolTypesDirection = [
-  {type: "direction", subtype: "<", value: "<", svg: Svgs.DirectionLeft},
-  {type: "direction", subtype: "v", value: "v", svg: Svgs.DirectionDown},
-  {type: "direction", subtype: ">", value: ">", svg: Svgs.DirectionRight},
-  {type: "direction", subtype: "^", value: "^", svg: Svgs.DirectionUp},
+  {type: "direction", keyboard: "a", subtype: "<", value: "<", svg: Svgs.DirectionLeft},
+  {type: "direction", keyboard: "s", subtype: "v", value: "v", svg: Svgs.DirectionDown},
+  {type: "direction", keyboard: "d", subtype: ">", value: ">", svg: Svgs.DirectionRight},
+  {type: "direction", keyboard: "w", subtype: "^", value: "^", svg: Svgs.DirectionUp},
 ];
 const symbolTypesOperation = [
-  {type: "operation", subtype: "START", value: "S", svg: Svgs.Start},
-  {type: "operation", subtype: "NEXT", value: "n", svg: Svgs.Next},
-  {type: "operation", subtype: "GRAB/DROP", options: {g: ["GRAB", Svgs.Grab], d: ["DROP", Svgs.Drop], w: ["GRAB/DROP", Svgs.Swap]}},
-  {type: "operation", subtype: "LOCK/FREE", options: {l: ["LOCK", Svgs.Latch], u: ["FREE", Svgs.Unlatch], t: ["LOCK/FREE", Svgs.ToggleLatch]}},
-  {type: "operation", subtype: "RESET", value: "*", svg: Svgs.Relatch},
-  {type: "operation", subtype: "SYNC", value: "s", svg: Svgs.Sync},
-  {type: "operation", subtype: "ROTATE", value: "r", svg: Svgs.Rotate},
-  {type: "operation", subtype: "BRANCH(|/)", options: {"<": ["<", Svgs.Branch1Left], "v": ["v", Svgs.Branch1Down], ">": [">", Svgs.Branch1Right], "^": ["^", Svgs.Branch1Up]}},
-  {type: "operation", subtype: "BRANCH(-\\)", options: {"[": ["<", Svgs.Branch0Left], "W": ["v", Svgs.Branch0Down], "]": [">", Svgs.Branch0Right], "M": ["^", Svgs.Branch0Up]}},
-  {type: "operation", subtype: "POWER", options: {p: ["TOGGLE TOP", Svgs.Power0], P: ["TOGGLE BOT", Svgs.Power1]}},
+  {type: "operation", keyboard: "", subtype: "START", value: "S", svg: Svgs.Start},
+  {type: "operation", keyboard: "q", subtype: "NEXT", value: "n", svg: Svgs.Next},
+  {type: "operation", keyboard: "e", subtype: "GRAB/DROP", options: {g: ["GRAB", Svgs.Grab], d: ["DROP", Svgs.Drop], w: ["GRAB/DROP", Svgs.Swap]}},
+  {type: "operation", keyboard: "r", subtype: "LOCK/FREE", options: {l: ["LOCK", Svgs.Latch], u: ["FREE", Svgs.Unlatch], t: ["LOCK/FREE", Svgs.ToggleLatch]}},
+  {type: "operation", keyboard: "t", subtype: "RESET", value: "*", svg: Svgs.Relatch},
+  {type: "operation", keyboard: "y", subtype: "SYNC", value: "s", svg: Svgs.Sync},
+  {type: "operation", keyboard: "u", subtype: "ROTATE", value: "r", svg: Svgs.Rotate},
+  {type: "operation", keyboard: "f", subtype: "BRANCH(|/)", options: {"<": ["<", Svgs.Branch1Left], "v": ["v", Svgs.Branch1Down], ">": [">", Svgs.Branch1Right], "^": ["^", Svgs.Branch1Up]}},
+  {type: "operation", keyboard: "g", subtype: "BRANCH(-\\)", options: {"[": ["<", Svgs.Branch0Left], "W": ["v", Svgs.Branch0Down], "]": [">", Svgs.Branch0Right], "M": ["^", Svgs.Branch0Up]}},
+  {type: "operation", keyboard: "h", subtype: "POWER", options: {p: ["TOGGLE TOP", Svgs.Power0], P: ["TOGGLE BOT", Svgs.Power1]}},
 ];
 
 function makeSymbolTypesByValue(symbolTypes) {
@@ -455,6 +455,7 @@ class Game extends React.Component {
   }
 
   renderSymbolGroup(type, symbolState) {
+    const symbolType = symbolTypeByState(symbolState);
     return (
       <SymbolGroup
         key={symbolTypeByState(symbolState).subtype}
@@ -463,6 +464,7 @@ class Game extends React.Component {
         clickHandler={this.symbolClickHandler}
         bot={this.state.bot}
         symbolState={symbolState}
+        held={symbolType.keyboard.includes(this.state.heldKey)}
       />
     );
   }
@@ -895,7 +897,14 @@ class Game extends React.Component {
         case "Z": return this.redo();
         }
       } else {
-        this.setState({heldKey: event.key});
+        const selectionSymbolStates = this.state.symbolType === "cellSymbol" ? this.state.selectionSymbolStateCellSymbols : this.state.selectionSymbolStateInstructions;
+        let newSelectedSymbolState = null;
+        for (const symbolState of selectionSymbolStates) {
+          const symbolType = symbolTypeByState(symbolState);
+          if (symbolType.keyboard.includes(event.key)) newSelectedSymbolState = symbolState;
+        }
+        let cb = newSelectedSymbolState ? () => this.setSelected(newSelectedSymbolState) : null;
+        this.setState({heldKey: event.key}, cb);
       }
       break;
     case "keyup":
@@ -1280,6 +1289,7 @@ class SymbolGroup extends React.PureComponent {
     if (this.props.symbolState.selected) classNames.push("selected");
     classNames.push(symbolType.className || "");
     classNames.push(symbolType.multi || "");
+    if (this.props.held) classNames.push("held");
     classNames = classNames.join(" ");
     return (
       <div className={classNames} onClick={this.clickHandler} onDrag={this.dragHandler} onDragStart={this.dragHandler} onDragEnd={this.dragHandler} draggable>
