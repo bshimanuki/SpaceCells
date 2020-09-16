@@ -23,6 +23,16 @@ function getNested(obj, seq, start=0) {
   return getNested(obj[seq[start]], seq, start + 1);
 }
 
+function setCookie(name, value) {
+  let maxAge = 60*60*24*365; // one year
+  document.cookie = `${name}=${encodeURIComponent(value)};max-age=${maxAge};`;
+}
+function getCookie(name) {
+  let rawValues = document.cookie.match("(^|;)\\s*" + name + "\\s*=\\s*([^;]+)");
+  let rawValue = rawValues ? rawValues.pop() : "";
+  return decodeURIComponent(rawValue);
+}
+
 var Module;
 const EmbindingsLoader = Embindings({
   locateFile: () => EmbindingsWASM,
@@ -393,6 +403,49 @@ class Board extends React.PureComponent {
   }
 }
 
+function parseSubmission(submission, m, n) {
+  var squares = Array.from({length: m}).map(_ => Array.from({length: n}).map(_ => makeEmptySquare()));
+  var parseGrid = (type, bot, lines) => {
+    if (lines.length !== m) return false;
+    let grid = Array.from({length: m}).map(row => Array(n).fill(nullSymbolState));
+    let indices = Array.from({length: m}).map(row => Array(n).fill(null));
+    for (let y=0; y<grid.length; ++y) {
+      if (lines[y].length !== n) return false;
+      for (let x=0; x<grid[y].length; ++x) if (!grid[y][x].value) {
+        let [value, dy, dx] = makeSymbolState(type, lines[y][x], y, x, bot);
+        if (value === undefined) return false;
+        grid[y][x] = value;
+        indices[y][x] = 0;
+        if (dy || dx) {
+          indices[y][x] = dy + dx >= 0 ? 0 : 1;
+          grid[y+dy][x+dx] = value;
+          indices[y+dy][x+dx] = dy + dx >= 0 ? 1 : 0;
+        }
+      }
+    }
+    for (let y=0; y<grid.length; ++y) for (let x=0; x<grid[y].length; ++x) {
+      if (type === "cellSymbol") {
+        squares[y][x].cellSymbol = grid[y][x];
+        squares[y][x].cellSymbolIndex = indices[y][x];
+      } else {
+        squares[y][x][type][bot] = grid[y][x];
+      }
+    }
+    return true;
+  };
+  var lines = submission.split(/(?:\r?\n)+/);
+  var valid = true;
+  valid &= parseGrid("cellSymbol", null, lines.slice(0, m));
+  valid &= parseGrid("direction", 0, lines.slice(m, 2*m));
+  valid &= parseGrid("operation", 0, lines.slice(2*m, 3*m));
+  valid &= parseGrid("direction", 1, lines.slice(3*m, 4*m));
+  valid &= parseGrid("operation", 1, lines.slice(4*m, 5*m));
+  if (!valid) {
+    return ["Could not parse input", null];
+  }
+  return [null, squares];
+};
+
 class Game extends React.Component {
   constructor(props) {
     super(props);
@@ -403,7 +456,6 @@ class Game extends React.Component {
       submission: "",
       submissionHistory: [],
       submissionFuture: [],
-      submissionIndex: -1,
       // backend
       board: null, // Emscripten pointer
       cells: [], // 2D array of Emscripten pointers
@@ -446,7 +498,7 @@ class Game extends React.Component {
   componentDidMount() {
     window.addEventListener("keydown", this.keyboardHandler)
     window.addEventListener("keyup", this.keyboardHandler)
-    this.setLevelHandler({target: {value: this.state.levelName}}, true); // clear board
+    this.setLevelHandler({target: {value: this.state.levelName}});
   }
 
   componentWillUnmount() {
@@ -471,53 +523,9 @@ class Game extends React.Component {
 
   loadSubmission(submission, {undoredo}={}) {
     var makeNewState = (state, props) => {
-      var newState = {squares: state.squares.map(row => row.map(square => {
-        let d = {};
-        for (let key in square) {
-          if (Array.isArray(square[key])) d[key] = square[key].map(_ => nullSymbolState);
-          else d[key] = nullSymbolState;
-        }
-        return d;
-      }))};
-      var parse = (type, bot, lines) => {
-        if (lines.length !== state.board.m) return false;
-        let grid = Array.from({length: state.board.m}).map(row => Array(state.board.n).fill(nullSymbolState));
-        let indices = Array.from({length: state.board.m}).map(row => Array(state.board.n).fill(null));
-        for (let y=0; y<grid.length; ++y) {
-          if (lines[y].length !== state.board.n) return false;
-          for (let x=0; x<grid[y].length; ++x) if (!grid[y][x].value) {
-            let [value, dy, dx] = makeSymbolState(type, lines[y][x], y, x, bot);
-            if (value === undefined) return false;
-            grid[y][x] = value;
-            indices[y][x] = 0;
-            if (dy || dx) {
-              indices[y][x] = dy + dx >= 0 ? 0 : 1;
-              grid[y+dy][x+dx] = value;
-              indices[y+dy][x+dx] = dy + dx >= 0 ? 1 : 0;
-            }
-          }
-        }
-        for (let y=0; y<grid.length; ++y) for (let x=0; x<grid[y].length; ++x) {
-          if (type === "cellSymbol") {
-            newState.squares[y][x].cellSymbol = grid[y][x];
-            newState.squares[y][x].cellSymbolIndex = indices[y][x];
-          } else {
-            newState.squares[y][x][type][bot] = grid[y][x];
-          }
-        }
-        return true;
-      };
-      var lines = submission.split(/(?:\r?\n)+/);
-      var valid = true;
-      valid &= parse("cellSymbol", null, lines.slice(0, state.board.m));
-      valid &= parse("direction", 0, lines.slice(state.board.m, 2*state.board.m));
-      valid &= parse("operation", 0, lines.slice(2*state.board.m, 3*state.board.m));
-      valid &= parse("direction", 1, lines.slice(3*state.board.m, 4*state.board.m));
-      valid &= parse("operation", 1, lines.slice(4*state.board.m, 5*state.board.m));
-      if (!valid) {
-        return ["Could not parse input", null];
-      }
-      return [null, newState];
+      var [error, squares] = parseSubmission(submission, state.board.m, state.board.n);
+      if (error) return {error: error};
+      return {squares: squares};
     };
     this.resetBoard({makeNewState, undoredo});
   }
@@ -945,8 +953,8 @@ class Game extends React.Component {
   resetBoard = ({...args}) => {
     this.setState((state, props) => {
       if (args.makeNewState) {
-        var [error, newState] = args.makeNewState(state, props);
-        if (error) return {error: error};
+        var newState = args.makeNewState(state, props);
+        if (newState.error) return newState;
       } else var newState = {};
       let stateGet = key => newState[key] || state[key];
       newState.submission = makeSubmission(stateGet("squares"), props.m, props.n);
@@ -962,6 +970,7 @@ class Game extends React.Component {
       }
       if (state.board) state.board.delete();
       newState.board = Module.LoadBoard(stateGet("levelData"), newState.submission);
+      setCookie(`board-state-${stateGet("levelName")}`, newState.submission);
       var trespassable = newState.board.get_trespassable();
       newState.trespassable = Array.from({length: newState.board.m}).map((row, y) => Array.from({length: newState.board.n}).map((cell, x) => {
         return trespassable.at(y, x);
@@ -1079,15 +1088,15 @@ class Game extends React.Component {
     this.setState({submission: event.target.value});
   }
 
-  setLevelHandler = (event, clearBoard=false) => {
+  setLevelHandler = (event, {loadCookie, clearBoard}={loadCookie:true, clearBoard:true}) => {
     var value = event.target.value;
     if (this.state.levelData === null || value !== this.state.levelName) {
       var path = levels[value];
-      getFileFromServer(path, text => this.setBoardToLevel(value, text, clearBoard));
+      getFileFromServer(path, text => this.setBoardToLevel(value, text, {loadCookie, clearBoard}));
     }
   }
 
-  setBoardToLevel = (levelName, levelData, clearBoard=false, keepHistory=false) => {
+  setBoardToLevel = (levelName, levelData, {keepHistory, clearBoard, loadCookie}={}) => {
     if (levelData) {
       if (this.state.simState !== "stop") this.simHandler("stop");
       var newState = {
@@ -1098,10 +1107,30 @@ class Game extends React.Component {
         newState.submissionHistory = [];
         newState.submissionFuture = [];
       }
+      var submission = null;
+      var board = null;
+      if (loadCookie) {
+        submission = getCookie(`board-state-${levelName}`);
+        if (submission) {
+          board = Module.LoadBoard(levelData, submission);
+          const status = board.check_status();
+          const m = board.m;
+          const n = board.n;
+          board.delete();
+          if (status !== Module.Status.INVALID) {
+            let [err, submissionSquares] = parseSubmission(submission, m, n);
+            if (!err) {
+              newState.squares = submissionSquares;
+              this.setState(newState, this.resetBoard);
+              return;
+            }
+          }
+        }
+      }
       let squares = this.state.squares;
       if (clearBoard) squares = squares.map(row => row.map(makeEmptySquare));
-      var submission = makeSubmission(squares, this.props.m, this.props.n);
-      var board = Module.LoadBoard(levelData, submission);
+      submission = makeSubmission(squares, this.props.m, this.props.n);
+      board = Module.LoadBoard(levelData, submission);
       var inputs = board.get_inputs();
       var inputLocations = Array.from({length: inputs.size()}).map((_, i) => inputs.get(i).location);
       inputs.delete();
@@ -1134,7 +1163,7 @@ class Game extends React.Component {
   }
 
   clearBoardHandler = event => {
-    this.setBoardToLevel(this.state.levelName, this.state.levelData, true, true);
+    this.setBoardToLevel(this.state.levelName, this.state.levelData, {keepHistory: true, clearBoard: true});
   }
 
   symbolClickHandler = symbolState => {
