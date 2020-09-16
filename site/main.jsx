@@ -715,12 +715,13 @@ class Game extends React.Component {
     return [squaresUpdater, updatedSymbolStates];
   }
 
-  copyOrMoveSelectedSymbols = (symbolState, position, dragging=false) => {
+  copyOrMoveSymbols = (symbolState, position, {noSelected, dragging}={}) => {
     this.setState((state, props) => {
-      if (state.selectedSymbolStates.size === 0) return null;
+      const symbolStates = noSelected ? [symbolState] : state.selectedSymbolStates;
+      if (symbolStates.size === 0) return null;
       let newState = {...state};
       let fits = true;
-      state.selectedSymbolStates.forEach(_symbolState => {
+      symbolStates.forEach(_symbolState => {
         if (_symbolState.onBoard) {
           var y =  _symbolState.trace[1]  + position[0] - symbolState.trace[1];
           var x =  _symbolState.trace[2]  + position[1] - symbolState.trace[2];
@@ -730,8 +731,8 @@ class Game extends React.Component {
         fits &= this.fits(state, props, _symbolState, y, x);
       });
       if (!fits) return null;
-      let [squaresUpdater, updatedSymbolStates] = this.getCopySymbolsUpdater(state, props, symbolState, position, state.selectedSymbolStates, dragging);
-      state.selectedSymbolStates.forEach(_symbolState => {
+      let [squaresUpdater, updatedSymbolStates] = this.getCopySymbolsUpdater(state, props, symbolState, position, symbolStates, dragging);
+      symbolStates.forEach(_symbolState => {
         if (_symbolState.onBoard) {
           const symbolType = symbolTypeByState(_symbolState);
           const [y, x] = _symbolState.trace.slice(1, 3);
@@ -866,6 +867,18 @@ class Game extends React.Component {
 
   boardClickHandler = (event, y, x, symbolState) => {
     if (this.state.simState !== "stop") return;
+    if (this.state.heldKey) {
+      let keyboardSymbolState = null;
+      const selectionSymbolStates = this.state.symbolType === "cellSymbol" ? this.state.selectionSymbolStateCellSymbols : this.state.selectionSymbolStateInstructions;
+      for (const symbolState of selectionSymbolStates) {
+        const symbolType = symbolTypeByState(symbolState);
+        if (symbolType.keyboard.includes(this.state.heldKey)) keyboardSymbolState = symbolState;
+      }
+      if (keyboardSymbolState) {
+        this.copyOrMoveSymbols(keyboardSymbolState, [y, x], {noSelected: true});
+        return;
+      }
+    }
     const keepOldAndToggle = this.selectedOnBoard() && event.shiftKey;
     if (symbolState) {
       if (this.state.inputs.some(square => matchLocation(square, y, x))) {
@@ -876,13 +889,16 @@ class Game extends React.Component {
         return;
       } else {
         this.setSelected(symbolState, keepOldAndToggle);
+        return;
       }
     } else if (this.selectedOnBoard()) {
       if (!keepOldAndToggle) this.setState(this.getClearSelected);
+      return;
     } else {
       if (this.state.selectedSymbolStates.size === 1) {
         const selectedSymbolState = this.state.selectedSymbolStates.values().next().value;
-        this.copyOrMoveSelectedSymbols(selectedSymbolState, [y, x]);
+        this.copyOrMoveSymbols(selectedSymbolState, [y, x]);
+        return;
       }
     }
   }
@@ -897,14 +913,7 @@ class Game extends React.Component {
         case "Z": return this.redo();
         }
       } else {
-        const selectionSymbolStates = this.state.symbolType === "cellSymbol" ? this.state.selectionSymbolStateCellSymbols : this.state.selectionSymbolStateInstructions;
-        let newSelectedSymbolState = null;
-        for (const symbolState of selectionSymbolStates) {
-          const symbolType = symbolTypeByState(symbolState);
-          if (symbolType.keyboard.includes(event.key)) newSelectedSymbolState = symbolState;
-        }
-        let cb = newSelectedSymbolState ? () => this.setSelected(newSelectedSymbolState) : null;
-        this.setState({heldKey: event.key}, cb);
+        this.setState({heldKey: event.key});
       }
       break;
     case "keyup":
@@ -1232,7 +1241,7 @@ class Game extends React.Component {
         break;
       case "drop":
         // dragend doesn't trigger, so trigger it manually
-        this.copyOrMoveSelectedSymbols(this.state.draggedSymbolState, [y, x], true);
+        this.copyOrMoveSymbols(this.state.draggedSymbolState, [y, x], {dragging: true});
         this.dragHandler(event, this.state.draggedSymbolState);
         // waterfall
       case "dragleave":

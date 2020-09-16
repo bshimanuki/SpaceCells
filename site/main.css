@@ -182,6 +182,9 @@ body {
 .symbolgroup.selected {
   filter: drop-shadow(0 0 1vmin black);
 }
+.symbolgroup.held {
+  filter: drop-shadow(0 0 1vmin black);
+}
 /* .bot0 .square-overlay, .bot1 .square-overlay { */
   /* border-style: solid; */
   /* border-width: 3.49px; [> extra 0.49 for rounding <] */
