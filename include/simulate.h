@@ -508,6 +508,7 @@ public:
   size_t get_cycle() const { return cycle; }
   const Grid<Cell>& get_cells() const { return cells; }
   Color get_last_color() const { return last_color; }
+  int get_num_symbols() const;
 
   // Setup
   Board(size_t m, size_t n, size_t nbots);

@@ -39,6 +39,7 @@ EMSCRIPTEN_BINDINGS(puzzle_bindings) {
     .function("get_error_reason", &Board::get_error_reason)
     .function("get_unresolved_board", &Board::get_unresolved_board)
     .function("get_resolved_board", &Board::get_resolved_board)
+    .function("get_num_symbols", &Board::get_num_symbols)
     ;
   function("LoadBoard", static_cast<Board(*)(const std::string&, const std::string&)>(&load));
 

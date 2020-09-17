@@ -461,6 +461,7 @@ class Game extends React.Component {
       testCase: 0,
       step: 0,
       cycle: 0,
+      numSymbols: 0,
       error: "", // if any errors
       errorReason: null,
       status: null, // from check_status()
@@ -626,6 +627,7 @@ class Game extends React.Component {
             <div><span className="steps">Completed Test Cases</span><span className="steps-value">{this.state.testCase + (this.state.step === (this.state.outputColors[this.state.testCase] || {}).length)}</span></div>
             {/*<div><span className="steps">Steps</span><span className="steps-value">{this.state.step}</span></div>*/}
             <div><span className="cycles">Total Cycles</span><span className="cycles-value">{this.state.cycle}</span></div>
+            <div><span className="cycles">Total Symbols</span><span className="num-symbols-value">{this.state.numSymbols}</span></div>
           </div>
           <br/>
           <div className="colon-list">
@@ -1017,6 +1019,7 @@ class Game extends React.Component {
       newState.testCase = state.board.test_case;
       newState.step = state.board.step;
       newState.cycle = state.board.cycle;
+      newState.numSymbols = state.board.get_num_symbols();
       state.cells.forEach(row => row.forEach(cell => {
         if (cell) cell.delete();
       }));

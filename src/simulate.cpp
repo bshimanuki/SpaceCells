@@ -1045,5 +1045,34 @@ std::string Board::get_resolved_board() const {
   return ss.str();
 }
 
+int Board::get_num_symbols() const {
+  int symbols = 0;
+  for (const auto &row : cells) {
+    for (const auto &cell : row) {
+      if (cell.exists) {
+        if (cell.is_1x1() || cell.partner_delta.y > 0 || cell.partner_delta.x > 0) {
+          ++symbols;
+        }
+      }
+    }
+  }
+  for (const auto &grid : directions) {
+    for (const auto &row : grid) {
+      for (const auto &direction : row) {
+        if (direction) ++symbols;
+      }
+    }
+  }
+  for (const auto &grid : operations) {
+    for (const auto &row : grid) {
+      for (const auto &operation : row) {
+        if (operation) ++symbols;
+      }
+    }
+  }
+  symbols -= inputs.size();
+  symbols -= outputs.size();
+  return symbols;
+}
 
 } // namespace puzzle
