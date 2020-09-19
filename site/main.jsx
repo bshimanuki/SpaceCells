@@ -1,6 +1,8 @@
 import React from "react";
 import ReactDOM from "react-dom";
 import update from "immutability-helper";
+import Modal from 'react-modal';
+import * as Charts from "@data-ui/histogram";
 
 import * as Svgs from "./svgs.jsx";
 import "./main.css"; // after svgs with its own css
@@ -23,6 +25,31 @@ function getNested(obj, seq, start=0) {
   return getNested(obj[seq[start]], seq, start + 1);
 }
 
+function mockNormal(mu, maxV) {
+  const n = 200;
+  const normalFidelity = 6;
+  const values = Array.from({length: n}).map(_ => Array.from({length: normalFidelity}).map(Math.random).reduce((acc, x) => acc + x) / normalFidelity * 2 * mu);
+  const nbins = 20;
+  const width = maxV / nbins;
+  const bins = Array(nbins).map((_, i) => i * width);
+  let counts = Array(nbins).fill(0);;
+  for (const value of values) {
+    ++counts[Math.floor(value / width)];
+  }
+  return {
+    bin0: 0,
+    binWidth: width,
+    counts: counts,
+  };
+}
+function makeMockData() {
+  return {
+    cycles: mockNormal(200, 500),
+    symbols: mockNormal(30, 80),
+  };
+}
+const mockData = makeMockData();
+
 var Module;
 const EmbindingsLoader = Embindings({
   locateFile: () => EmbindingsWASM,
@@ -33,6 +60,7 @@ EmbindingsLoader.then((core) => {
     <Game m={10} n={12}/>,
     document.getElementById("game")
   );
+  Modal.setAppElement("#game");
   console.log("loaded");
 });
 
@@ -484,6 +512,9 @@ class Game extends React.Component {
       dragOverFits: false,
       // state change indicator alternate between +/-1
       flipflop: 1,
+      // results
+      showModal: false,
+      lastResults: null,
     };
   }
 
@@ -546,6 +577,8 @@ class Game extends React.Component {
           <input type="button" value="Load" onClick={this.setBoardHandler}/>
           <div style={{paddingBottom: "60px"}}/>
           <input type="button" value="Reset Board" onClick={this.clearBoardHandler}/>
+          <div style={{paddingBottom: "60px"}}/>
+          <input type="button" value="Show Results" onClick={this.openModalHandler}/>
         </div>
         <div className="center-content" style={{display:"flex", flexDirection:"column", alignItems:"center", width:"min-content"}}>
           <div style={{display:"flex", width:"min-content"}} className="game-board">
@@ -635,9 +668,24 @@ class Game extends React.Component {
           </div>
           <br/>
           { this.state.status === Module.Status.DONE && <div className="finished">Finished level!</div> }
+          <ResultsModal isOpen={this.state.showModal} closeModalHandler={this.closeModalHandler} stats={mockData} results={this.state.lastResults}/>
         </div>
       </div>
     );
+  }
+
+  onFinish = () => {
+    if (this.state.status === Module.Status.DONE) {
+      this.setState((state, props) => {
+        return {
+          showModal: true,
+          lastResults: {
+            cycles: state.cycle,
+            symbols: state.numSymbols,
+          },
+        };
+      });
+    }
   }
 
   selectedOnBoard = (state=this.state, props=this.props) => state.selectedSymbolStates.size && state.selectedSymbolStates.values().next().value.onBoard;
@@ -1044,7 +1092,7 @@ class Game extends React.Component {
       newState.validBoard = newState.status !== Module.Status.INVALID;
       if (newState.error) console.log(newState.error);
       return newState;
-    });
+    }, this.onFinish);
   }
 
   move = (steps=1) => {
@@ -1205,6 +1253,7 @@ class Game extends React.Component {
   }
 
   dragOverHandler = (event, {y, x, special, onDrop}) => {
+    if (!this.state.draggedSymbolState.value) return;
     if (special) {
       switch (event.type) {
       case "dragenter":
@@ -1288,6 +1337,13 @@ class Game extends React.Component {
       }
     }
   }
+
+  openModalHandler = () => {
+    this.setState({showModal: true});
+  }
+  closeModalHandler = () => {
+    this.setState({showModal: false});
+  }
 }
 
 class Toggle extends React.PureComponent {
@@ -1360,6 +1416,90 @@ class OptionItem extends React.PureComponent {
         />
         <label htmlFor={`radio-${this.props.value}`}>{this.props.option}</label>
       </div>
+    );
+  }
+}
+
+class ResultsChart extends React.PureComponent {
+  render() {
+    const binnedData = this.props.values.counts.map((count, i) => ({
+      id: `${i}`,
+      bin0: this.props.values.bin0 + i * this.props.values.binWidth,
+      bin1: this.props.values.bin0 + (i + 1) * this.props.values.binWidth,
+      count: count,
+    }));
+    let ownBinnedData = null;
+    if (this.props.own) {
+      ownBinnedData = [{
+        id: `own`,
+        bin0: this.props.own,
+        bin1: this.props.own+1,
+        count: Math.max(...this.props.values.counts),
+      }];
+    }
+    return (
+      <Charts.Histogram
+        ariaLabel="Statistics"
+        height={400}
+        width={400}
+      >
+        <Charts.PatternLines
+          id={`pattern-${this.props.name}`}
+          height={8}
+          width={8}
+          background="none"
+          stroke="#22b8cf"
+          strokeWidth={0.5}
+          orientation={[ "diagonal" ]}
+        />
+        <Charts.BarSeries animated binnedData={binnedData} stroke="#22b8cf" fill={`url(#pattern-${this.props.name})`}/>
+        {ownBinnedData && <Charts.BarSeries animated binnedData={ownBinnedData} stroke="#00f"/>}
+        <Charts.XAxis
+          label={this.props.label}
+        />
+        <Charts.YAxis
+          label=" "
+          numTicks={0}
+        />
+      </Charts.Histogram>
+    );
+  }
+}
+
+class ResultsModal extends React.PureComponent {
+  render() {
+    const cyclesBinnedData = this.props.stats.cycles.counts.map((count, i) => ({
+      id: `${i}`,
+      bin0: this.props.stats.cycles.bin0 + i * this.props.stats.cycles.binWidth,
+      bin1: this.props.stats.cycles.bin0 + (i + 1) * this.props.stats.cycles.binWidth,
+      count: count,
+    }));
+    const symbolsBinnedData = this.props.stats.symbols.counts.map((count, i) => ({
+      id: `${i}`,
+      bin0: this.props.stats.symbols.bin0 + i * this.props.stats.symbols.binWidth,
+      bin1: this.props.stats.symbols.bin0 + (i + 1) * this.props.stats.symbols.binWidth,
+      count: count,
+    }));
+    return (
+      <Modal
+        isOpen={this.props.isOpen}
+        onRequestClose={this.props.closeModalHandler}
+        contentLabel="Result Statistics"
+        overlayClassName="modal-overlay"
+        className="modal-content"
+      >
+        <div className="modal-title">
+          Assignment Complete!
+        </div>
+        <div className="charts">
+          <ResultsChart name="cycles" values={this.props.stats.cycles} own={(this.props.results||{}).cycles} label="Elapsed Cycles"/>
+          <ResultsChart name="symbols" values={this.props.stats.symbols} own={(this.props.results||{}).symbols} label="Symbols Used"/>
+        </div>
+        <div className="modal-buttons">
+          <button className="modal-close-button" onClick={this.props.closeModalHandler}>Go Back</button>
+          <button className="modal-next-button" onClick={this.props.closeModalHandler}>Next</button>
+        </div>
+      </Modal>
     );
   }
 }

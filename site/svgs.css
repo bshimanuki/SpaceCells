@@ -1,4 +1,4 @@
-svg {
+.symbol svg, .symbolgroup svg {
   position: absolute;
   top: 50%;
   left: 50%;
@@ -110,7 +110,7 @@ svg {
   opacity: 0.75;
 }
 
-svg text {
+.symbol svg text {
   font-weight: bold;
   stroke: black;
   stroke-width: 0.05;

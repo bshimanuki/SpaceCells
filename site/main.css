@@ -374,3 +374,67 @@ body {
   background-color: green;
   opacity: 0.5;
 }
+
+/* results modal */
+.modal-title {
+  text-align: center;
+  font-size: 40;
+  margin: 10px;
+}
+.modal-buttons {
+  position: absolute;
+  bottom: 5%;
+  right: 5%;
+}
+.modal-buttons > * {
+  margin: 0px 10px;
+  padding: 5px 10px;
+}
+.modal-overlay {
+  /* defaults */
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.75);
+  /* custom */
+  z-index: 100;
+}
+.modal-content {
+  /* defaults */
+  position: absolute;
+  top: 40px;
+  left: 40px;
+  right: 40px;
+  bottom: 40px;
+  border: 1px solid #ccc;
+  background: #fff;
+  overflow: auto;
+  WebkitOverflowScrolling: touch;
+  borderRadius: 4px;
+  outline: none;
+  padding: 20px;
+  /* custom */
+  height: 720px;
+  width: 1080px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 20px;
+  background-color: aliceblue;
+}
+.charts {
+  display: flex;
+  justify-content: center;
+}
+.charts > * {
+  margin: 20px;
+}
+.vx-axis-label {
+  font-size: 20;
+  transform: translate(0, 20px);
+}
+.vx-axis-tick {
+  user-select: none;
+}
