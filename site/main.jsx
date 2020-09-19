@@ -155,8 +155,8 @@ const symbolTypesDirection = [
 const symbolTypesOperation = [
   {type: "operation", keyboard: "", subtype: "START", value: "S", svg: Svgs.Start},
   {type: "operation", keyboard: "q", subtype: "NEXT", value: "n", svg: Svgs.Next},
-  {type: "operation", keyboard: "e", subtype: "GRAB/DROP", options: {g: ["GRAB", Svgs.Grab], d: ["DROP", Svgs.Drop], w: ["GRAB/DROP", Svgs.Swap]}},
-  {type: "operation", keyboard: "r", subtype: "LOCK/FREE", options: {l: ["LOCK", Svgs.Latch], u: ["FREE", Svgs.Unlatch], t: ["LOCK/FREE", Svgs.ToggleLatch]}},
+  {type: "operation", keyboard: "e", subtype: "GRAB/DROP", options: {w: ["GRAB/DROP", Svgs.Swap], g: ["GRAB", Svgs.Grab], d: ["DROP", Svgs.Drop]}},
+  {type: "operation", keyboard: "r", subtype: "LOCK/FREE", options: {t: ["LOCK/FREE", Svgs.ToggleLatch], l: ["LOCK", Svgs.Latch], u: ["FREE", Svgs.Unlatch]}},
   {type: "operation", keyboard: "t", subtype: "RESET", value: "*", svg: Svgs.Relatch},
   {type: "operation", keyboard: "y", subtype: "SYNC", value: "s", svg: Svgs.Sync},
   {type: "operation", keyboard: "u", subtype: "ROTATE", value: "r", svg: Svgs.Rotate},
@@ -603,8 +603,9 @@ class Game extends React.Component {
           </div>
           <div className="bottom-bar" style={{display:"flex", flexDirection:"column"}}>
             <div className="toggle-bar" style={{display:"flex", flexDirection:"row"}}>
-              <Toggle handler={this.symbolTypeHandler} selected={this.state.symbolType} name="symbol-type" options={{cellSymbol:"Cells", instruction:"Instructions"}}/>
-              <Toggle handler={this.botHandler} selected={this.state.bot} name="bot" options={["Red", "Blue"]} colors={botColors}/>
+              {/*<Toggle handler={this.symbolTypeHandler} selected={this.state.symbolType} name="symbol-type" options={{cellSymbol:"Cells", instruction:"Instructions"}}/>*/}
+              {/*<Toggle handler={this.botHandler} selected={this.state.bot} name="bot" options={["Red", "Blue"]} colors={botColors}/>*/}
+              <Toggle handler={this.jointSymbolTypeHandler} selected={this.state.symbolType === "cellSymbol" ? "cellSymbol" : botColors[this.state.bot]} name="symbol-type" options={{cellSymbol:"Cells", red:"Red Instr.", blue:"Blue Instr."}} colors={{cellSymbol:"green", red:"red", blue:"blue"}}/>
               <Toggle handler={this.simHandler} selected={this.state.simState} name="sim" options={{stop:"⏹", pause:"⏸", step:"⧐", play:"▶", fast:"⏩", nonstop:"⏩", batch:"⏭"}}/>
               <div style={{flex:1}}></div>
               <div className={`trash ${trashActive ? "active" : "inactive"} ${this.state.dragOverPosition === "trash" && "dragover"}`} onClick={this.trash} onDragEnter={this.trashDragOver} onDragOver={this.trashDragOver} onDragLeave={this.trashDragOver} onDrop={this.trashDragOver}>🗑</div>
@@ -858,6 +859,13 @@ class Game extends React.Component {
     });
   }
 
+  jointSymbolTypeHandler = value => {
+    if (value === "cellSymbol" || value === "instruction") {
+      this.symbolTypeHandler(value);
+    } else {
+      this.botHandler(botColors.indexOf(value));
+    }
+  }
   botHandler = value => { this.setState({bot: Number(value)}, () => this.symbolTypeHandler("instruction")); }
   symbolTypeHandler = value => {
     this.setState((state, props) => {
@@ -966,6 +974,19 @@ class Game extends React.Component {
         case "Z": return this.redo();
         }
       } else {
+        switch (event.key) {
+        case "1": this.symbolTypeHandler("cellSymbol"); break;
+        case "2": this.botHandler(0); break;
+        case "3": this.botHandler(1); break;
+        case "4": this.simHandler("stop"); break;
+        case "5": this.simHandler("pause"); break;
+        case "6": this.simHandler("step"); break;
+        case "7": this.simHandler("play"); break;
+        case "8": this.simHandler("fast"); break;
+        case "9": this.simHandler("nonstop"); break;
+        case "0": this.simHandler("batch"); break;
+        case "Delete": case "Backspace": this.trash(); break;
+        }
         this.setState({heldKey: event.key});
       }
       break;
