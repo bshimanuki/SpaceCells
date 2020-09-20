@@ -1,15 +1,45 @@
-export const levels = {
-  "not": require("../examples/not.lvl").default,
-  "and": require("../examples/and.lvl").default,
-  "crossing": require("../examples/crossing.lvl").default,
-  "delay": require("../examples/delay.lvl").default,
-  "switch": require("../examples/switch.lvl").default,
-  "xor": require("../examples/xor.lvl").default,
-  "median": require("../examples/median.lvl").default,
-  "rainbow": require("../examples/rainbow.lvl").default,
-  "adder": require("../examples/adder.lvl").default,
-  "stack": require("../examples/stack.lvl").default,
-};
+export const levels = [
+  {
+    name: "not",
+    data: require("../examples/not.lvl").default,
+  },
+  {
+    name: "and",
+    data: require("../examples/and.lvl").default,
+  },
+  {
+    name: "crossing",
+    data: require("../examples/crossing.lvl").default,
+  },
+  {
+    name: "delay",
+    data: require("../examples/delay.lvl").default,
+  },
+  {
+    name: "switch",
+    data: require("../examples/switch.lvl").default,
+  },
+  {
+    name: "xor",
+    data: require("../examples/xor.lvl").default,
+  },
+  {
+    name: "median",
+    data: require("../examples/median.lvl").default,
+  },
+  {
+    name: "rainbow",
+    data: require("../examples/rainbow.lvl").default,
+  },
+  {
+    name: "adder",
+    data: require("../examples/adder.lvl").default,
+  },
+  {
+    name: "stack",
+    data: require("../examples/stack.lvl").default,
+  },
+];
 
 export const backgrounds = [
   require("../backgrounds/1.txt").default,

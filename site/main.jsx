@@ -479,7 +479,8 @@ class Game extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      levelName: Object.keys(Levels.levels)[0],
+      levelNumber: 0,
+      levelName: Levels.levels[0].name,
       levelData: null,
       background: null,
       squares: Array.from({length: this.props.m}, e => Array.from({length: this.props.n}, makeEmptySquare)),
@@ -532,7 +533,7 @@ class Game extends React.Component {
   componentDidMount() {
     window.addEventListener("keydown", this.keyboardHandler)
     window.addEventListener("keyup", this.keyboardHandler)
-    this.setLevelHandler({target: {value: this.state.levelName}});
+    this.setLevelHandler({target: {value: this.state.levelNumber}});
   }
 
   componentWillUnmount() {
@@ -581,8 +582,8 @@ class Game extends React.Component {
         <div className="level-selector-sidebar" style={{display:"flex", flexDirection:"column"}}>
           <div>
             <label htmlFor="level_select">Choose level:</label>
-            <select name="level_select" id="level_select" value={this.state.levelName} onChange={this.setLevelHandler}>
-              {Object.keys(Levels.levels).map(levelName => <option key={levelName} value={levelName}>{levelName}</option>)}
+            <select name="level_select" id="level_select" value={this.state.levelNumber} onChange={this.setLevelHandler}>
+              {Levels.levels.map((level, i) => <option key={i} value={i}>{level.name}</option>)}
             </select>
           </div>
           <textarea name="submission" id="submission" value={this.state.submission} onChange={this.setSubmission}/>
@@ -1170,77 +1171,75 @@ class Game extends React.Component {
   }
 
   setLevelHandler = (event, {loadCookie, clearBoard}={loadCookie:true, clearBoard:true}) => {
-    var value = event.target.value;
-    if (this.state.levelData === null || value !== this.state.levelName) {
+    var value = Number(event.target.value);
+    if (this.state.levelData === null || value !== this.state.levelNumber) {
       // var path = levels[value];
       // getFileFromServer(path, text => this.setBoardToLevel(value, text, {loadCookie, clearBoard}));
-      const level = Levels.levels[value];
-      const levelIndex = Object.keys(Levels.levels).indexOf(value);
-      const background = Levels.backgrounds[levelIndex];
-      this.setBoardToLevel(value, level, {loadCookie, clearBoard, background: background});
+      this.setBoardToLevel(value, {loadCookie, clearBoard});
     }
   }
 
-  setBoardToLevel = (levelName, levelData, {keepHistory, clearBoard, loadCookie, background}={}) => {
-    if (levelData) {
-      if (this.state.simState !== "stop") this.simHandler("stop");
-      var newState = {
-        levelName: levelName,
-        levelData: levelData,
-      }
-      if (!keepHistory) {
-        newState.submissionHistory = [];
-        newState.submissionFuture = [];
-      }
-      if (background) newState.background = background.split('\n');
-      var submission = null;
-      var board = null;
-      if (loadCookie) {
-        submission = localStorage.getItem(`board-state-${levelName}`);
-        if (submission) {
-          board = Module.LoadBoard(levelData, submission);
-          const status = board.check_status();
-          const m = board.m;
-          const n = board.n;
-          board.delete();
-          if (status !== Module.Status.INVALID) {
-            let [err, submissionSquares] = parseSubmission(submission, m, n);
-            if (!err) {
-              newState.squares = submissionSquares;
-              this.setState(newState, this.resetBoard);
-              return;
-            }
-          }
-        }
-      }
-      let squares = this.state.squares;
-      if (clearBoard) squares = squares.map(row => row.map(makeEmptySquare));
-      submission = makeSubmission(squares, this.props.m, this.props.n);
-      board = Module.LoadBoard(levelData, submission);
-      var inputs = board.get_inputs();
-      var inputLocations = Array.from({length: inputs.size()}).map((_, i) => inputs.get(i).location);
-      inputs.delete();
-      let levelGrid = board.get_level();
-      newState.squares = squares.map((row, y) => row.map((square, x) => {
-        if (clearBoard) {
-          for (let bot in startSquares) {
-            bot = Number(bot);
-            if (JSON.stringify(startSquares[bot]) === JSON.stringify([y, x])) {
-              let [symbolState] = makeSymbolState("operation", "S", y, x, bot);
-              return update(makeEmptySquare(), {operation: {[bot]: {$set: symbolState}}});
-            }
-          }
-        }
-        let levelValue = String.fromCharCode(levelGrid.at(y, x));
-        if (levelValue === "x") return makeFixedCell("cellSymbol", "x", y, x);
-        if (levelValue === "+") return makeFixedCell("cellSymbol", "+", y, x);
-        if (y < board.m && x < board.n && !cellAllowed(levelValue)) return makeEmptySquare();
-        return {...square};
-      }));
-      levelGrid.delete();
-      board.delete();
-      this.setState(newState, this.resetBoard);
+  setBoardToLevel = (levelNumber, {keepHistory, clearBoard, loadCookie}={}) => {
+    if (this.state.simState !== "stop") this.simHandler("stop");
+    const level = Levels.levels[levelNumber];
+    const background = Levels.backgrounds[levelNumber].split('\n');
+    var newState = {
+      levelNumber: levelNumber,
+      levelName: level.name,
+      levelData: level.data,
+      background: background,
+    };
+    if (!keepHistory) {
+      newState.submissionHistory = [];
+      newState.submissionFuture = [];
     }
+    var submission = null;
+    var board = null;
+    if (loadCookie) {
+      submission = localStorage.getItem(`board-state-${level.name}`);
+      if (submission) {
+        board = Module.LoadBoard(level.data, submission);
+        const status = board.check_status();
+        const m = board.m;
+        const n = board.n;
+        board.delete();
+        if (status !== Module.Status.INVALID) {
+          let [err, submissionSquares] = parseSubmission(submission, m, n);
+          if (!err) {
+            newState.squares = submissionSquares;
+            this.setState(newState, this.resetBoard);
+            return;
+          }
+        }
+      }
+    }
+    let squares = this.state.squares;
+    if (clearBoard) squares = squares.map(row => row.map(makeEmptySquare));
+    submission = makeSubmission(squares, this.props.m, this.props.n);
+    board = Module.LoadBoard(level.data, submission);
+    var inputs = board.get_inputs();
+    var inputLocations = Array.from({length: inputs.size()}).map((_, i) => inputs.get(i).location);
+    inputs.delete();
+    let levelGrid = board.get_level();
+    newState.squares = squares.map((row, y) => row.map((square, x) => {
+      if (clearBoard) {
+        for (let bot in startSquares) {
+          bot = Number(bot);
+          if (JSON.stringify(startSquares[bot]) === JSON.stringify([y, x])) {
+            let [symbolState] = makeSymbolState("operation", "S", y, x, bot);
+            return update(makeEmptySquare(), {operation: {[bot]: {$set: symbolState}}});
+          }
+        }
+      }
+      let levelValue = String.fromCharCode(levelGrid.at(y, x));
+      if (levelValue === "x") return makeFixedCell("cellSymbol", "x", y, x);
+      if (levelValue === "+") return makeFixedCell("cellSymbol", "+", y, x);
+      if (y < board.m && x < board.n && !cellAllowed(levelValue)) return makeEmptySquare();
+      return {...square};
+    }));
+    levelGrid.delete();
+    board.delete();
+    this.setState(newState, this.resetBoard);
   }
 
   setBoardHandler = event => {
@@ -1249,7 +1248,7 @@ class Game extends React.Component {
   }
 
   clearBoardHandler = event => {
-    this.setBoardToLevel(this.state.levelName, this.state.levelData, {keepHistory: true, clearBoard: true});
+    this.setBoardToLevel(this.state.levelNumber, {keepHistory: true, clearBoard: true});
   }
 
   symbolClickHandler = symbolState => {
