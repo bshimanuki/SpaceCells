@@ -386,7 +386,16 @@ function Cloud(props) {
   const octaves = 4;
   const seed = 0;
   return <>
-    <filter id="filter-cloud">
+    <filter id="filter-cloud-light">
+      <feTurbulence type="fractalNoise" baseFrequency={f} numOctaves={octaves} seed={seed}/>
+      <feComponentTransfer>
+        <feFuncR type="table" tableValues="1"/>
+        <feFuncG type="table" tableValues="1"/>
+        <feFuncB type="table" tableValues="1"/>
+        <feFuncA type="table" tableValues="0 0 0 0 0.5 1 1"/>
+      </feComponentTransfer>
+    </filter>
+    <filter id="filter-cloud-dark">
       <feTurbulence type="fractalNoise" baseFrequency={f} numOctaves={octaves} seed={seed}/>
       <feComponentTransfer>
         <feFuncR type="table" tableValues="1"/>
@@ -395,8 +404,11 @@ function Cloud(props) {
         <feFuncA type="table" tableValues="0 0 0.25 0.75 1 1 1"/>
       </feComponentTransfer>
     </filter>
-    <mask id="mask-cloud">
-      <rect x={0} y={0} width={1} height={1} filter="url(#filter-cloud)"/>
+    <mask id="mask-cloud-light">
+      <rect x={0} y={0} width={1} height={1} filter="url(#filter-cloud-light)"/>
+    </mask>
+    <mask id="mask-cloud-dark">
+      <rect x={0} y={0} width={1} height={1} filter="url(#filter-cloud-dark)"/>
     </mask>
   </>;
 }
@@ -407,6 +419,8 @@ export function LightTile(props) {
     <svg viewBox="0 0 1 1">
       <rect x={0} y={0} width={1} height={1} fill="lightgray"/>
       <rect x={s} y={s} width={1-2*s} height={1-2*s} fill="url(#tile-pattern)"/>
+      <rect fill="bisque" x={0} y={0} width={1} height={1} mask="url(#mask-cloud-light)" transform={`translate(${-props.x},${-props.y}) scale(${props.n},${props.m})`}/>
+      {props.children}
     </svg>
   );
 }
@@ -417,7 +431,7 @@ export function DarkTile(props) {
     <svg viewBox="0 0 1 1">
       <rect x={0} y={0} width={1} height={1} fill="lightgray"/>
       <rect x={s} y={s} width={1-2*s} height={1-2*s} fill="url(#tile-pattern)"/>
-      <rect fill="bisque" x={0} y={0} width={1} height={1} mask="url(#mask-cloud)" transform={`translate(${-props.x},${-props.y}) scale(${props.n},${props.m})`}/>
+      <rect fill="bisque" x={0} y={0} width={1} height={1} mask="url(#mask-cloud-dark)" transform={`translate(${-props.x},${-props.y}) scale(${props.n},${props.m})`}/>
       {props.children}
     </svg>
   );

@@ -349,11 +349,11 @@ class Square extends React.PureComponent {
     const cellSymbolType = symbolTypeByState(this.props.cellSymbol);
     let background = null;
     if (this.props.input || this.props.output) {
-      background = <Svgs.LightTile/>;
+      background = <Svgs.LightTile y={this.props.y} x={this.props.x} m={this.props.m} n={this.props.n}/>;
     } else if (this.props.trespassable) {
       switch (this.props.background) {
       case "a":
-        background = <Svgs.LightTile/>;
+        background = <Svgs.LightTile y={this.props.y} x={this.props.x} m={this.props.m} n={this.props.n}/>;
         break;
       case "b":
         background = <Svgs.DarkTile y={this.props.y} x={this.props.x} m={this.props.m} n={this.props.n}/>;
