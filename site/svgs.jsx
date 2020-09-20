@@ -36,7 +36,7 @@ Arrow.defaultProps = {
   y1: 0,
   className: "",
   padding: PADDING,
-}
+};
 
 function CellBorder({w, h, r, strokeWidth, className, padding, ...props}) {
   let x = -w + strokeWidth / 2 + 2 * padding;
@@ -51,7 +51,7 @@ CellBorder.defaultProps = {
   strokeWidth: 0.1,
   className: "cell-border",
   padding: PADDING,
-}
+};
 
 export function CellBot({w, h, r, strokeWidth, padding, ...props}) {
   return <Svg w={w} h={h} {...props}>
@@ -64,7 +64,7 @@ CellBot.defaultProps = {
   r: CellBorder.defaultProps.r + CellBorder.defaultProps.strokeWidth / 2 + (PADDING - BOT_PADDING),
   strokeWidth: 2 * (PADDING - BOT_PADDING),
   padding: BOT_PADDING,
-}
+};
 
 
 // x, y not padded
@@ -86,7 +86,7 @@ XCellFill.defaultProps = {
   r1: 0.20, // blue
   r0: 0.22, // green
   padding: PADDING,
-}
+};
 
 function PlusCellFill({x, y, offset, r1, r0, padding, ...props}) {
   offset *= 1 - padding;
@@ -106,7 +106,7 @@ PlusCellFill.defaultProps = {
   r1: 0.27, // red
   r0: 0.24, // orange
   padding: PADDING,
-}
+};
 
 export function XCell({w, h, _className, className, ...props}) {
   return <Svg w={w} h={h} className={`${_className} ${className}`} {...props}>
@@ -114,14 +114,14 @@ export function XCell({w, h, _className, className, ...props}) {
     <XCellFill/>
   </Svg>;
 }
-XCell.defaultProps = {w:1, h:1, _className:"cell-x", className:""}
+XCell.defaultProps = {w:1, h:1, _className:"cell-x", className:""};
 export function PlusCell({w, h, _className, className, ...props}) {
   return <Svg w={w} h={h} className={`${_className} ${className}`} {...props}>
     <CellBorder w={w} h={h}/>
     <PlusCellFill/>
   </Svg>;
 }
-PlusCell.defaultProps = {w:1, h:1, _className:"cell-plus", className:""}
+PlusCell.defaultProps = {w:1, h:1, _className:"cell-plus", className:""};
 export function HorizontalCell(props) {
   return <XCell _className="cell-horizontal" w={2} {...props}/>;
 }
@@ -145,7 +145,7 @@ Diode.defaultProps = {
   headDistance: 0.3,
   headLength: 0.3,
   headAngle: Math.PI / 4,
-}
+};
 
 export function DiodeUp(props) {
   return <Diode dx={0} dy={-1} className="diode-up" {...props}/>;
@@ -174,7 +174,7 @@ DirectionArrow.defaultProps = {
   headAngle: Math.PI / 3,
   headLength: 0.4,
   drawGhost: true,
-}
+};
 
 function Direction({dx, dy, _className, className, arrowProps, ...props}) {
   return <Svg className={`direction ${_className} ${className}`} {...props}>
@@ -184,7 +184,7 @@ function Direction({dx, dy, _className, className, arrowProps, ...props}) {
 Direction.defaultProps = {
   _className: "",
   className: "",
-}
+};
 
 export function DirectionUp(props) {
   return <Direction dx={0} dy={-1} _className="direction-up" {...props}/>;
@@ -234,7 +234,7 @@ Operation.defaultProps = {
   unicodeTextHeight: 0.45,
   _className: "",
   className: "",
-}
+};
 function UnicodeOperation(props) {
   return <Operation unicodeFontSize={0.8} {...props}/>;
 }
@@ -295,7 +295,7 @@ Branch.defaultProps = {
     headDistance: 0.7,
   },
   branchRadius: 0.5,
-}
+};
 
 function Branch1(props) {
   return <Branch {...props}>
@@ -349,4 +349,85 @@ export function Branch0Left(props) {
 }
 export function Branch0Right(props) {
   return <Branch0 className="branch0right" dx={1} dy={0} {...props}/>;
+}
+
+function Star(props) {
+  const dx = props.dx;
+  return (
+    <polygon className="star" points={`0,0 ${dx},0.5 0,1 0.5,${1-dx} 1,1 ${1-dx},0.5 1,0 0.5,${dx}`} {...props}/>
+  );
+}
+
+function Hatch(props) {
+  const rx = 0.3;
+  const ry = 0.1;
+  return <g {...props}>
+    <ellipse cy={0} cx={0} ry={ry} rx={rx} transform="translate(0,0.5) rotate(45)"/>
+    <ellipse cy={0} cx={0} ry={ry} rx={rx} transform="translate(1,0.5) rotate(45)"/>
+    <ellipse cy={0} cx={0} ry={ry} rx={rx} transform="translate(0.5,0) rotate(-45)"/>
+    <ellipse cy={0} cx={0} ry={ry} rx={rx} transform="translate(0.5,1) rotate(-45)"/>
+  </g>;
+}
+
+function Pattern(props) {
+  const s = 100 / props.n;
+  return (
+    <pattern id={props.id} viewBox="0 0 1 1" width={`${s}%`} height={`${s}%`}>
+      {props.children}
+    </pattern>
+  );
+}
+Pattern.defaultProps = {
+  n: 4,
+}
+
+function Cloud(props) {
+  const f = 100;
+  const octaves = 4;
+  const seed = 0;
+  return (
+    <filter id="filter-cloud">
+      <feTurbulence type="fractalNoise" baseFrequency={f} numOctaves={octaves} seed={seed} result="noise"/>
+      <feDiffuseLighting in="noise" lighting-color="white" surfaceScale="1">
+        <feDistantLight azimuth="45" elevation="60" />
+      </feDiffuseLighting>
+    </filter>
+  );
+}
+
+export function LightTile(props) {
+  const s = 0.0;
+  return (
+    <svg viewBox="0 0 1 1">
+      <rect x={0} y={0} width={1} height={1} fill="lightgray"/>
+      <rect x={s} y={s} width={1-2*s} height={1-2*s} fill="url(#tile-pattern)"/>
+    </svg>
+  );
+}
+
+export function DarkTile(props) {
+  const s = 0.0;
+  // const pattern = <Star dx={0.25} fill="#abc"/>;
+  const pattern = <Hatch fill="#abc"/>;
+  const cloudOpacity = 1;
+  return (
+    <svg viewBox="0 0 1 1">
+      <rect x={0} y={0} width={1} height={1} fill="lightgray"/>
+      <rect x={s} y={s} width={1-2*s} height={1-2*s} fill="url(#tile-pattern)"/>
+      <rect x={0} y={0} width={1} height={1} opacity={cloudOpacity} filter="url(#filter-cloud)" transform={`translate(${-props.x},${-props.y}) scale(${props.n},${props.m})`}/>
+    </svg>
+  );
+}
+
+export function SvgDefs() {
+  // const pattern = <Star dx={0.25} fill="#abc"/>;
+  const pattern = <Hatch fill="#abc"/>;
+  return (
+    <svg width={0} height={0}>
+      <Pattern id="tile-pattern">
+        {pattern}
+      </Pattern>
+      <Cloud/>
+    </svg>
+  );
 }

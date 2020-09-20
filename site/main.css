@@ -51,14 +51,16 @@ body {
   position: relative;
   height: 60px;
   width: 60px;
-  outline: 1px solid #000;
-  outline-offset: -1px;
 }
-.square-overlay,.square-underlay,.square-drag-overlay {
+.square-overlay,.square-underlay,.square-drag-overlay,.square-background {
   position: absolute;
   width: 100%;
   height: 100%;
   pointer-events: none;
+}
+.square-background {
+  outline: 1px solid #000;
+  outline-offset: -1px;
 }
 .square-overlay {
   z-index: 4;

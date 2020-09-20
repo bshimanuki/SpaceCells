@@ -361,6 +361,10 @@ class Square extends React.PureComponent {
     const cellSymbolType = symbolTypeByState(this.props.cellSymbol);
     return (
       <div className={classNames} onClick={this.clickHandler} onDragEnter={this.dragOverHandler} onDragOver={this.dragOverHandler} onDragLeave={this.dragOverHandler} onDrop={this.dragOverHandler}>
+        <div className="square-background">
+          {this.props.trespassable && <Svgs.LightTile y={this.props.y} x={this.props.x} m={this.props.m} n={this.props.n}/>}
+          {(this.props.input || this.props.output) && <Svgs.LightTile/>}
+        </div>
         <div className="square-underlay"/>
         <div className={`square-overlay ${cellBotClassNames}`}>
           <Svgs.CellBot/>
@@ -392,6 +396,8 @@ class Board extends React.PureComponent {
       dragOver={dragOver}
       stopped={this.props.stopped}
       flipflop={dragOver && this.props.flipflop}
+      m={this.props.m}
+      n={this.props.n}
       {...props}
     />);
   }
@@ -672,6 +678,7 @@ class Game extends React.Component {
           { this.state.status === Module.Status.DONE && <div className="finished">Finished level!</div> }
           <ResultsModal isOpen={this.state.showModal} closeModalHandler={this.closeModalHandler} stats={mockData} results={this.state.lastResults}/>
         </div>
+        <Svgs.SvgDefs/>
       </div>
     );
   }
