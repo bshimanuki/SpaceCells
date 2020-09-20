@@ -557,6 +557,7 @@ class Game extends React.Component {
     let classNames = [];
     if (this.state.draggedSymbolState.value) classNames.push("dragging");
     if (this.state.dragOverFits) classNames.push("dragover-fits");
+    if (this.state.dragOverPosition) classNames.push("dragover-active");
     if (this.state.dragOverPosition === "trash") classNames.push("dragover-trash");
     if (this.state.wasNext) classNames.push(`output-color-${this.state.lastColor}`);
     classNames.push(`sim-${this.state.simState}`);
