@@ -362,7 +362,7 @@ class Square extends React.PureComponent {
     return (
       <div className={classNames} onClick={this.clickHandler} onDragEnter={this.dragOverHandler} onDragOver={this.dragOverHandler} onDragLeave={this.dragOverHandler} onDrop={this.dragOverHandler}>
         <div className="square-background">
-          {this.props.trespassable && <Svgs.LightTile y={this.props.y} x={this.props.x} m={this.props.m} n={this.props.n}/>}
+          {this.props.trespassable && <Svgs.DarkTile y={this.props.y} x={this.props.x} m={this.props.m} n={this.props.n}/>}
           {(this.props.input || this.props.output) && <Svgs.LightTile/>}
         </div>
         <div className="square-underlay"/>

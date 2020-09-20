@@ -382,17 +382,23 @@ Pattern.defaultProps = {
 }
 
 function Cloud(props) {
-  const f = 100;
+  const f = 40;
   const octaves = 4;
   const seed = 0;
-  return (
+  return <>
     <filter id="filter-cloud">
-      <feTurbulence type="fractalNoise" baseFrequency={f} numOctaves={octaves} seed={seed} result="noise"/>
-      <feDiffuseLighting in="noise" lighting-color="white" surfaceScale="1">
-        <feDistantLight azimuth="45" elevation="60" />
-      </feDiffuseLighting>
+      <feTurbulence type="fractalNoise" baseFrequency={f} numOctaves={octaves} seed={seed}/>
+      <feComponentTransfer>
+        <feFuncR type="table" tableValues="1"/>
+        <feFuncG type="table" tableValues="1"/>
+        <feFuncB type="table" tableValues="1"/>
+        <feFuncA type="table" tableValues="0 0 0.25 0.75 1 1 1"/>
+      </feComponentTransfer>
     </filter>
-  );
+    <mask id="mask-cloud">
+      <rect x={0} y={0} width={1} height={1} filter="url(#filter-cloud)"/>
+    </mask>
+  </>;
 }
 
 export function LightTile(props) {
@@ -414,7 +420,7 @@ export function DarkTile(props) {
     <svg viewBox="0 0 1 1">
       <rect x={0} y={0} width={1} height={1} fill="lightgray"/>
       <rect x={s} y={s} width={1-2*s} height={1-2*s} fill="url(#tile-pattern)"/>
-      <rect x={0} y={0} width={1} height={1} opacity={cloudOpacity} filter="url(#filter-cloud)" transform={`translate(${-props.x},${-props.y}) scale(${props.n},${props.m})`}/>
+      <rect fill="bisque" x={0} y={0} width={1} height={1} opacity={cloudOpacity} mask="url(#mask-cloud)" transform={`translate(${-props.x},${-props.y}) scale(${props.n},${props.m})`}/>
     </svg>
   );
 }
