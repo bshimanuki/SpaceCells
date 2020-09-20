@@ -5,6 +5,7 @@ import Modal from 'react-modal';
 import * as Charts from "@data-ui/histogram";
 
 import * as Svgs from "./svgs.jsx";
+import * as Levels from "./levels.jsx";
 import "./main.css"; // after svgs with its own css
 import Embindings from "./embindings.js";
 import EmbindingsWASM from "./embindings.wasm";
@@ -63,19 +64,6 @@ EmbindingsLoader.then((core) => {
   Modal.setAppElement("#game");
   console.log("loaded");
 });
-
-const levels = {
-  "not": "../examples/not.lvl",
-  "and": "../examples/and.lvl",
-  "crossing": "../examples/crossing.lvl",
-  "delay": "../examples/delay.lvl",
-  "switch": "../examples/switch.lvl",
-  "xor": "../examples/xor.lvl",
-  "median": "../examples/median.lvl",
-  "rainbow": "../examples/rainbow.lvl",
-  "adder": "../examples/adder.lvl",
-  "stack": "../examples/stack.lvl",
-};
 
 const startSquares = [
   [2, 5], // red
@@ -359,11 +347,26 @@ class Square extends React.PureComponent {
     if (this.props.bot1) cellBotClassNames.push("bot1");
     cellBotClassNames = cellBotClassNames.join(" ");
     const cellSymbolType = symbolTypeByState(this.props.cellSymbol);
+    let background = null;
+    if (this.props.input || this.props.output) {
+      background = <Svgs.LightTile/>;
+    } else if (this.props.trespassable) {
+      switch (this.props.background) {
+      case "a":
+        background = <Svgs.LightTile/>;
+        break;
+      case "b":
+        background = <Svgs.DarkTile y={this.props.y} x={this.props.x} m={this.props.m} n={this.props.n}/>;
+        break;
+      case "c":
+        background = <Svgs.CrystalTile y={this.props.y} x={this.props.x} m={this.props.m} n={this.props.n}/>;
+        break;
+      }
+    }
     return (
       <div className={classNames} onClick={this.clickHandler} onDragEnter={this.dragOverHandler} onDragOver={this.dragOverHandler} onDragLeave={this.dragOverHandler} onDrop={this.dragOverHandler}>
         <div className="square-background">
-          {this.props.trespassable && <Svgs.DarkTile y={this.props.y} x={this.props.x} m={this.props.m} n={this.props.n}/>}
-          {(this.props.input || this.props.output) && <Svgs.LightTile/>}
+          {background}
         </div>
         <div className="square-underlay"/>
         <div className={`square-overlay ${cellBotClassNames}`}>
@@ -412,6 +415,7 @@ class Board extends React.PureComponent {
               y: y,
               x: x,
               cell: ((this.props.cells || {})[y] || {})[x],
+              background: ((this.props.background || {})[y] || {})[x],
               trespassable: ((this.props.trespassable || {})[y] || {})[x],
               bot0: matchLocation(this.props.bots[0], y, x),
               bot1: matchLocation(this.props.bots[1], y, x),
@@ -475,8 +479,9 @@ class Game extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      levelName: Object.keys(levels)[0],
+      levelName: Object.keys(Levels.levels)[0],
       levelData: null,
+      background: null,
       squares: Array.from({length: this.props.m}, e => Array.from({length: this.props.n}, makeEmptySquare)),
       submission: "",
       submissionHistory: [],
@@ -577,7 +582,7 @@ class Game extends React.Component {
           <div>
             <label htmlFor="level_select">Choose level:</label>
             <select name="level_select" id="level_select" value={this.state.levelName} onChange={this.setLevelHandler}>
-              {Object.keys(levels).map(levelName => <option key={levelName} value={levelName}>{levelName}</option>)}
+              {Object.keys(Levels.levels).map(levelName => <option key={levelName} value={levelName}>{levelName}</option>)}
             </select>
           </div>
           <textarea name="submission" id="submission" value={this.state.submission} onChange={this.setSubmission}/>
@@ -600,6 +605,7 @@ class Game extends React.Component {
               n={this.props.n}
               squares={this.state.squares}
               cells={this.state.cells}
+              background={this.state.background}
               trespassable={this.state.trespassable}
               inputs={this.state.inputs}
               outputs={this.state.outputs}
@@ -1166,12 +1172,16 @@ class Game extends React.Component {
   setLevelHandler = (event, {loadCookie, clearBoard}={loadCookie:true, clearBoard:true}) => {
     var value = event.target.value;
     if (this.state.levelData === null || value !== this.state.levelName) {
-      var path = levels[value];
-      getFileFromServer(path, text => this.setBoardToLevel(value, text, {loadCookie, clearBoard}));
+      // var path = levels[value];
+      // getFileFromServer(path, text => this.setBoardToLevel(value, text, {loadCookie, clearBoard}));
+      const level = Levels.levels[value];
+      const levelIndex = Object.keys(Levels.levels).indexOf(value);
+      const background = Levels.backgrounds[levelIndex];
+      this.setBoardToLevel(value, level, {loadCookie, clearBoard, background: background});
     }
   }
 
-  setBoardToLevel = (levelName, levelData, {keepHistory, clearBoard, loadCookie}={}) => {
+  setBoardToLevel = (levelName, levelData, {keepHistory, clearBoard, loadCookie, background}={}) => {
     if (levelData) {
       if (this.state.simState !== "stop") this.simHandler("stop");
       var newState = {
@@ -1182,6 +1192,7 @@ class Game extends React.Component {
         newState.submissionHistory = [];
         newState.submissionFuture = [];
       }
+      if (background) newState.background = background.split('\n');
       var submission = null;
       var board = null;
       if (loadCookie) {

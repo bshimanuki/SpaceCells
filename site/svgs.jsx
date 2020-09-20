@@ -413,25 +413,36 @@ export function LightTile(props) {
 
 export function DarkTile(props) {
   const s = 0.0;
-  // const pattern = <Star dx={0.25} fill="#abc"/>;
-  const pattern = <Hatch fill="#abc"/>;
-  const cloudOpacity = 1;
   return (
     <svg viewBox="0 0 1 1">
       <rect x={0} y={0} width={1} height={1} fill="lightgray"/>
       <rect x={s} y={s} width={1-2*s} height={1-2*s} fill="url(#tile-pattern)"/>
-      <rect fill="bisque" x={0} y={0} width={1} height={1} opacity={cloudOpacity} mask="url(#mask-cloud)" transform={`translate(${-props.x},${-props.y}) scale(${props.n},${props.m})`}/>
+      <rect fill="bisque" x={0} y={0} width={1} height={1} mask="url(#mask-cloud)" transform={`translate(${-props.x},${-props.y}) scale(${props.n},${props.m})`}/>
+      {props.children}
     </svg>
   );
 }
 
+export function CrystalTile(props) {
+  const s = 0.0;
+  const crystalOpacity = 0.5;
+  return (
+    <DarkTile {...props}>
+      <rect x={s} y={s} width={1-2*s} height={1-2*s} opacity={crystalOpacity} fill="url(#crystal-pattern)"/>
+    </DarkTile>
+  )
+}
+
 export function SvgDefs() {
-  // const pattern = <Star dx={0.25} fill="#abc"/>;
   const pattern = <Hatch fill="#abc"/>;
+  const crystalPattern = <Star dx={0.25} fill="#cba"/>;
   return (
     <svg width={0} height={0}>
       <Pattern id="tile-pattern">
         {pattern}
+      </Pattern>
+      <Pattern id="crystal-pattern">
+        {crystalPattern}
       </Pattern>
       <Cloud/>
     </svg>

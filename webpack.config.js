@@ -33,6 +33,11 @@ module.exports = {
         ]
       },
       {
+        test: /\.(txt|lvl)$/,
+        exclude: /node_modules/,
+        loader: 'raw-loader',
+      },
+      {
         test: /\.svg$/,
         exclude: /node_modules/,
         use: [
