@@ -479,10 +479,13 @@ class Game extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
+      // level data
       levelNumber: 0,
       levelName: Levels.levels[0].name,
       levelData: null,
       background: null,
+      levelsUnlocked: 1,
+      // submission data
       squares: Array.from({length: this.props.m}, e => Array.from({length: this.props.n}, makeEmptySquare)),
       submission: "",
       submissionHistory: [],
@@ -524,7 +527,7 @@ class Game extends React.Component {
       dragOverFits: false,
       // state change indicator alternate between +/-1
       flipflop: 1,
-      // results
+      // modal (results and level information)
       showModal: false,
       lastResults: null,
       modalLevelEnd: false,
@@ -567,6 +570,23 @@ class Game extends React.Component {
     this.resetBoard({makeNewState, undoredo});
   }
 
+  renderDebugWindow() {
+    return <>
+      <div style={{paddingBottom: "60px"}}/>
+      <div className="debug-sidebar" style={{display:"flex", flexDirection:"column"}}>
+        <div className="debug-title">Debug Window</div>
+        <div>
+          <label htmlFor="level_select">Choose level:</label>
+          <select name="level_select" id="level_select" value={this.state.levelNumber} onChange={this.setLevelHandler}>
+            {Levels.levels.map((level, i) => <option key={i} value={i}>{level.name}</option>)}
+          </select>
+        </div>
+        <textarea name="submission" id="submission" value={this.state.submission} onChange={this.setSubmission}/>
+        <input type="button" value="Load" onClick={this.setBoardHandler}/>
+      </div>
+    </>;
+  }
+
   render() {
     let classNames = [];
     if (this.state.draggedSymbolState.value) classNames.push("dragging");
@@ -581,19 +601,27 @@ class Game extends React.Component {
     let trashActive = [...this.state.selectedSymbolStates].some(symbolState => symbolState.onBoard && symbolState.value !== "S");
     return (
       <div id="main-content" style={{display:"flex"}} className={classNames}>
-        <div className="level-selector-sidebar" style={{display:"flex", flexDirection:"column"}}>
-          <div>
-            <label htmlFor="level_select">Choose level:</label>
-            <select name="level_select" id="level_select" value={this.state.levelNumber} onChange={this.setLevelHandler}>
-              {Levels.levels.map((level, i) => <option key={i} value={i}>{level.name}</option>)}
-            </select>
+        <div className="left-sidebar" style={{display:"flex", flexDirection:"column"}}>
+          <div className="level-selection">
+            {Array.from({length: this.state.levelsUnlocked}).map((_, i) =>
+            <React.Fragment key={i}>
+              <input type="radio" id={`radio-level-${Levels.levels[i].name}`}
+                value={i} name="level-selection"
+                checked={this.state.levelNumber === i}
+                onClick={this.setLevelHandler}
+                readOnly
+              />
+              <label htmlFor={`radio-level-${Levels.levels[i].name}`}>
+                Assignment {i+1}: {Levels.levels[i].title}
+              </label>
+            </React.Fragment>
+            )}
           </div>
-          <textarea name="submission" id="submission" value={this.state.submission} onChange={this.setSubmission}/>
-          <input type="button" value="Load" onClick={this.setBoardHandler}/>
+          <input className="level-button level-information-button" type="button" value="Level Information" onClick={this.openModalHandler}/>
           <div style={{paddingBottom: "60px"}}/>
-          <input type="button" value="Reset Board" onClick={this.clearBoardHandler}/>
-          <div style={{paddingBottom: "60px"}}/>
-          <input type="button" value="Level Information" onClick={this.openModalHandler}/>
+          <input className="level-button reset-button" type="button" value="Reset Board" onClick={this.clearBoardHandler}/>
+          {/* TODO: replace with "Load Last Solution" */}
+          <input className={`level-button load-solution ${this.state.levelNumber < this.state.levelsUnlocked - 1 ? "visible" : "hidden"}`} type="button" value="Load Last Solution (example for now)" onClick={this.loadLastSolutionHandler}/>
         </div>
         <div className="center-content" style={{display:"flex", flexDirection:"column", alignItems:"center", width:"min-content"}}>
           <div style={{display:"flex", width:"min-content"}} className="game-board">
@@ -681,10 +709,15 @@ class Game extends React.Component {
           </div>
           <br/>
           <div className="colon-list">
-            {this.state.error ? <div><span className="error">Error</span><span className="error-value">{this.state.error}</span></div> : "" }
+            <div className={this.state.error ? "visible" : "hidden"}>
+              <span className="error">Error</span><span className="error-value">{this.state.error}</span>
+            </div>
           </div>
           <br/>
-          { this.state.status === Module.Status.DONE && <div className="finished">Finished level!</div> }
+          <div className={`finished ${this.state.status === Module.Status.DONE ? "visible" : "hidden"}`}>
+            Finished level!
+          </div>
+          {this.renderDebugWindow()}
           <GameModal
             isOpen={this.state.showModal}
             modalHandlerClose={this.modalHandlerClose}
@@ -1250,6 +1283,14 @@ class Game extends React.Component {
     this.setBoardToLevel(this.state.levelNumber, {keepHistory: true, clearBoard: true});
   }
 
+  loadLastSolutionHandler = event => {
+    // TODO: query server
+    const url = `../examples/${Levels.levels[this.state.levelNumber].name}.sol`;
+    getFileFromServer(url, text => {
+      this.loadSubmission(text);
+    });
+  }
+
   symbolClickHandler = symbolState => {
     if (this.state.simState !== "stop") return;
     this.setSelected(symbolState);
@@ -1402,9 +1443,10 @@ class Game extends React.Component {
   }
   modalHandlerStart = event => this.modalHandlerClose(event, true);
   onFinish = () => {
+    // TODO: query server
     if (this.state.status === Module.Status.DONE) {
       this.setState((state, props) => {
-        return {
+        let newState = {
           showModal: true,
           modalLevelEnd: true,
           modalPage: -1,
@@ -1413,6 +1455,10 @@ class Game extends React.Component {
             symbols: state.numSymbols,
           },
         };
+        if (state.levelNumber === state.levelsUnlocked - 1) {
+          newState.levelsUnlocked = state.levelsUnlocked + 1;
+        }
+        return newState;
       });
     }
   }
