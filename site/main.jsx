@@ -527,6 +527,8 @@ class Game extends React.Component {
       // results
       showModal: false,
       lastResults: null,
+      modalLevelEnd: false,
+      modalPage: 0, // -1 for results, 0 for info
     };
   }
 
@@ -591,7 +593,7 @@ class Game extends React.Component {
           <div style={{paddingBottom: "60px"}}/>
           <input type="button" value="Reset Board" onClick={this.clearBoardHandler}/>
           <div style={{paddingBottom: "60px"}}/>
-          <input type="button" value="Show Results" onClick={this.openModalHandler}/>
+          <input type="button" value="Level Information" onClick={this.openModalHandler}/>
         </div>
         <div className="center-content" style={{display:"flex", flexDirection:"column", alignItems:"center", width:"min-content"}}>
           <div style={{display:"flex", width:"min-content"}} className="game-board">
@@ -683,25 +685,22 @@ class Game extends React.Component {
           </div>
           <br/>
           { this.state.status === Module.Status.DONE && <div className="finished">Finished level!</div> }
-          <ResultsModal isOpen={this.state.showModal} closeModalHandler={this.closeModalHandler} stats={mockData} results={this.state.lastResults}/>
+          <GameModal
+            isOpen={this.state.showModal}
+            modalHandlerClose={this.modalHandlerClose}
+            modalHandlerNext={this.modalHandlerNext}
+            modalHandlerPrev={this.modalHandlerPrev}
+            modalHandlerStart={this.modalHandlerStart}
+            stats={mockData}
+            results={this.state.lastResults}
+            modalLevelEnd={this.state.modalLevelEnd}
+            levelNumber={this.state.levelNumber}
+            modalPage={this.state.modalPage}
+          />
         </div>
         <Svgs.SvgDefs/>
       </div>
     );
-  }
-
-  onFinish = () => {
-    if (this.state.status === Module.Status.DONE) {
-      this.setState((state, props) => {
-        return {
-          showModal: true,
-          lastResults: {
-            cycles: state.cycle,
-            symbols: state.numSymbols,
-          },
-        };
-      });
-    }
   }
 
   selectedOnBoard = (state=this.state, props=this.props) => state.selectedSymbolStates.size && state.selectedSymbolStates.values().next().value.onBoard;
@@ -1378,11 +1377,46 @@ class Game extends React.Component {
   }
 
   openModalHandler = () => {
-    this.setState({showModal: true});
+    this.setState({
+      showModal: true,
+      modalLevelEnd: false,
+      modalPage: 0,
+    });
   }
-  closeModalHandler = () => {
-    this.setState({showModal: false});
+  modalHandlerClose = (event, startNext) => {
+    this.setState({
+        showModal: false,
+        modalLevelEnd: false,
+        modalPage: 0,
+    }, () => {
+      if (startNext) {
+        this.setLevelHandler({target: {value: this.state.levelNumber + 1}});
+      }
+    });
   }
+  modalHandlerNext = event => {
+    this.setState((state, props) => ({modalPage: state.modalPage + 1}));
+  }
+  modalHandlerPrev = event => {
+    this.setState((state, props) => ({modalPage: state.modalPage - 1}));
+  }
+  modalHandlerStart = event => this.modalHandlerClose(event, true);
+  onFinish = () => {
+    if (this.state.status === Module.Status.DONE) {
+      this.setState((state, props) => {
+        return {
+          showModal: true,
+          modalLevelEnd: true,
+          modalPage: -1,
+          lastResults: {
+            cycles: state.cycle,
+            symbols: state.numSymbols,
+          },
+        };
+      });
+    }
+  }
+
 }
 
 class Toggle extends React.PureComponent {
@@ -1505,38 +1539,64 @@ class ResultsChart extends React.PureComponent {
   }
 }
 
-class ResultsModal extends React.PureComponent {
+class GameModal extends React.PureComponent {
   render() {
-    const cyclesBinnedData = this.props.stats.cycles.counts.map((count, i) => ({
-      id: `${i}`,
-      bin0: this.props.stats.cycles.bin0 + i * this.props.stats.cycles.binWidth,
-      bin1: this.props.stats.cycles.bin0 + (i + 1) * this.props.stats.cycles.binWidth,
-      count: count,
-    }));
-    const symbolsBinnedData = this.props.stats.symbols.counts.map((count, i) => ({
-      id: `${i}`,
-      bin0: this.props.stats.symbols.bin0 + i * this.props.stats.symbols.binWidth,
-      bin1: this.props.stats.symbols.bin0 + (i + 1) * this.props.stats.symbols.binWidth,
-      count: count,
-    }));
+    let cyclesBinnedData = null;
+    let symbolsBinnedData = null;
+    if (this.props.stats) {
+      cyclesBinnedData = this.props.stats.cycles.counts.map((count, i) => ({
+        id: `${i}`,
+        bin0: this.props.stats.cycles.bin0 + i * this.props.stats.cycles.binWidth,
+        bin1: this.props.stats.cycles.bin0 + (i + 1) * this.props.stats.cycles.binWidth,
+        count: count,
+      }));
+      symbolsBinnedData = this.props.stats.symbols.counts.map((count, i) => ({
+        id: `${i}`,
+        bin0: this.props.stats.symbols.bin0 + i * this.props.stats.symbols.binWidth,
+        bin1: this.props.stats.symbols.bin0 + (i + 1) * this.props.stats.symbols.binWidth,
+        count: count,
+      }));
+    }
+    const levelForInfo = this.props.levelNumber + this.props.modalLevelEnd;
     return (
       <Modal
         isOpen={this.props.isOpen}
-        onRequestClose={this.props.closeModalHandler}
+        onRequestClose={this.props.modalHandlerClose}
         contentLabel="Result Statistics"
         overlayClassName="modal-overlay"
         className="modal-content"
       >
-        <div className="modal-title">
-          Assignment Complete!
-        </div>
-        <div className="charts">
-          <ResultsChart name="cycles" values={this.props.stats.cycles} own={(this.props.results||{}).cycles} label="Elapsed Cycles"/>
-          <ResultsChart name="symbols" values={this.props.stats.symbols} own={(this.props.results||{}).symbols} label="Symbols Used"/>
+        <div className="modal-body">
+          {this.props.modalPage === -1
+            ? <>
+              <div className="modal-title">
+                Assignment Complete!
+              </div>
+              <div className="charts">
+                <ResultsChart name="cycles" values={this.props.stats.cycles} own={(this.props.results||{}).cycles} label="Elapsed Cycles"/>
+                <ResultsChart name="symbols" values={this.props.stats.symbols} own={(this.props.results||{}).symbols} label="Symbols Used"/>
+              </div>
+            </>
+            : <>
+              {Levels.levels[levelForInfo].info}
+            </>
+          }
         </div>
         <div className="modal-buttons">
-          <button className="modal-close-button" onClick={this.props.closeModalHandler}>Go Back</button>
-          <button className="modal-next-button" onClick={this.props.closeModalHandler}>Next</button>
+          {this.props.modalPage === -1
+            ? <>
+              <button className="modal-close-button" onClick={this.props.modalHandlerClose}>Go Back</button>
+              <button className="modal-next-button" onClick={this.props.modalHandlerNext}>Next</button>
+            </>
+            : this.props.modalLevelEnd
+              ? <>
+                <button className="modal-prev-button" onClick={this.props.modalHandlerPrev}>Prev</button>
+                <button className="modal-start-button" onClick={this.props.modalHandlerStart}>Start</button>
+              </>
+              :<>
+                <button className="modal-close-button" onClick={this.props.modalHandlerClose}>Close</button>
+              </>
+          }
         </div>
       </Modal>
     );
