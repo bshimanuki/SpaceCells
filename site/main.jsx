@@ -1223,6 +1223,11 @@ class Game extends React.Component {
       levelData: level.data,
       background: background,
     };
+    if (localStorage.getItem(`seen-modal-${level.name}`) === null) {
+      newState.showModal = true;
+      newState.modalLevelEnd = false;
+      newState.modalPage = 0;
+    }
     if (!keepHistory) {
       newState.submissionHistory = [];
       newState.submissionFuture = [];
@@ -1426,7 +1431,8 @@ class Game extends React.Component {
       modalPage: 0,
     });
   }
-  modalHandlerClose = (event, startNext) => {
+  modalHandlerClose = (event, startNext=false) => {
+    localStorage.setItem(`seen-modal-${Levels.levels[this.state.levelNumber+startNext].name}`, "");
     this.setState({
         showModal: false,
         modalLevelEnd: false,
@@ -1626,6 +1632,9 @@ class GameModal extends React.PureComponent {
               </div>
             </>
             : <>
+              <div className="modal-title">
+                Assignment {levelForInfo+1}: {Levels.levels[levelForInfo].title}
+              </div>
               {Levels.levels[levelForInfo].info}
             </>
           }

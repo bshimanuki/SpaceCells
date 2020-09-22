@@ -431,15 +431,6 @@ body {
   font-size: 40;
   margin: 10px;
 }
-.modal-buttons {
-  position: absolute;
-  bottom: 5%;
-  right: 5%;
-}
-.modal-buttons > * {
-  margin: 0px 10px;
-  padding: 5px 10px;
-}
 .modal-overlay {
   /* defaults */
   position: fixed;
@@ -473,6 +464,25 @@ body {
   transform: translate(-50%, -50%);
   border-radius: 20px;
   background-color: aliceblue;
+  color: black;
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 0;
+}
+.modal-body {
+  overflow: auto;
+  margin: 20px 0;
+  padding: 0 50px;
+}
+.modal-buttons {
+  align-self: flex-end;
+  margin: 20px;
+}
+.modal-buttons > * {
+  margin: 0px 10px;
+  padding: 5px 10px;
 }
 .charts {
   display: flex;

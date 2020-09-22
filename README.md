@@ -11,8 +11,6 @@ Open a browser and go to `localhost:8000/build`.
 
 If you don't have python 3, you can run `python -m SimpleHTTPServer 8000` instead.
 
-See the Google Drive design document for an overview of gameplay.
-
 ## Interface
 
 There are 3 different ways to input symbols.
@@ -45,7 +43,7 @@ Given two sequential inputs, let green represent a 0 bit and blue represent a 1 
 Given two sequential inputs, push the upper color onto a stack if the lower color is green, and pop from the stack to the output if the lower color is blue. When pushing onto the stack, output the color pushed. The inputs are guaranteed such that the stack never grows beyond 3 elements.
 
 ## Appendix
-The interface has been implemented with icons, but the left hand sidebar can be used to load/copy a text submission (for testing).
+The interface has been implemented with icons, but the Debug Window can be used to load/copy a text submission (for testing).
 
 Here is a list of what each symbol corresponds to in the text format.
 ### Cells

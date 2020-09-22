@@ -4,6 +4,9 @@ import * as Svgs from "./svgs.jsx";
 import "./svgs.css";
 import "./info.css";
 
+function Empty() {
+  return <div><Svgs.XCell className="hidden"/></div>;
+}
 function Sel() {
   return <div><div className="highlight"><Svgs.XCell className="hidden"/></div></div>;
 }
@@ -22,17 +25,21 @@ const OL = (props={}) => <Svgs.PlusCell className={`latched resolved-0 ${props.c
 export default function Reference() {
   return <div className="reference">
     <h1>Reference</h1>
-    <p>In this world, you are building systems of cells manipulated by bots. Bots move and follow instructions every cycle, with the eventual goal of using the input cells to construct a correct polarities at the output cells. When a bot advances the state with the NEXT instruction, the outputs are verified and the inputs step to the next set of inputs.</p>
+    <p>In this world, you are building systems of cells manipulated by bots. Bots move and follow instructions every cycle, with the eventual goal of using the input cells to construct a correct polarities at the output cells.</p>
+
+    <h2>Inputs and Outputs</h2>
+    <p>The inputs come from the left of the grid and the outputs are on the right of the grid. Some levels may not have any inputs. The goal of the level is to produce the expected outputs for each test sequence of inputs.</p>
+    <p>The outputs will be checked and the inputs will advance forward whenever a bot is on a NEXT instruction.</p>
 
     <h2>Cells</h2>
     <p>Cells contain four cavities in a square pattern in which lies two electrons. Due to Coulomb repulsion, the electrons settle in opposing cavities. Thus each cell has two determined polarities. When a current is applied, the cell will emit light in a color depending on the polarity.</p>
     <p>The polarity of cells cause nearby cells to be affected at a range shown below. Most cell types will restabilize each cycle. Cells that are closer together have higher priority than cells further apart.</p>
     <div className="gridlines" style={{display:"grid", gridTemplateColumns:"repeat(5, min-content)"}}>
-      <div/><Sel/><Sel/><Sel/><div/>
+      <Empty/><Sel/><Sel/><Sel/><Empty/>
       <Sel/><Sel/><Sel/><Sel/><Sel/>
       <Sel/><Sel/><X/><Sel/><Sel/>
       <Sel/><Sel/><Sel/><Sel/><Sel/>
-      <div/><Sel/><Sel/><Sel/><div/>
+      <Empty/><Sel/><Sel/><Sel/><Empty/>
     </div>
 
     <h3>Unlatched Cells</h3>
@@ -68,8 +75,10 @@ export default function Reference() {
 
     <h2>Unresolved Cells</h2>
     <p>Cells whose polarity does not stabilize to one polarity or the other are considered unresolved. Unresolved cells will cause other cells that depend on them to also be unresolved. You will receive an error if branching or outputting is attempted on an unresolved cell. The middle two cells here are unresolved.</p>
-    <div className="gridlines row-line">
-      <BL/><X/><X/><GL/>
+    <div className="gridlines" style={{display:"grid", gridTemplateColumns:"repeat(6, min-content)"}}>
+      <Empty/><Empty/><Empty/><Empty/><Empty/><Empty/>
+      <Empty/><BL/><X/><X/><GL/><Empty/>
+      <Empty/><Empty/><Empty/><Empty/><Empty/><Empty/>
     </div>
 
     <h2>Bots</h2>
