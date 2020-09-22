@@ -7,12 +7,12 @@ import "./svgs.css";
 const PADDING = 0.06;
 const BOT_PADDING = 0.02;
 
-function Svg({w, h, children, ...props}) {
-  return <div {...props}>
+function Svg({w, h, className, children, ...props}) {
+  return <div className={`svg-container ${className}`}{...props}>
     <svg viewBox={`${-w} ${-h} ${2*w} ${2*h}`}>{children}</svg>
   </div>;
 }
-Svg.defaultProps = {w:1, h:1};
+Svg.defaultProps = {w:1, h:1, className:""};
 
 function Arrow({x1, y1, x2, y2, headAngle, headLength, drawTail, padding, className, ...props}) {
   x1 *= 1 - padding;
@@ -123,10 +123,10 @@ export function PlusCell({w, h, _className, className, ...props}) {
 }
 PlusCell.defaultProps = {w:1, h:1, _className:"cell-plus", className:""};
 export function HorizontalCell(props) {
-  return <XCell _className="cell-horizontal" w={2} {...props}/>;
+  return <XCell _className="horizontal cell-horizontal" w={2} {...props}/>;
 }
 export function VerticalCell(props) {
-  return <XCell _className="cell-vertical" h={2} {...props}/>;
+  return <XCell _className="vertical cell-vertical" h={2} {...props}/>;
 }
 
 function Diode({dx, dy, headDistance, headLength, headAngle, className, ...props}) {
@@ -148,16 +148,16 @@ Diode.defaultProps = {
 };
 
 export function DiodeUp(props) {
-  return <Diode dx={0} dy={-1} className="diode-up" {...props}/>;
+  return <Diode dx={0} dy={-1} className="vertical diode-up" {...props}/>;
 }
 export function DiodeDown(props) {
-  return <Diode dx={0} dy={1} className="diode-down" {...props}/>;
+  return <Diode dx={0} dy={1} className="vertical diode-down" {...props}/>;
 }
 export function DiodeLeft(props) {
-  return <Diode dx={-1} dy={0} className="diode-left" {...props}/>;
+  return <Diode dx={-1} dy={0} className="horizontal diode-left" {...props}/>;
 }
 export function DiodeRight(props) {
-  return <Diode dx={1} dy={0} className="diode-right" {...props}/>;
+  return <Diode dx={1} dy={0} className="horizontal diode-right" {...props}/>;
 }
 
 function DirectionArrow({dx, dy, headDistance, drawGhost, className, ...props}) {
@@ -349,6 +349,14 @@ export function Branch0Left(props) {
 }
 export function Branch0Right(props) {
   return <Branch0 className="branch0right" dx={1} dy={0} {...props}/>;
+}
+
+export function RightArrow(props) {
+  return (
+    <Svg {...props}>
+      <Arrow className="rightarrow" x1={-0.5} y1={0} x2={0.5} y2={0} headAngle={Math.PI/4} headLength={0.5} drawTail/>
+    </Svg>
+  );
 }
 
 function Star(props) {

@@ -1,3 +1,5 @@
+import * as Svgs from "./svgs.jsx";
+
 export const levels = [
   {
     name: "not",
@@ -75,3 +77,5 @@ export const backgrounds = [
   require("../backgrounds/11.txt").default,
   require("../backgrounds/12.txt").default,
 ];
+
+

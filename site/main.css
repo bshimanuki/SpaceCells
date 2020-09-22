@@ -15,7 +15,8 @@ textarea {
 /* layout */
 body {
   /* background-color: whitesmoke; */
-  background-color: gray;
+  background-color: #444;
+  color: #ddd;
 }
 #game {
 }
@@ -494,6 +495,7 @@ body {
   padding: 15px;
   background-color: pink;
   border: 2px solid red;
+  color: black;
 }
 .debug-title {
   font-weight: bold;

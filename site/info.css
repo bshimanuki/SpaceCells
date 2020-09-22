@@ -1,0 +1,40 @@
+.reference .hidden {
+  visibility: hidden;
+}
+.reference .svg-container {
+  display: inline;
+  position: relative;
+  user-select: none;
+}
+.reference svg {
+  position: relative;
+  height: 60px;
+  width: 60px;
+}
+.reference .inline svg {
+  height: 30px;
+  width: 30px;
+}
+.reference .gridlines > * {
+  border: 1px solid black;
+}
+.reference .highlight {
+  background-color: red;
+  opacity: 0.5;
+}
+.reference .row-line {
+  display: flex;
+  align-items: flex-end;
+}
+.reference .horizontal svg {
+  width: 120px;
+}
+.reference .vertical svg {
+  height: 120px;
+}
+.reference .horizontal {
+  grid-column-end: span 2;
+}
+.reference .vertical {
+  grid-row-end: span 2;
+}

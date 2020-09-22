@@ -116,3 +116,8 @@
   stroke-width: 0.05;
   paint-order: stroke fill;
 }
+
+.rightarrow {
+  stroke: black;
+  stroke-width: 0.2;
+}

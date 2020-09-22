@@ -6,6 +6,7 @@ import * as Charts from "@data-ui/histogram";
 
 import * as Svgs from "./svgs.jsx";
 import * as Levels from "./levels.jsx";
+import Reference from "./reference.jsx";
 import "./main.css"; // after svgs with its own css
 import Embindings from "./embindings.js";
 import EmbindingsWASM from "./embindings.wasm";
@@ -666,6 +667,7 @@ class Game extends React.Component {
               </div>
             </div>
           </div>
+          <Reference/>
         </div>
         <div className="stats-sidebar" style={{display:"flex", flexDirection:"column"}}>
           <div className="colon-list">
