@@ -1502,8 +1502,8 @@ class Game extends React.Component {
             symbols: state.numSymbols,
           },
         };
-        if (state.levelNumber === state.levelsUnlocked - 1) {
-          newState.levelsUnlocked = state.levelsUnlocked + 1;
+        if (state.levelNumber >= state.levelsUnlocked - 1) {
+          newState.levelsUnlocked = state.levelNumber + 2;
         }
         return newState;
       });
@@ -1679,11 +1679,9 @@ class GameModal extends React.PureComponent {
               </div>
             </div>
             : <div className="level-info information">
-              {Levels.levels[levelForInfo].preface}
+              {Levels.levels[levelForInfo].preface && <div className="level-preface">{Levels.levels[levelForInfo].preface}</div>}
               <div className="modal-title">
                 Assignment {levelForInfo+1}: {Levels.levels[levelForInfo].title}
-              </div>
-              <div style={{paddingBottom:"60px"}}>
               </div>
               <div className="modal-goal">
                 <span className="goal-title">Goal: </span>

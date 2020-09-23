@@ -17,6 +17,9 @@ textarea {
 .clickable:hover {
   filter: drop-shadow(0 0 0.5vmin cornflowerblue);
 }
+.level-selection .clickable:hover {
+  filter: none;
+}
 
 /* layout */
 body {
@@ -236,7 +239,7 @@ body {
 .input,.output {
   background: honeydew;
 }
-.output.unpowered svg { opacity: 0.75 }
+.output.unpowered svg { opacity: 0.5 }
 .output.powered .square-underlay {
   border-style: dashed;
   border-width: 1%;
@@ -447,9 +450,7 @@ body {
   text-align: center;
   font-size: 40;
   margin: 10px;
-}
-.modal-title:not(:first-child) {
-  margin-top: 30px;
+  margin-bottom: 30px;
 }
 .modal-overlay {
   /* defaults */
@@ -492,9 +493,12 @@ body {
   padding: 0;
 }
 .modal-body {
+  flex: 1;
   overflow: auto;
   margin: 20px 0;
   padding: 0 50px;
+  display: flex;
+  flex-direction: column;
 }
 .modal-buttons {
   align-self: flex-end;
@@ -517,6 +521,13 @@ body {
 }
 .vx-axis-tick {
   user-select: none;
+}
+.level-info {
+  flex: 1;
+}
+.level-preface {
+  /* min-height: 50%; */
+  padding-bottom: 30px;
 }
 .modal-goal {
 }

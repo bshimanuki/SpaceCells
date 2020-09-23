@@ -18,7 +18,7 @@ export const backgrounds = [
 ];
 
 const LevelNot = <>
-  <p>Given a blue or green input, output the opposite color.</p>
+  <p>Turn the output green when the input is blue and blue when the input is green.</p>
 </>;
 
 const LevelAnd = <>
@@ -26,15 +26,15 @@ const LevelAnd = <>
 </>;
 
 const LevelCrossing = <>
-  <p>Given a red/orange input and a blue/green input, output the inputs crossing paths.</p>
+  <p>Propagate the top input to the bottom output and the bottom input to the top output.</p>
 </>;
 
 const LevelDelay = <>
-  <p>Given one input, output the color of the previous input. Output blue as the first output.</p>
+  <p>Output blue on the first step. For all other steps, output the color of the previous input.</p>
 </>;
 
 const LevelSwitch = <>
-  <p>Given one input, switch the output between blue and red whenever the input is blue. The output should start as blue (unless the first input is blue).</p>
+  <p>Switch the output between blue and red whenever the input is blue. The output should start as blue (unless the first input is blue).</p>
 </>;
 
 const LevelXor = <>
@@ -58,7 +58,7 @@ const LevelStack = <>
 </>;
 
 const IntroNot = <>
-  <div className="modal-title">SpaceCells</div>
+  {/*<div className="modal-title">SpaceCells</div>*/}
   <p>Welcome to SpaceCells, the satellite planet where engineers design systems that control colors at the level of electrons. The basic building block is the cell, a component with four cavities which holds two electrons.</p>
   <Svgs.XCell/>
   <p>By placing them in different configurations, we can make them do anything we want!</p>
@@ -70,7 +70,8 @@ const IntroNot = <>
     <Svgs.DirectionRight className="bot0"/>
     <Svgs.Next className="bot0"/>
   </div>
-</>
+  <p>You can check out the Reference for a complete description of cells and instructions.</p>
+</>;
 
 const IntroAnd = <>
   <p>I have found a truly marvelous demonstration of this configuration, which this note is too small to contain.</p>
@@ -81,7 +82,26 @@ const IntroAnd = <>
     <div/><div/><Svgs.DiodeUp/><div/><div/>
     <div/><div/><div/><div/>
   </div>
-</>
+</>;
+
+const IntroCrossing = <>
+  <p>You are on your own this time for instruction placement.</p>
+</>;
+
+const IntroDelay = <>
+  <p>Cells innately have no memories, but you know bots, they never forget a thing.</p>
+</>;
+
+const IntroSwitch = <>
+  <p>You can use the POWER instructions to toggle the power to the outputs.</p>
+  <div className="row-line">
+    <Svgs.Power0 className="bot0"/>
+    <Svgs.Power0 className="bot1"/>
+    <Svgs.Power1 className="bot0"/>
+    <Svgs.Power1 className="bot1"/>
+  </div>
+  <p>Only powered outputs emit light. Both outputs start powered.</p>
+</>;
 
 export const levels = [
   {
@@ -93,56 +113,59 @@ export const levels = [
   },
   {
     name: "and",
-    title: "and",
+    title: "Unity",
     data: require("../examples/and.lvl").default,
     goal: LevelAnd,
     preface: IntroAnd,
   },
   {
     name: "crossing",
-    title: "crossing",
+    title: "X Crossing",
     data: require("../examples/crossing.lvl").default,
     goal: LevelCrossing,
+    preface: IntroCrossing,
   },
   {
     name: "delay",
-    title: "delay",
+    title: "Memories",
     data: require("../examples/delay.lvl").default,
     goal: LevelDelay,
+    preface: IntroDelay,
   },
   {
     name: "switch",
-    title: "switch",
+    title: "Power It Up",
     data: require("../examples/switch.lvl").default,
     goal: LevelSwitch,
+    preface: IntroSwitch,
   },
   {
     name: "xor",
-    title: "xor",
+    title: "Differences",
     data: require("../examples/xor.lvl").default,
     goal: LevelXor,
   },
   {
     name: "median",
-    title: "median",
+    title: "Median Filter",
     data: require("../examples/median.lvl").default,
     goal: LevelMedian,
   },
   {
     name: "rainbow",
-    title: "rainbow",
+    title: "Colors of the Rainbow",
     data: require("../examples/rainbow.lvl").default,
     goal: LevelRainbow,
   },
   {
     name: "adder",
-    title: "adder",
+    title: "Quick Maths",
     data: require("../examples/adder.lvl").default,
     goal: LevelAdder,
   },
   {
     name: "stack",
-    title: "stack",
+    title: "Stacks on Stacks",
     data: require("../examples/stack.lvl").default,
     goal: LevelStack,
   },

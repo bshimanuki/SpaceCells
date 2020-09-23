@@ -1,4 +1,4 @@
-import React from "react";
+import React, {memo} from "react";
 
 import * as Svgs from "./svgs.jsx";
 import "./svgs.css";
@@ -22,7 +22,7 @@ const GL = (props={}) => <Svgs.XCell className={`latched resolved-0 ${props.clas
 const RL = (props={}) => <Svgs.PlusCell className={`latched resolved-1 ${props.classname || ""}`} {...props}/>;
 const OL = (props={}) => <Svgs.PlusCell className={`latched resolved-0 ${props.classname || ""}`} {...props}/>;
 
-export default function Reference() {
+function Reference() {
   return <div className="reference information">
     <h1>Reference</h1>
     <p>In this world, you are building systems of cells manipulated by bots. Bots move and follow instructions every cycle, with the eventual goal of using the input cells to construct a correct polarities at the output cells.</p>
@@ -196,3 +196,4 @@ export default function Reference() {
     <p>If the current cell matches one of the specified polarities, change directions (ignoring any regular arrows). It is an error if the cell does not have a stable polarity at the current cycle. This is valid for 1x1 cells and diode cells.</p>
   </div>;
 }
+export default memo(Reference);
