@@ -219,7 +219,7 @@ function makeSymbolState(type, c, y, x, bot) {
   for (let symbolValue in symbols) {
     if (symbolValue.includes(c)) {
       if (type === "cellSymbol") {
-        var symbolState = SymbolState({type:type, value:symbolValue, onBoard:true, trace:["squares", y, x, type]});
+        var symbolState = SymbolState({type:type, value:symbolValue, onBoard:true, trace:["squares", c === "v" ? y - 1 : y, c === ">" ? x - 1 : x, type]});
       } else {
         var symbolState = SymbolState({type:type, value:symbolValue, onBoard:true, bot: bot, trace:["squares", y, x, type, bot]});
       }
@@ -260,6 +260,7 @@ class Symbol extends React.PureComponent {
     var classNames = []
     classNames.push("symbol");
     classNames.push("image-container");
+    classNames.push(this.props.stopped && !this.props.io && (!this.props.symbolState.selected || this.props.heldShift) ? "clickable" : "unclickable");
     if (this.props.symbolState.selected) classNames.push("selected");
     let props = {
       onClick: this.clickHandler,
@@ -322,6 +323,8 @@ class Square extends React.PureComponent {
         index={0}
         simBoard={this.props.simBoard}
         stopped={this.props.stopped}
+        heldShift={this.props.heldShift}
+        io={this.props.input || this.props.output}
         {...props}
         clickHandler={this.props.clickHandler}
         dragHandler={this.props.dragHandler}
@@ -349,6 +352,11 @@ class Square extends React.PureComponent {
     cellBotClassNames = cellBotClassNames.join(" ");
     const cellSymbolType = symbolTypeByState(this.props.cellSymbol);
     let background = null;
+    let outputSymbol = null;
+    if (this.props.output) {
+      if (this.props.y < 5) outputSymbol = "ℵ";
+      else outputSymbol = "ב";
+    }
     if (this.props.input || this.props.output) {
       background = <Svgs.LightTile y={this.props.y} x={this.props.x} m={this.props.m} n={this.props.n}/>;
     } else if (this.props.trespassable) {
@@ -371,6 +379,7 @@ class Square extends React.PureComponent {
         </div>
         <div className="square-underlay"/>
         <div className={`square-overlay ${cellBotClassNames}`}>
+          {outputSymbol && <div className="output-symbol">{outputSymbol}</div>}
           <Svgs.CellBot/>
         </div>
         <div className="square-drag-overlay"/>
@@ -399,6 +408,7 @@ class Board extends React.PureComponent {
       simBoard={this.props.simBoard}
       dragOver={dragOver}
       stopped={this.props.stopped}
+      heldShift={this.props.heldShift}
       flipflop={dragOver && this.props.flipflop}
       m={this.props.m}
       n={this.props.n}
@@ -520,6 +530,7 @@ class Game extends React.Component {
       selectionSymbolStateCellSymbols: initialSelectionSymbolStates("selectionSymbolStateCellSymbols", symbolTypesCellSymbol),
       selectionSymbolStateInstructions: initialSelectionSymbolStates("selectionSymbolStateInstructions", [...symbolTypesDirection, ...symbolTypesOperation]),
       // events
+      heldShift: null,
       heldKey: null,
       draggedSymbolState: nullSymbolState,
       dragOverPosition: null,
@@ -553,6 +564,7 @@ class Game extends React.Component {
       <SymbolGroup
         key={symbolTypeByState(symbolState).subtype}
         active={this.state.symbolType===type}
+        stopped={this.state.simState === "stop"}
         dragHandler={this.dragHandler}
         clickHandler={this.symbolClickHandler}
         bot={this.state.bot}
@@ -575,11 +587,11 @@ class Game extends React.Component {
     return <>
       <div style={{paddingBottom: "60px"}}/>
       <div className="debug-sidebar" style={{display:"flex", flexDirection:"column"}}>
-        <div className="debug-title">Debug Window</div>
+        <div className="debug-title">Testsolver Debug Window</div>
         <div>
           <label htmlFor="level_select">Choose level:</label>
           <select name="level_select" id="level_select" value={this.state.levelNumber} onChange={this.setLevelHandler}>
-            {Levels.levels.map((level, i) => <option key={i} value={i}>{level.name}</option>)}
+            {Levels.levels.map((level, i) => <option key={i} value={i}>{level.title}</option>)}
           </select>
         </div>
         <textarea name="submission" id="submission" value={this.state.submission} onChange={this.setSubmission}/>
@@ -612,17 +624,17 @@ class Game extends React.Component {
                 onClick={this.setLevelHandler}
                 readOnly
               />
-              <label htmlFor={`radio-level-${Levels.levels[i].name}`}>
+              <label htmlFor={`radio-level-${Levels.levels[i].name}`} className={this.state.levelNumber === i ? "unclickable" : "clickable"}>
                 Assignment {i+1}: {Levels.levels[i].title}
               </label>
             </React.Fragment>
             )}
           </div>
-          <input className="level-button level-information-button" type="button" value="Level Information" onClick={this.openModalHandler}/>
+          <input className="clickable level-button level-information-button" type="button" value="Level Information" onClick={this.openModalHandler}/>
           <div style={{paddingBottom: "60px"}}/>
-          <input className="level-button reset-button" type="button" value="Reset Board" onClick={this.clearBoardHandler}/>
+          <input className="clickable level-button reset-button" type="button" value="Reset Board" onClick={this.clearBoardHandler}/>
           {/* TODO: replace with "Load Last Solution" */}
-          <input className={`level-button load-solution ${this.state.levelNumber < this.state.levelsUnlocked - 1 ? "visible" : "hidden"}`} type="button" value="Load Last Solution (example for now)" onClick={this.loadLastSolutionHandler}/>
+          <input className={`clickable level-button load-solution ${this.state.levelNumber < this.state.levelsUnlocked - 1 ? "visible" : "hidden"}`} type="button" value="Load Last Solution (example for now)" onClick={this.loadLastSolutionHandler}/>
         </div>
         <div className="center-content" style={{display:"flex", flexDirection:"column", alignItems:"center", width:"min-content"}}>
           <div style={{display:"flex", width:"min-content"}} className="game-board">
@@ -633,6 +645,7 @@ class Game extends React.Component {
               dragOverSet={this.state.dragOverSet}
               simBoard={this.state.validBoard || this.state.cycle}
               stopped={this.state.simState==="stop"}
+              heldShift={this.state.heldShift}
               m={this.props.m}
               n={this.props.n}
               squares={this.state.squares}
@@ -1014,6 +1027,7 @@ class Game extends React.Component {
   }
 
   keyboardHandler = event => {
+    this.setState({heldShift: event.shiftKey});
     if (isTextBox(event.target)) return;
     switch (event.type) {
     case "keydown":
@@ -1477,17 +1491,24 @@ class Toggle extends React.PureComponent {
   render() {
     return (
       <div className={`toggle ${this.props.name}-toggle`}>
-        {Object.keys(this.props.options).map(option =>
-        <React.Fragment key={`radio-${option}`}>
-          <input type="radio" id={`radio-${option}`} value={option} name={this.props.name}
-            // == to equate "1" with 1
-            checked={this.props.selected == option}
-            onClick={this.handler}
-            readOnly
-          />
-          <label htmlFor={`radio-${option}`} className={(this.props.colors||{})[option]}>{this.props.options[option]}</label>
-        </React.Fragment>
-        )}
+        {Object.keys(this.props.options).map(option => {
+          const selected = this.props.selected == option;
+          let classNames = [];
+          classNames.push(selected ? "unclickable" : "clickable");
+          if (this.props.colors) classNames.push(this.props.colors[option]);
+          classNames = classNames.join(" ");
+          return (
+            <React.Fragment key={`radio-${option}`}>
+              <input type="radio" id={`radio-${option}`} value={option} name={this.props.name}
+                // == to equate "1" with 1
+                checked={selected}
+                onClick={this.handler}
+                readOnly
+              />
+              <label htmlFor={`radio-${option}`} className={classNames}>{this.props.options[option]}</label>
+            </React.Fragment>
+          );
+        })}
       </div>
     );
   }
@@ -1505,6 +1526,7 @@ class SymbolGroup extends React.PureComponent {
     classNames.push("symbolgroup");
     classNames.push(symbolState.type);
     classNames.push(`symbol-${symbolState.value}`);
+    classNames.push(this.props.stopped && !this.props.symbolState.selected ? "clickable" : "unclickable")
     if (this.props.symbolState.selected) classNames.push("selected");
     classNames.push(symbolType.className || "");
     classNames.push(symbolType.multi || "");
@@ -1632,10 +1654,16 @@ class GameModal extends React.PureComponent {
               </div>
             </>
             : <>
+              {Levels.levels[levelForInfo].preface}
               <div className="modal-title">
                 Assignment {levelForInfo+1}: {Levels.levels[levelForInfo].title}
               </div>
-              {Levels.levels[levelForInfo].info}
+              <div style={{paddingBottom:"60px"}}>
+              </div>
+              <div className="modal-goal">
+                <span className="goal-title">Goal: </span>
+                <span className="goal-content">{Levels.levels[levelForInfo].goal}</span>
+              </div>
             </>
           }
         </div>

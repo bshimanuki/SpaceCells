@@ -27,6 +27,12 @@ export default function Reference() {
     <h1>Reference</h1>
     <p>In this world, you are building systems of cells manipulated by bots. Bots move and follow instructions every cycle, with the eventual goal of using the input cells to construct a correct polarities at the output cells.</p>
 
+    <h2>Controls</h2>
+    <p>The bottom bar contains cell and instruction symbols, which you can place on the grid by clicking or dragging. (Alternatively, you can hold the top two rows of a QWERTY keyboard to select and then click to place.)</p>
+    <p>Symbols on the grid can be dragged around or removed by dragging to or clicking the trash can. Hold Shift while clicking to select multiple symbols. The START symbols can be moved but not removed.</p>
+    <p>Run your system by using the playback toggles. (There are also keyboard shortcuts for the symbol type with keys 1-3 and playback with keys 4-0.)</p>
+    <p>Ctrl+Z and Ctrl+Shift+Z will undo/redo, and Delete/Backspace will remove the selected symbols.</p>
+
     <h2>Inputs and Outputs</h2>
     <p>The inputs come from the left of the grid and the outputs are on the right of the grid. Some levels may not have any inputs. The goal of the level is to produce the expected outputs for each test sequence of inputs.</p>
     <p>The outputs will be checked and the inputs will advance forward whenever a bot is on a NEXT instruction.</p>

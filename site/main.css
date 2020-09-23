@@ -11,6 +11,12 @@ textarea {
 .hidden {
   visibility: hidden;
 }
+.clickable {
+  cursor: pointer;
+}
+.clickable:hover {
+  filter: drop-shadow(0 0 0.5vmin cornflowerblue);
+}
 
 /* layout */
 body {
@@ -68,6 +74,12 @@ body {
 }
 .square-overlay {
   z-index: 4;
+}
+.output-symbol {
+  position: absolute;
+  margin-top: 100%;
+  width: 100%;
+  text-align: center;
 }
 .square-drag-overlay {
   z-index: 5;
@@ -232,6 +244,7 @@ body {
   font-size: 30px;
   margin: 0 3%;
   user-select: none;
+  color: black;
 }
 .trash.inactive { visibility: hidden; }
 .trash:hover,.trash.dragover {
@@ -497,6 +510,14 @@ body {
 }
 .vx-axis-tick {
   user-select: none;
+}
+.modal-goal {
+}
+.goal-title {
+  font-weight: bold;
+  font-size: larger;
+}
+.goal-content {
 }
 
 /* debug sidebar */
