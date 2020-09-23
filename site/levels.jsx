@@ -57,18 +57,46 @@ const LevelStack = <>
   <p>Given two sequential inputs, push the upper color onto a stack if the lower color is green, and pop from the stack to the output if the lower color is blue. When pushing onto the stack, output the color pushed. The inputs are guaranteed such that the stack never grows beyond 3 elements.</p>
 </>;
 
+const IntroNot = <>
+  <div className="modal-title">SpaceCells</div>
+  <p>Welcome to SpaceCells, the satellite planet where engineers design systems that control colors at the level of electrons. The basic building block is the cell, a component with four cavities which holds two electrons.</p>
+  <Svgs.XCell/>
+  <p>By placing them in different configurations, we can make them do anything we want!</p>
+  <p>Cells are too small for human hands, so we manipulate them using bots. Bots move and perform all sorts of operations based on instructions we assign. The only ones you need as we start off are the direction instructions and the NEXT instruction. The NEXT instruction will cause your output to be verified and will advance the input(s) and output(s).</p>
+  <div className="row-line">
+    <Svgs.DirectionLeft className="bot0"/>
+    <Svgs.DirectionDown className="bot0"/>
+    <Svgs.DirectionUp className="bot0"/>
+    <Svgs.DirectionRight className="bot0"/>
+    <Svgs.Next className="bot0"/>
+  </div>
+</>
+
+const IntroAnd = <>
+  <p>I have found a truly marvelous demonstration of this configuration, which this note is too small to contain.</p>
+  <div style={{display:"grid", gridTemplateColumns:"repeat(5, min-content)"}}>
+    <div/><div/><Svgs.DiodeDown/><div/><div/>
+    <div/><div/><div/><div/>
+    <Svgs.DiodeRight/><Svgs.XCell/><Svgs.XCell/><Svgs.XCell/>
+    <div/><div/><Svgs.DiodeUp/><div/><div/>
+    <div/><div/><div/><div/>
+  </div>
+</>
+
 export const levels = [
   {
     name: "not",
     title: "Inversion",
     data: require("../examples/not.lvl").default,
     goal: LevelNot,
+    preface: IntroNot,
   },
   {
     name: "and",
     title: "and",
     data: require("../examples/and.lvl").default,
     goal: LevelAnd,
+    preface: IntroAnd,
   },
   {
     name: "crossing",

@@ -21,10 +21,13 @@ textarea {
 /* layout */
 body {
   /* background-color: whitesmoke; */
-  background-color: #444;
-  color: #ddd;
+  background-color: #999;
+  color: #000;
 }
 #game {
+}
+.game-title {
+  text-align: center;
 }
 #main-content {
   justify-content: center;
@@ -80,6 +83,7 @@ body {
   margin-top: 100%;
   width: 100%;
   text-align: center;
+  color: lightgray;
 }
 .square-drag-overlay {
   z-index: 5;
@@ -443,6 +447,9 @@ body {
   text-align: center;
   font-size: 40;
   margin: 10px;
+}
+.modal-title:not(:first-child) {
+  margin-top: 30px;
 }
 .modal-overlay {
   /* defaults */

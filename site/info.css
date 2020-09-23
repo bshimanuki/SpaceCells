@@ -1,40 +1,40 @@
-.reference .hidden {
+.information .hidden {
   visibility: hidden;
 }
-.reference .svg-container {
+.information .svg-container {
   display: inline;
   position: relative;
   user-select: none;
 }
-.reference svg {
+.information svg {
   position: relative;
   height: 60px;
   width: 60px;
 }
-.reference .inline svg {
+.information .inline svg {
   height: 30px;
   width: 30px;
 }
-.reference .gridlines > * {
+.information .gridlines > * {
   border: 1px solid black;
 }
-.reference .highlight {
+.information .highlight {
   background-color: red;
   opacity: 0.5;
 }
-.reference .row-line {
+.information .row-line {
   display: flex;
   align-items: flex-end;
 }
-.reference .horizontal svg {
+.information .horizontal svg {
   width: 120px;
 }
-.reference .vertical svg {
+.information .vertical svg {
   height: 120px;
 }
-.reference .horizontal {
+.information .horizontal {
   grid-column-end: span 2;
 }
-.reference .vertical {
+.information .vertical {
   grid-row-end: span 2;
 }

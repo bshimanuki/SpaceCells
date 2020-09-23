@@ -12,6 +12,7 @@ import Embindings from "./embindings.js";
 import EmbindingsWASM from "./embindings.wasm";
 
 const MAX_HISTORY = 1000;
+const NUM_LEVELS_TO_INITIALIZE_INSTRUCTIONS = 2;
 
 function nest(seq, value, obj={}, overwrite=true, start=0) {
   if (start === seq.length) {
@@ -612,7 +613,8 @@ class Game extends React.Component {
     classNames = classNames.join(" ");
     // trash is active if non-START board symbols are selected
     let trashActive = [...this.state.selectedSymbolStates].some(symbolState => symbolState.onBoard && symbolState.value !== "S");
-    return (
+    return <>
+      <h1 className="game-title">SpaceCells</h1>
       <div id="main-content" style={{display:"flex"}} className={classNames}>
         <div className="left-sidebar" style={{display:"flex", flexDirection:"column"}}>
           <div className="level-selection">
@@ -748,7 +750,7 @@ class Game extends React.Component {
         </div>
         <Svgs.SvgDefs/>
       </div>
-    );
+    </>;
   }
 
   selectedOnBoard = (state=this.state, props=this.props) => state.selectedSymbolStates.size && state.selectedSymbolStates.values().next().value.onBoard;
@@ -1276,6 +1278,29 @@ class Game extends React.Component {
     let levelGrid = board.get_level();
     newState.squares = squares.map((row, y) => row.map((square, x) => {
       if (clearBoard) {
+        if (newState.levelNumber < NUM_LEVELS_TO_INITIALIZE_INSTRUCTIONS) {
+          // special case initializing instructions for first couple levels
+          if (JSON.stringify(startSquares[0]) === JSON.stringify([y, x])) {
+            let [downSymbolState] = makeSymbolState("direction", "v", y, x, 0);
+            let [startSymbolState] = makeSymbolState("operation", "S", y, x, 0);
+            return update(makeEmptySquare(), {
+              direction: {0: {$set: downSymbolState}},
+              operation: {0: {$set: startSymbolState}},
+            });
+          }
+          if (JSON.stringify(startSquares[0]) === JSON.stringify([y - 2, x])) {
+            let [nextSymbolState] = makeSymbolState("operation", "n", y, x, 0);
+            return update(makeEmptySquare(), {
+              operation: {0: {$set: nextSymbolState}},
+            });
+          }
+          if (JSON.stringify(startSquares[0]) === JSON.stringify([y - 4, x])) {
+            let [upSymbolState] = makeSymbolState("direction", "^", y, x, 0);
+            return update(makeEmptySquare(), {
+              direction: {0: {$set: upSymbolState}},
+            });
+          }
+        }
         for (let bot in startSquares) {
           bot = Number(bot);
           if (JSON.stringify(startSquares[bot]) === JSON.stringify([y, x])) {
@@ -1644,7 +1669,7 @@ class GameModal extends React.PureComponent {
       >
         <div className="modal-body">
           {this.props.modalPage === -1
-            ? <>
+            ? <div className="stats-info">
               <div className="modal-title">
                 Assignment Complete!
               </div>
@@ -1652,8 +1677,8 @@ class GameModal extends React.PureComponent {
                 <ResultsChart name="cycles" values={this.props.stats.cycles} own={(this.props.results||{}).cycles} label="Elapsed Cycles"/>
                 <ResultsChart name="symbols" values={this.props.stats.symbols} own={(this.props.results||{}).symbols} label="Symbols Used"/>
               </div>
-            </>
-            : <>
+            </div>
+            : <div className="level-info information">
               {Levels.levels[levelForInfo].preface}
               <div className="modal-title">
                 Assignment {levelForInfo+1}: {Levels.levels[levelForInfo].title}
@@ -1664,7 +1689,7 @@ class GameModal extends React.PureComponent {
                 <span className="goal-title">Goal: </span>
                 <span className="goal-content">{Levels.levels[levelForInfo].goal}</span>
               </div>
-            </>
+            </div>
           }
         </div>
         <div className="modal-buttons">
