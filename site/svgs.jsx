@@ -455,9 +455,20 @@ export function CrystalTile(props) {
   )
 }
 
+export function CleanCrystalTile(props) {
+  const s = 0.0;
+  const crystalOpacity = 1;
+  return (
+    <svg viewBox="0 0 1 1">
+      <rect x={s} y={s} width={1-2*s} height={1-2*s} opacity={crystalOpacity} fill="url(#clean-crystal-pattern)"/>
+    </svg>
+  );
+}
+
 export function SvgDefs() {
   const pattern = <Hatch fill="#abc"/>;
   const crystalPattern = <Star dx={0.25} fill="#cba"/>;
+  const cleanCrystalPattern = <Star dx={0.25} fill="#fba"/>;
   return (
     <svg width={0} height={0}>
       <Pattern id="tile-pattern">
@@ -465,6 +476,9 @@ export function SvgDefs() {
       </Pattern>
       <Pattern id="crystal-pattern">
         {crystalPattern}
+      </Pattern>
+      <Pattern id="clean-crystal-pattern">
+        {cleanCrystalPattern}
       </Pattern>
       <Cloud/>
     </svg>

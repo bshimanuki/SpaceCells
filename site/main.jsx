@@ -601,90 +601,41 @@ class Game extends React.Component {
     </>;
   }
 
-  render() {
-    let classNames = [];
-    if (this.state.draggedSymbolState.value) classNames.push("dragging");
-    if (this.state.dragOverFits) classNames.push("dragover-fits");
-    if (this.state.dragOverPosition) classNames.push("dragover-active");
-    if (this.state.dragOverPosition === "trash") classNames.push("dragover-trash");
-    if (this.state.wasNext) classNames.push(`output-color-${this.state.lastColor}`);
-    classNames.push(`sim-${this.state.simState}`);
-    if (this.state.simState !== "stop") classNames.push("sim-running");
-    classNames = classNames.join(" ");
-    // trash is active if non-START board symbols are selected
-    let trashActive = [...this.state.selectedSymbolStates].some(symbolState => symbolState.onBoard && symbolState.value !== "S");
+  renderLevelSidebar() {
+    const mainHidden = this.state.levelName === "epilogue" ? "hidden" : "";
     return <>
-      <h1 className="game-title">SpaceCells</h1>
-      <div id="main-content" style={{display:"flex"}} className={classNames}>
-        <div className="left-sidebar" style={{display:"flex", flexDirection:"column"}}>
-          <div className="level-selection">
-            {Array.from({length: this.state.levelsUnlocked}).map((_, i) =>
-            <React.Fragment key={i}>
-              <input type="radio" id={`radio-level-${Levels.levels[i].name}`}
-                value={i} name="level-selection"
-                checked={this.state.levelNumber === i}
-                onClick={this.setLevelHandler}
-                readOnly
-              />
-              <label htmlFor={`radio-level-${Levels.levels[i].name}`} className={this.state.levelNumber === i ? "unclickable" : "clickable"}>
-                Assignment {i+1}: {Levels.levels[i].title}
-              </label>
-            </React.Fragment>
-            )}
-          </div>
+      <div className="left-sidebar" style={{display:"flex", flexDirection:"column"}}>
+        <div className="level-selection">
+          {Array.from({length: this.state.levelsUnlocked}).map((_, i) =>
+          <React.Fragment key={i}>
+            <input type="radio" id={`radio-level-${Levels.levels[i].name}`}
+              value={i} name="level-selection"
+              checked={this.state.levelNumber === i}
+              onClick={this.setLevelHandler}
+              readOnly
+            />
+            <label htmlFor={`radio-level-${Levels.levels[i].name}`} className={this.state.levelNumber === i ? "unclickable" : "clickable"}>
+              Assignment {i+1}: {Levels.levels[i].title}
+            </label>
+          </React.Fragment>
+          )}
+        </div>
+        <div className={`level-buttons ${mainHidden}`} style={{display:"flex", flexDirection:"column"}}>
           <input className="clickable level-button level-information-button" type="button" value="Level Information" onClick={this.openModalHandler}/>
           <div style={{paddingBottom: "60px"}}/>
           <input className="clickable level-button reset-button" type="button" value="Reset Board" onClick={this.clearBoardHandler}/>
           {/* TODO: replace with "Load Last Solution" */}
           <input className={`clickable level-button load-solution ${this.state.levelNumber < this.state.levelsUnlocked - 1 ? "visible" : "hidden"}`} type="button" value="Load Last Solution (example for now)" onClick={this.loadLastSolutionHandler}/>
         </div>
-        <div className="center-content" style={{display:"flex", flexDirection:"column", alignItems:"center", width:"min-content"}}>
-          <div style={{display:"flex", width:"min-content"}} className="game-board">
-            <Board
-              clickHandler={this.boardClickHandler}
-              dragHandler={this.dragHandler}
-              dragOverHandler={this.dragOverHandler}
-              dragOverSet={this.state.dragOverSet}
-              simBoard={this.state.validBoard || this.state.cycle}
-              stopped={this.state.simState==="stop"}
-              heldShift={this.state.heldShift}
-              m={this.props.m}
-              n={this.props.n}
-              squares={this.state.squares}
-              cells={this.state.cells}
-              background={this.state.background}
-              trespassable={this.state.trespassable}
-              inputs={this.state.inputs}
-              outputs={this.state.outputs}
-              levelGrid={this.state.levelGrid}
-              bots={this.state.bots}
-              flipflop={this.state.flipflop}
-            />
-          </div>
-          <div className="bottom-bar" style={{display:"flex", flexDirection:"column"}}>
-            <div className="toggle-bar" style={{display:"flex", flexDirection:"row"}}>
-              {/*<Toggle handler={this.symbolTypeHandler} selected={this.state.symbolType} name="symbol-type" options={{cellSymbol:"Cells", instruction:"Instructions"}}/>*/}
-              {/*<Toggle handler={this.botHandler} selected={this.state.bot} name="bot" options={["Red", "Blue"]} colors={botColors}/>*/}
-              <Toggle handler={this.jointSymbolTypeHandler} selected={this.state.symbolType === "cellSymbol" ? "cellSymbol" : botColors[this.state.bot]} name="symbol-type" options={{cellSymbol:"Cells", red:"Red Instr.", blue:"Blue Instr."}} colors={{cellSymbol:"green", red:"red", blue:"blue"}}/>
-              <Toggle handler={this.simHandler} selected={this.state.simState} name="sim" options={{stop:"⏹", pause:"⏸", step:"⧐", play:"▶", fast:"⏩", nonstop:"⏩", batch:"⏭"}}/>
-              <div style={{flex:1}}></div>
-              <div className={`trash ${trashActive ? "active" : "inactive"} ${this.state.dragOverPosition === "trash" && "dragover"}`} onClick={this.trash} onDragEnter={this.trashDragOver} onDragOver={this.trashDragOver} onDragLeave={this.trashDragOver} onDrop={this.trashDragOver}>🗑</div>
-            </div>
-            <div className={`symbol-bar bot${this.state.bot}`} style={{position:"relative"}}>
-              <div className="symbol-grid-bar grid-layout" style={{position:"relative"}}>
-                {this.state.selectionSymbolStateCellSymbols.map(symbolState => this.renderSymbolGroup("cellSymbol", symbolState))}
-                {this.state.selectionSymbolStateInstructions.map(symbolState => this.renderSymbolGroup("instruction", symbolState))}
-                {this.state.symbolType === "instruction" &&
-                  <div className="symbol-options-bar">
-                    <SymbolOptions changeOption={this.changeSymbolOption} selectedSymbolState={this.state.selectedSymbolStates.size === 1 && this.state.selectedSymbolStates.values().next().value}/>
-                  </div>
-                }
-              </div>
-            </div>
-          </div>
-          <Reference/>
-        </div>
-        <div className="stats-sidebar" style={{display:"flex", flexDirection:"column"}}>
+      </div>
+    </>;
+  }
+
+  renderStatsSidebar() {
+    const mainHidden = this.state.levelName === "epilogue" ? "hidden" : "";
+    return <>
+      <div className="stats-sidebar">
+        <div className={`stats-content ${mainHidden}`} style={{display:"flex", flexDirection:"column"}}>
           <div className="colon-list">
             <div className="test-case">
               <span className="test-case-name">Test Case</span><span><span className="test-case-value">{this.state.testCase + 1}</span> / <span className="test-case-total">{this.state.outputColors.length}</span></span>
@@ -734,20 +685,97 @@ class Game extends React.Component {
           <div className={`finished ${this.state.status === Module.Status.DONE ? "visible" : "hidden"}`}>
             Finished level!
           </div>
-          {this.renderDebugWindow()}
-          <GameModal
-            isOpen={this.state.showModal}
-            modalHandlerClose={this.modalHandlerClose}
-            modalHandlerNext={this.modalHandlerNext}
-            modalHandlerPrev={this.modalHandlerPrev}
-            modalHandlerStart={this.modalHandlerStart}
-            stats={mockData}
-            results={this.state.lastResults}
-            modalLevelEnd={this.state.modalLevelEnd}
-            levelNumber={this.state.levelNumber}
-            modalPage={this.state.modalPage}
-          />
         </div>
+        {this.renderDebugWindow()}
+        <GameModal
+          isOpen={this.state.showModal}
+          modalHandlerClose={this.modalHandlerClose}
+          modalHandlerNext={this.modalHandlerNext}
+          modalHandlerPrev={this.modalHandlerPrev}
+          modalHandlerStart={this.modalHandlerStart}
+          stats={mockData}
+          results={this.state.lastResults}
+          modalLevelEnd={this.state.modalLevelEnd}
+          levelNumber={this.state.levelNumber}
+          modalPage={this.state.modalPage}
+        />
+      </div>
+    </>;
+  }
+
+  renderCenter() {
+    // trash is active if non-START board symbols are selected
+    const trashActive = [...this.state.selectedSymbolStates].some(symbolState => symbolState.onBoard && symbolState.value !== "S");
+    const mainHidden = this.state.levelName === "epilogue" ? "hidden" : "";
+    return <>
+      <div className="center-column">
+        {this.state.levelName === "epilogue" && <div className="epilogue">{Levels.Epilogue}</div>}
+        <div className={`center-content ${mainHidden}`} style={{display:"flex", flexDirection:"column", alignItems:"center", width:"min-content"}}>
+          <div style={{display:"flex", width:"min-content"}} className="game-board">
+            <Board
+              clickHandler={this.boardClickHandler}
+              dragHandler={this.dragHandler}
+              dragOverHandler={this.dragOverHandler}
+              dragOverSet={this.state.dragOverSet}
+              simBoard={this.state.validBoard || this.state.cycle}
+              stopped={this.state.simState==="stop"}
+              heldShift={this.state.heldShift}
+              m={this.props.m}
+              n={this.props.n}
+              squares={this.state.squares}
+              cells={this.state.cells}
+              background={this.state.background}
+              trespassable={this.state.trespassable}
+              inputs={this.state.inputs}
+              outputs={this.state.outputs}
+              levelGrid={this.state.levelGrid}
+              bots={this.state.bots}
+              flipflop={this.state.flipflop}
+            />
+          </div>
+          <div className="bottom-bar" style={{display:"flex", flexDirection:"column"}}>
+            <div className="toggle-bar" style={{display:"flex", flexDirection:"row"}}>
+              {/*<Toggle handler={this.symbolTypeHandler} selected={this.state.symbolType} name="symbol-type" options={{cellSymbol:"Cells", instruction:"Instructions"}}/>*/}
+              {/*<Toggle handler={this.botHandler} selected={this.state.bot} name="bot" options={["Red", "Blue"]} colors={botColors}/>*/}
+              <Toggle handler={this.jointSymbolTypeHandler} selected={this.state.symbolType === "cellSymbol" ? "cellSymbol" : botColors[this.state.bot]} name="symbol-type" options={{cellSymbol:"Cells", red:"Red Instr.", blue:"Blue Instr."}} colors={{cellSymbol:"green", red:"red", blue:"blue"}}/>
+              <Toggle handler={this.simHandler} selected={this.state.simState} name="sim" options={{stop:"⏹", pause:"⏸", step:"⧐", play:"▶", fast:"⏩", nonstop:"⏩", batch:"⏭"}}/>
+              <div style={{flex:1}}></div>
+              <div className={`trash ${trashActive ? "active" : "inactive"} ${this.state.dragOverPosition === "trash" && "dragover"}`} onClick={this.trash} onDragEnter={this.trashDragOver} onDragOver={this.trashDragOver} onDragLeave={this.trashDragOver} onDrop={this.trashDragOver}>🗑</div>
+            </div>
+            <div className={`symbol-bar bot${this.state.bot}`} style={{position:"relative"}}>
+              <div className="symbol-grid-bar grid-layout" style={{position:"relative"}}>
+                {this.state.selectionSymbolStateCellSymbols.map(symbolState => this.renderSymbolGroup("cellSymbol", symbolState))}
+                {this.state.selectionSymbolStateInstructions.map(symbolState => this.renderSymbolGroup("instruction", symbolState))}
+                {this.state.symbolType === "instruction" &&
+                  <div className="symbol-options-bar">
+                    <SymbolOptions changeOption={this.changeSymbolOption} selectedSymbolState={this.state.selectedSymbolStates.size === 1 && this.state.selectedSymbolStates.values().next().value}/>
+                  </div>
+                }
+              </div>
+            </div>
+          </div>
+          {this.state.levelName !== "epilogue" && <Reference/>}
+        </div>
+      </div>
+    </>;
+  }
+
+  render() {
+    let classNames = [];
+    if (this.state.draggedSymbolState.value) classNames.push("dragging");
+    if (this.state.dragOverFits) classNames.push("dragover-fits");
+    if (this.state.dragOverPosition) classNames.push("dragover-active");
+    if (this.state.dragOverPosition === "trash") classNames.push("dragover-trash");
+    if (this.state.wasNext) classNames.push(`output-color-${this.state.lastColor}`);
+    classNames.push(`sim-${this.state.simState}`);
+    if (this.state.simState !== "stop") classNames.push("sim-running");
+    classNames = classNames.join(" ");
+    return <>
+      <h1 className="game-title">SpaceCells</h1>
+      <div id="main-content" style={{display:"flex"}} className={classNames}>
+        {this.renderLevelSidebar()}
+        {this.renderCenter()}
+        {this.renderStatsSidebar()}
         <Svgs.SvgDefs/>
       </div>
     </>;
@@ -1223,6 +1251,13 @@ class Game extends React.Component {
   setLevelHandler = (event, {loadCookie, clearBoard}={loadCookie:true, clearBoard:true}) => {
     var value = Number(event.target.value);
     if (this.state.levelData === null || value !== this.state.levelNumber) {
+      if (Levels.levels[value].name === "epilogue") {
+        this.setState({
+          levelNumber: value,
+          levelName: Levels.levels[value].name,
+        });
+        return;
+      }
       // var path = levels[value];
       // getFileFromServer(path, text => this.setBoardToLevel(value, text, {loadCookie, clearBoard}));
       this.setBoardToLevel(value, {loadCookie, clearBoard});
@@ -1658,7 +1693,8 @@ class GameModal extends React.PureComponent {
         count: count,
       }));
     }
-    const levelForInfo = this.props.levelNumber + this.props.modalLevelEnd;
+    const levelNumberForInfo = this.props.levelNumber + this.props.modalLevelEnd;
+    const levelNameForInfo = Levels.levels[levelNumberForInfo].name;
     return (
       <Modal
         isOpen={this.props.isOpen}
@@ -1679,13 +1715,13 @@ class GameModal extends React.PureComponent {
               </div>
             </div>
             : <div className="level-info information">
-              {Levels.levels[levelForInfo].preface && <div className="level-preface">{Levels.levels[levelForInfo].preface}</div>}
+              {Levels.levels[levelNumberForInfo].preface && <div className="level-preface">{Levels.levels[levelNumberForInfo].preface}</div>}
               <div className="modal-title">
-                Assignment {levelForInfo+1}: {Levels.levels[levelForInfo].title}
+                Assignment {levelNumberForInfo+1}: {Levels.levels[levelNumberForInfo].title}
               </div>
               <div className="modal-goal">
                 <span className="goal-title">Goal: </span>
-                <span className="goal-content">{Levels.levels[levelForInfo].goal}</span>
+                <span className="goal-content">{Levels.levels[levelNumberForInfo].goal}</span>
               </div>
             </div>
           }
@@ -1694,7 +1730,10 @@ class GameModal extends React.PureComponent {
           {this.props.modalPage === -1
             ? <>
               <button className="modal-close-button" onClick={this.props.modalHandlerClose}>Go Back</button>
-              <button className="modal-next-button" onClick={this.props.modalHandlerNext}>Next</button>
+              {levelNameForInfo === "epilogue"
+                ? <button className="modal-next-button" onClick={this.props.modalHandlerStart}>Epilogue</button>
+                : <button className="modal-next-button" onClick={this.props.modalHandlerNext}>Next</button>
+              }
             </>
             : this.props.modalLevelEnd
               ? <>

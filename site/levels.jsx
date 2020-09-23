@@ -103,6 +103,12 @@ const IntroSwitch = <>
   <p>Only powered outputs emit light. Both outputs start powered.</p>
 </>;
 
+export const Epilogue = <>
+  <h2>Epilogue</h2>
+  <p>This is a final farewell. I am leaving in search of crystalized lattices which will allow for lightspeed computations. I have included a diagram here for you. With these at the table, we will have a key element towards advancing to the next age of innovation.</p>
+  <Svgs.CleanCrystalTile/>
+</>;
+
 export const levels = [
   {
     name: "not",
@@ -168,5 +174,9 @@ export const levels = [
     title: "Stacks on Stacks",
     data: require("../examples/stack.lvl").default,
     goal: LevelStack,
+  },
+  {
+    name: "epilogue",
+    title: "Epilogue",
   },
 ];

@@ -40,6 +40,10 @@ body {
   /* padding: 0 1%; */
   width: 15%;
 }
+.center-column{
+  position: relative;
+  width: min-width;
+}
 .center-content {
   min-width: min-content;
   align-items: center;
@@ -536,6 +540,17 @@ body {
   font-size: larger;
 }
 .goal-content {
+}
+
+/* epilogue */
+.epilogue {
+  position: absolute;
+  width: 100%;
+  padding: 30px;
+}
+.epilogue svg {
+  height: 60px;
+  width: 60px;
 }
 
 /* debug sidebar */
