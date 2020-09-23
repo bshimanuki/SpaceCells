@@ -489,14 +489,16 @@ function parseSubmission(submission, m, n) {
 
 class Game extends React.Component {
   constructor(props) {
+    // TODO: get from server
+    const levelsUnlocked = Number(localStorage.getItem("levels-unlocked")) || 1;
     super(props);
     this.state = {
       // level data
-      levelNumber: 0,
-      levelName: Levels.levels[0].name,
+      levelNumber: levelsUnlocked - 1,
+      levelName: Levels.levels[levelsUnlocked - 1].name,
       levelData: null,
       background: null,
-      levelsUnlocked: 1,
+      levelsUnlocked: levelsUnlocked,
       // submission data
       squares: Array.from({length: this.props.m}, e => Array.from({length: this.props.n}, makeEmptySquare)),
       submission: "",
@@ -615,7 +617,7 @@ class Game extends React.Component {
               readOnly
             />
             <label htmlFor={`radio-level-${Levels.levels[i].name}`} className={this.state.levelNumber === i ? "unclickable" : "clickable"}>
-              Assignment {i+1}: {Levels.levels[i].title}
+              {Levels.levels[i].name === "epilogue" ? Levels.levels[i].title : `Assignment ${i+1}: ${Levels.levels[i].title}`}
             </label>
           </React.Fragment>
           )}
@@ -1539,6 +1541,7 @@ class Game extends React.Component {
         };
         if (state.levelNumber >= state.levelsUnlocked - 1) {
           newState.levelsUnlocked = state.levelNumber + 2;
+          localStorage.setItem("levels-unlocked", newState.levelsUnlocked);
         }
         return newState;
       });

@@ -58,10 +58,16 @@ const LevelStack = <>
 </>;
 
 const IntroNot = <>
-  {/*<div className="modal-title">SpaceCells</div>*/}
+  <div className="modal-title">SpaceCells</div>
   <p>Welcome to SpaceCells, the satellite planet where engineers design systems that control colors at the level of electrons. The basic building block is the cell, a component with four cavities which holds two electrons.</p>
   <Svgs.XCell/>
   <p>By placing them in different configurations, we can make them do anything we want!</p>
+  <div className="gridlines" style={{display:"grid", gridTemplateColumns:"repeat(6, min-content)"}}>
+    <Svgs.XCell className="latched resolved-1"/><Svgs.XCell className="resolved-1"/><Svgs.XCell className="resolved-1"/><Svgs.XCell className="resolved-1"/><Svgs.XCell className="resolved-1"/><Svgs.XCell className="resolved-1"/>
+    <div/><div/><Svgs.XCell className="resolved-1"/><div/><div/><div/>
+    <Svgs.XCell className="resolved-1"/><div/><div/><Svgs.XCell className="resolved-0"/><Svgs.XCell className="resolved-0"/><Svgs.XCell className="resolved-0"/>
+  </div>
+  <p><Svgs.XCell className="inline latched resolved-1"/> is a locked cell, meaning it is fixed. Other <Svgs.XCell className="inline"/> cells are free to change.</p>
   <p>Cells are too small for human hands, so we manipulate them using bots. Bots move and perform all sorts of operations based on instructions we assign. The only ones you need as we start off are the direction instructions and the NEXT instruction. The NEXT instruction will cause your output to be verified and will advance the input(s) and output(s).</p>
   <div className="row-line">
     <Svgs.DirectionLeft className="bot0"/>
@@ -75,7 +81,7 @@ const IntroNot = <>
 
 const IntroAnd = <>
   <p>I have found a truly marvelous demonstration of this configuration, which this note is too small to contain.</p>
-  <div style={{display:"grid", gridTemplateColumns:"repeat(5, min-content)"}}>
+  <div className="gridlines" style={{display:"grid", gridTemplateColumns:"repeat(5, min-content)"}}>
     <div/><div/><Svgs.DiodeDown/><div/><div/>
     <div/><div/><div/><div/>
     <Svgs.DiodeRight/><Svgs.XCell/><Svgs.XCell/><Svgs.XCell/>
