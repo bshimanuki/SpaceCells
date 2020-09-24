@@ -50,11 +50,15 @@ const LevelRainbow = <>
 </>;
 
 const LevelMedian = <>
-  <p>Given one sequential input, output the median (majority) of the past 3 inputs. The first 3 inputs will be blue.</p>
+  <p>Given one sequential input, output the majority of the past 3 inputs. The first 3 inputs will be blue.</p>
 </>;
 
 const LevelAdder = <>
   <p>Given two sequential inputs, let green represent a 0 bit and blue represent a 1 bit. The inputs are given from low bit to high bit. Output the corresponding color for the addition of these numbers in base 2.</p>
+</>;
+
+const LevelBattle = <>
+  <p>The top input is for a blue player and the bottom input is for a green player. The game starts neutral. A player fires by inputting blue. Whenever a player fires, the state moves one step in the direction of the player (green, white, blue) or stays the same if already at an end. If both players fire, they both lose and you should output purple once and reset the state to neutral.</p>
 </>;
 
 const LevelStack = <>
@@ -191,10 +195,10 @@ export const levels = [
     goal: LevelAdder,
   },
   {
-    name: "placeholder-not-2",
-    title: "Placeholder 2",
-    data: require("../examples/not.lvl").default,
-    goal: LevelNot,
+    name: "battle",
+    title: "Fight",
+    data: require("../examples/battle.lvl").default,
+    goal: LevelBattle,
   },
   {
     name: "stack",
