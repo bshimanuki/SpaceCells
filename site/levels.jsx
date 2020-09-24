@@ -157,6 +157,12 @@ export const levels = [
     preface: IntroSwitch,
   },
   {
+    name: "placeholder-not-1",
+    title: "Placeholder 1",
+    data: require("../examples/not.lvl").default,
+    goal: LevelNot,
+  },
+  {
     name: "xor",
     title: "Differences",
     data: require("../examples/xor.lvl").default,
@@ -179,6 +185,12 @@ export const levels = [
     title: "Quick Maths",
     data: require("../examples/adder.lvl").default,
     goal: LevelAdder,
+  },
+  {
+    name: "placeholder-not-2",
+    title: "Placeholder 2",
+    data: require("../examples/not.lvl").default,
+    goal: LevelNot,
   },
   {
     name: "stack",
