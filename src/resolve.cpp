@@ -207,6 +207,8 @@ bool Board::resolve() {
           const uint8_t dist = sqr(dist_delta.y) + sqr(dist_delta.x);
           // opposite orientation in same alignment have no effect
           if (cell.x != neighbor.x && cell.offset == neighbor.offset) continue;
+          // opposite orientation in the same axis have not effect
+          if (cell.x != neighbor.x && (dist_delta.y == 0 || dist_delta.x == 0)) continue;
           R r = R::FromInt(dist);
           // distance beyond simulated range of effect
           if (r == MAXR) continue;
