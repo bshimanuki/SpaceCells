@@ -145,14 +145,14 @@ const symbolTypesDirection = [
 const symbolTypesOperation = [
   {type: "operation", keyboard: "", availableFrom: 0, subtype: "START", value: "S", svg: Svgs.Start},
   {type: "operation", keyboard: "q", availableFrom: 0, subtype: "NEXT", value: "n", svg: Svgs.Next},
-  {type: "operation", keyboard: "e", availableFrom: 2, subtype: "GRAB/DROP", options: {w: ["GRAB/DROP", Svgs.Swap], g: ["GRAB", Svgs.Grab], d: ["DROP", Svgs.Drop]}},
-  {type: "operation", keyboard: "r", availableFrom: 2, subtype: "LOCK/FREE", options: {t: ["LOCK/FREE", Svgs.ToggleLatch], l: ["LOCK", Svgs.Latch], u: ["FREE", Svgs.Unlatch]}},
-  {type: "operation", keyboard: "t", availableFrom: 2, subtype: "RESET", value: "*", svg: Svgs.Relatch},
-  {type: "operation", keyboard: "y", availableFrom: 2, subtype: "SYNC", value: "s", svg: Svgs.Sync},
-  {type: "operation", keyboard: "u", availableFrom: 2, subtype: "ROTATE", value: "r", svg: Svgs.Rotate},
-  {type: "operation", keyboard: "f", availableFrom: 2, subtype: "BRANCH(|/)", options: {"<": ["<", Svgs.Branch1Left], "v": ["v", Svgs.Branch1Down], ">": [">", Svgs.Branch1Right], "^": ["^", Svgs.Branch1Up]}},
-  {type: "operation", keyboard: "g", availableFrom: 2, subtype: "BRANCH(-\\)", options: {"[": ["<", Svgs.Branch0Left], "W": ["v", Svgs.Branch0Down], "]": [">", Svgs.Branch0Right], "M": ["^", Svgs.Branch0Up]}},
-  {type: "operation", keyboard: "h", availableFrom: 2, subtype: "POWER", options: {p: ["TOGGLE TOP", Svgs.Power0], P: ["TOGGLE BOT", Svgs.Power1]}},
+  {type: "operation", keyboard: "e", availableFrom: 3, subtype: "GRAB/DROP", options: {w: ["GRAB/DROP", Svgs.Swap], g: ["GRAB", Svgs.Grab], d: ["DROP", Svgs.Drop]}},
+  {type: "operation", keyboard: "r", availableFrom: 3, subtype: "LOCK/FREE", options: {t: ["LOCK/FREE", Svgs.ToggleLatch], l: ["LOCK", Svgs.Latch], u: ["FREE", Svgs.Unlatch]}},
+  {type: "operation", keyboard: "t", availableFrom: 3, subtype: "RESET", value: "*", svg: Svgs.Relatch},
+  {type: "operation", keyboard: "y", availableFrom: 3, subtype: "SYNC", value: "s", svg: Svgs.Sync},
+  {type: "operation", keyboard: "u", availableFrom: 3, subtype: "ROTATE", value: "r", svg: Svgs.Rotate},
+  {type: "operation", keyboard: "f", availableFrom: 3, subtype: "BRANCH(|/)", options: {"<": ["<", Svgs.Branch1Left], ">": [">", Svgs.Branch1Right], "v": ["v", Svgs.Branch1Down], "^": ["^", Svgs.Branch1Up]}},
+  {type: "operation", keyboard: "g", availableFrom: 3, subtype: "BRANCH(-\\)", options: {"[": ["<", Svgs.Branch0Left], "]": [">", Svgs.Branch0Right], "W": ["v", Svgs.Branch0Down], "M": ["^", Svgs.Branch0Up]}},
+  {type: "operation", keyboard: "h", availableFrom: 4, subtype: "POWER", options: {p: ["TOGGLE TOP", Svgs.Power0], P: ["TOGGLE BOT", Svgs.Power1]}},
 ];
 
 function makeSymbolTypesByValue(symbolTypes) {

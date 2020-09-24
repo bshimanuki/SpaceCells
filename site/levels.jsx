@@ -104,7 +104,7 @@ const IntroCrossing = <>
 </>;
 
 const IntroDelay = <>
-  <p>Cells innately have no memories, but you know bots, they never forget a thing.</p>
+  <p>Cells innately have no memories, but you know bots, they never forget a thing. Check the Instructions tabs for access to most instructions.</p>
 </>;
 
 const IntroSwitch = <>
