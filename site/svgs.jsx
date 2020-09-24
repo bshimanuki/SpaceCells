@@ -270,10 +270,12 @@ export function Relatch(props) {
   // return <UnicodeOperation texts="💥" _className="relatch" {...props}/>
 // }
 export function Sync(props) {
-  return <UnicodeOperation texts="🗘" _className="sync" {...props}/>
+  // return <UnicodeOperation texts="🗘" _className="sync" {...props}/>
+  return <Operation texts="SYNC" _className="sync" {...props}/>
 }
 export function Rotate(props) {
-  return <UnicodeOperation texts="⭮" _className="rotate" {...props}/>
+  // return <UnicodeOperation texts="⭮" _className="rotate" {...props}/>
+  return <Operation texts="ROT" _className="rotate" {...props}/>
 }
 export function Power0(props) {
   return <Operation texts={["PWR", "ℵ"]} _className="power0" {...props}/>

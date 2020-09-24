@@ -41,6 +41,10 @@ const LevelXor = <>
   <p>Given two inputs, output green if they are the same or blue if they are different.</p>
 </>;
 
+const LevelRam = <>
+  <p>You have a blue/green input and a red/orange input. There is a red cubbie and a orange cubbie that each start with a blue light. Each step, use the bottom input to put the top input into that cubbie and output the color that was there before.</p>
+</>;
+
 const LevelRainbow = <>
   <p>No inputs. Output red, orange, yellow, green, blue, and purple in order and repeat.</p>
 </>;
@@ -157,28 +161,28 @@ export const levels = [
     preface: IntroSwitch,
   },
   {
-    name: "placeholder-not-1",
-    title: "Placeholder 1",
-    data: require("../examples/not.lvl").default,
-    goal: LevelNot,
-  },
-  {
     name: "xor",
     title: "Differences",
     data: require("../examples/xor.lvl").default,
     goal: LevelXor,
   },
   {
-    name: "median",
-    title: "Median Filter",
-    data: require("../examples/median.lvl").default,
-    goal: LevelMedian,
+    name: "ram",
+    title: "Storage Unit",
+    data: require("../examples/ram.lvl").default,
+    goal: LevelRam,
   },
   {
     name: "rainbow",
     title: "Colors of the Rainbow",
     data: require("../examples/rainbow.lvl").default,
     goal: LevelRainbow,
+  },
+  {
+    name: "median",
+    title: "Median Filter",
+    data: require("../examples/median.lvl").default,
+    goal: LevelMedian,
   },
   {
     name: "adder",
