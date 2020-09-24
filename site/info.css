@@ -38,3 +38,7 @@
 .information .vertical {
   grid-row-end: span 2;
 }
+
+.level-info .row-line, .level-info .gridlines {
+  justify-content: center;
+}

@@ -123,36 +123,36 @@ function svgForCell(c) {
 const botColors = ["red", "blue"];
 
 const symbolTypesCellSymbol = [
-  {type: "cellSymbol", keyboard: "q", subtype: "/", value: "/", svg: Svgs.XCell, className: "resolved-1 latched"},
-  {type: "cellSymbol", keyboard: "w", subtype: "\\", value: "\\", svg: Svgs.XCell, className: "resolved-0 latched"},
-  {type: "cellSymbol", keyboard: "e", subtype: "x", value: "x", svg: Svgs.XCell, className: "resolved-x unlatched"},
-  {type: "cellSymbol", keyboard: "r", subtype: "+", value: "+", svg: Svgs.PlusCell, className: "resolved-x unlatched"},
-  {type: "cellSymbol", keyboard: "a", subtype: "-", value: "-", svg: Svgs.PlusCell, className: "resolved-1 latched"},
-  {type: "cellSymbol", keyboard: "s", subtype: "|", value: "|", svg: Svgs.PlusCell, className: "resolved-0 latched"},
-  {type: "cellSymbol", keyboard: "df", subtype: "][", value: "][", svg: Svgs.HorizontalCell, multi: "horizontal"},
-  {type: "cellSymbol", keyboard: "tg", subtype: "W\nM", value: "WM", svg: Svgs.VerticalCell, multi: "vertical"},
-  {type: "cellSymbol", keyboard: "yu", subtype: "<x", value: "<x", svg: Svgs.DiodeLeft, multi: "horizontal"},
-  {type: "cellSymbol", keyboard: "ik", subtype: "x\nv", value: "xv", svg: Svgs.DiodeDown, multi: "vertical"},
-  {type: "cellSymbol", keyboard: "ol", subtype: "^\nx", value: "^x", svg: Svgs.DiodeUp, multi: "vertical"},
-  {type: "cellSymbol", keyboard: "hj", subtype: "x>", value: "x>", svg: Svgs.DiodeRight, multi: "horizontal"},
+  {type: "cellSymbol", keyboard: "q", availableFrom: 1, subtype: "/", value: "/", svg: Svgs.XCell, className: "resolved-1 latched"},
+  {type: "cellSymbol", keyboard: "w", availableFrom: 1, subtype: "\\", value: "\\", svg: Svgs.XCell, className: "resolved-0 latched"},
+  {type: "cellSymbol", keyboard: "e", availableFrom: 0, subtype: "x", value: "x", svg: Svgs.XCell, className: "resolved-x unlatched"},
+  {type: "cellSymbol", keyboard: "r", availableFrom: 1, subtype: "+", value: "+", svg: Svgs.PlusCell, className: "resolved-x unlatched"},
+  {type: "cellSymbol", keyboard: "a", availableFrom: 1, subtype: "-", value: "-", svg: Svgs.PlusCell, className: "resolved-1 latched"},
+  {type: "cellSymbol", keyboard: "s", availableFrom: 1, subtype: "|", value: "|", svg: Svgs.PlusCell, className: "resolved-0 latched"},
+  {type: "cellSymbol", keyboard: "df", availableFrom: 1, subtype: "][", value: "][", svg: Svgs.HorizontalCell, multi: "horizontal"},
+  {type: "cellSymbol", keyboard: "tg", availableFrom: 1, subtype: "W\nM", value: "WM", svg: Svgs.VerticalCell, multi: "vertical"},
+  {type: "cellSymbol", keyboard: "yu", availableFrom: 1, subtype: "<x", value: "<x", svg: Svgs.DiodeLeft, multi: "horizontal"},
+  {type: "cellSymbol", keyboard: "ik", availableFrom: 1, subtype: "x\nv", value: "xv", svg: Svgs.DiodeDown, multi: "vertical"},
+  {type: "cellSymbol", keyboard: "ol", availableFrom: 1, subtype: "^\nx", value: "^x", svg: Svgs.DiodeUp, multi: "vertical"},
+  {type: "cellSymbol", keyboard: "hj", availableFrom: 1, subtype: "x>", value: "x>", svg: Svgs.DiodeRight, multi: "horizontal"},
 ];
 const symbolTypesDirection = [
-  {type: "direction", keyboard: "a", subtype: "<", value: "<", svg: Svgs.DirectionLeft},
-  {type: "direction", keyboard: "s", subtype: "v", value: "v", svg: Svgs.DirectionDown},
-  {type: "direction", keyboard: "d", subtype: ">", value: ">", svg: Svgs.DirectionRight},
-  {type: "direction", keyboard: "w", subtype: "^", value: "^", svg: Svgs.DirectionUp},
+  {type: "direction", keyboard: "a", availableFrom: 0, subtype: "<", value: "<", svg: Svgs.DirectionLeft},
+  {type: "direction", keyboard: "s", availableFrom: 0, subtype: "v", value: "v", svg: Svgs.DirectionDown},
+  {type: "direction", keyboard: "d", availableFrom: 0, subtype: ">", value: ">", svg: Svgs.DirectionRight},
+  {type: "direction", keyboard: "w", availableFrom: 0, subtype: "^", value: "^", svg: Svgs.DirectionUp},
 ];
 const symbolTypesOperation = [
-  {type: "operation", keyboard: "", subtype: "START", value: "S", svg: Svgs.Start},
-  {type: "operation", keyboard: "q", subtype: "NEXT", value: "n", svg: Svgs.Next},
-  {type: "operation", keyboard: "e", subtype: "GRAB/DROP", options: {w: ["GRAB/DROP", Svgs.Swap], g: ["GRAB", Svgs.Grab], d: ["DROP", Svgs.Drop]}},
-  {type: "operation", keyboard: "r", subtype: "LOCK/FREE", options: {t: ["LOCK/FREE", Svgs.ToggleLatch], l: ["LOCK", Svgs.Latch], u: ["FREE", Svgs.Unlatch]}},
-  {type: "operation", keyboard: "t", subtype: "RESET", value: "*", svg: Svgs.Relatch},
-  {type: "operation", keyboard: "y", subtype: "SYNC", value: "s", svg: Svgs.Sync},
-  {type: "operation", keyboard: "u", subtype: "ROTATE", value: "r", svg: Svgs.Rotate},
-  {type: "operation", keyboard: "f", subtype: "BRANCH(|/)", options: {"<": ["<", Svgs.Branch1Left], "v": ["v", Svgs.Branch1Down], ">": [">", Svgs.Branch1Right], "^": ["^", Svgs.Branch1Up]}},
-  {type: "operation", keyboard: "g", subtype: "BRANCH(-\\)", options: {"[": ["<", Svgs.Branch0Left], "W": ["v", Svgs.Branch0Down], "]": [">", Svgs.Branch0Right], "M": ["^", Svgs.Branch0Up]}},
-  {type: "operation", keyboard: "h", subtype: "POWER", options: {p: ["TOGGLE TOP", Svgs.Power0], P: ["TOGGLE BOT", Svgs.Power1]}},
+  {type: "operation", keyboard: "", availableFrom: 0, subtype: "START", value: "S", svg: Svgs.Start},
+  {type: "operation", keyboard: "q", availableFrom: 0, subtype: "NEXT", value: "n", svg: Svgs.Next},
+  {type: "operation", keyboard: "e", availableFrom: 2, subtype: "GRAB/DROP", options: {w: ["GRAB/DROP", Svgs.Swap], g: ["GRAB", Svgs.Grab], d: ["DROP", Svgs.Drop]}},
+  {type: "operation", keyboard: "r", availableFrom: 2, subtype: "LOCK/FREE", options: {t: ["LOCK/FREE", Svgs.ToggleLatch], l: ["LOCK", Svgs.Latch], u: ["FREE", Svgs.Unlatch]}},
+  {type: "operation", keyboard: "t", availableFrom: 2, subtype: "RESET", value: "*", svg: Svgs.Relatch},
+  {type: "operation", keyboard: "y", availableFrom: 2, subtype: "SYNC", value: "s", svg: Svgs.Sync},
+  {type: "operation", keyboard: "u", availableFrom: 2, subtype: "ROTATE", value: "r", svg: Svgs.Rotate},
+  {type: "operation", keyboard: "f", availableFrom: 2, subtype: "BRANCH(|/)", options: {"<": ["<", Svgs.Branch1Left], "v": ["v", Svgs.Branch1Down], ">": [">", Svgs.Branch1Right], "^": ["^", Svgs.Branch1Up]}},
+  {type: "operation", keyboard: "g", availableFrom: 2, subtype: "BRANCH(-\\)", options: {"[": ["<", Svgs.Branch0Left], "W": ["v", Svgs.Branch0Down], "]": [">", Svgs.Branch0Right], "M": ["^", Svgs.Branch0Up]}},
+  {type: "operation", keyboard: "h", availableFrom: 2, subtype: "POWER", options: {p: ["TOGGLE TOP", Svgs.Power0], P: ["TOGGLE BOT", Svgs.Power1]}},
 ];
 
 function makeSymbolTypesByValue(symbolTypes) {
@@ -329,7 +329,7 @@ class Square extends React.PureComponent {
         {...props}
         clickHandler={this.props.clickHandler}
         dragHandler={this.props.dragHandler}
-        draggable={this.props.trespassable}
+        draggable={this.props.trespassable && this.props.stopped}
       />
     );
   }
@@ -573,6 +573,7 @@ class Game extends React.Component {
         bot={this.state.bot}
         symbolState={symbolState}
         held={symbolType.keyboard.includes(this.state.heldKey)}
+        levelsUnlocked={this.state.levelsUnlocked}
       />
     );
   }
@@ -749,9 +750,7 @@ class Game extends React.Component {
                 {this.state.selectionSymbolStateCellSymbols.map(symbolState => this.renderSymbolGroup("cellSymbol", symbolState))}
                 {this.state.selectionSymbolStateInstructions.map(symbolState => this.renderSymbolGroup("instruction", symbolState))}
                 {this.state.symbolType === "instruction" &&
-                  <div className="symbol-options-bar">
-                    <SymbolOptions changeOption={this.changeSymbolOption} selectedSymbolState={this.state.selectedSymbolStates.size === 1 && this.state.selectedSymbolStates.values().next().value}/>
-                  </div>
+                  <SymbolOptions changeOption={this.changeSymbolOption} selectedSymbolState={this.state.selectedSymbolStates.size === 1 && this.state.selectedSymbolStates.values().next().value}/>
                 }
               </div>
             </div>
@@ -1375,6 +1374,8 @@ class Game extends React.Component {
   }
 
   symbolClickHandler = symbolState => {
+    const symbolType = symbolTypeByState(symbolState);
+    if (symbolType.availableFrom >= this.state.levelsUnlocked) return;
     if (this.state.simState !== "stop") return;
     this.setSelected(symbolState);
   }
@@ -1584,19 +1585,20 @@ class SymbolGroup extends React.PureComponent {
     const symbolState = this.props.symbolState;
     const symbolType = symbolTypeByState(symbolState);
     const Component = symbolType.svg || symbolType.options[symbolState.value][1];
+    const available = symbolType.availableFrom < this.props.levelsUnlocked && this.props.stopped;
     let classNames = [];
     classNames.push("image-container");
     classNames.push("symbolgroup");
     classNames.push(symbolState.type);
     classNames.push(`symbol-${symbolState.value}`);
-    classNames.push(this.props.stopped && !this.props.symbolState.selected ? "clickable" : "unclickable")
+    classNames.push(available && !this.props.symbolState.selected ? "clickable" : "unclickable")
     if (this.props.symbolState.selected) classNames.push("selected");
     classNames.push(symbolType.className || "");
     classNames.push(symbolType.multi || "");
     if (this.props.held) classNames.push("held");
     classNames = classNames.join(" ");
     return (
-      <div className={classNames} onClick={this.clickHandler} onDrag={this.dragHandler} onDragStart={this.dragHandler} onDragEnd={this.dragHandler} draggable>
+      <div className={classNames} onClick={this.clickHandler} onDrag={this.dragHandler} onDragStart={this.dragHandler} onDragEnd={this.dragHandler} draggable={available}>
         <Component className="image-base"/>
       </div>
     );
@@ -1609,10 +1611,13 @@ class SymbolOptions extends React.PureComponent {
   render() {
     const symbolType = this.props.selectedSymbolState ? symbolTypeByState(this.props.selectedSymbolState) : {};
     return (
-      <div className="symbol-options">
-        {Object.entries(symbolType.options || []).map(([value, [option, svg]]) =>
-        <OptionItem key={value} value={value} option={option} subtype={symbolType.subtype} {...this.props}/>
-        )}
+      <div className="symbol-options-bar">
+        <div className="symbol-options-title">{symbolType.options && "Varieties"}</div>
+        <div className="symbol-options-grid">
+          {Object.entries(symbolType.options || []).map(([value, [option, svg]]) =>
+          <OptionItem key={value} value={value} svg={svg} subtype={symbolType.subtype} {...this.props}/>
+          )}
+        </div>
       </div>
     );
   }
@@ -1620,13 +1625,17 @@ class SymbolOptions extends React.PureComponent {
 
 class OptionItem extends React.PureComponent {
   render() {
+    const Svg = this.props.svg;
+    const checked = this.props.selectedSymbolState && this.props.selectedSymbolState.value === this.props.value;
+    console.log(this.props.value, checked);
     return (
-      <div style={{display:"flex", alignItems:"center"}} key={`radio-option-${this.props.option}`}>
+      <div className={checked ? "selected unclickable" : "clickable"} key={`radio-option-${this.props.option}`}>
         <input type="radio" id={`radio-${this.props.value}`} value={this.props.value} name={`radio-for-${this.props.subtype}`}
-          checked={this.props.selectedSymbolState && this.props.selectedSymbolState.value === this.props.value}
+          checked={checked}
           onChange={this.props.changeOption}
+          readOnly
         />
-        <label htmlFor={`radio-${this.props.value}`}>{this.props.option}</label>
+        <label htmlFor={`radio-${this.props.value}`}><Svg/></label>
       </div>
     );
   }

@@ -58,23 +58,28 @@ const LevelStack = <>
 </>;
 
 const IntroNot = <>
-  <div className="modal-title">SpaceCells</div>
+  {/*<div className="modal-title">SpaceCells</div>*/}
   <p>Welcome to SpaceCells, the satellite planet where engineers design systems that control colors at the level of electrons. The basic building block is the cell, a component with four cavities which holds two electrons.</p>
-  <Svgs.XCell/>
-  <p>By placing them in different configurations, we can make them do anything we want!</p>
+  <div className="row-line">
+    <Svgs.XCell/>
+  </div>
+  <p>By placing them in different configurations, we can make them do anything we set our minds to!</p>
+  {/*
   <div className="gridlines" style={{display:"grid", gridTemplateColumns:"repeat(6, min-content)"}}>
     <Svgs.XCell className="latched resolved-1"/><Svgs.XCell className="resolved-1"/><Svgs.XCell className="resolved-1"/><Svgs.XCell className="resolved-1"/><Svgs.XCell className="resolved-1"/><Svgs.XCell className="resolved-1"/>
     <div/><div/><Svgs.XCell className="resolved-1"/><div/><div/><div/>
     <Svgs.XCell className="resolved-1"/><div/><div/><Svgs.XCell className="resolved-0"/><Svgs.XCell className="resolved-0"/><Svgs.XCell className="resolved-0"/>
   </div>
   <p><Svgs.XCell className="inline latched resolved-1"/> is a locked cell, meaning it is fixed. Other <Svgs.XCell className="inline"/> cells are free to change.</p>
-  <p>Cells are too small for human hands, so we manipulate them using bots. Bots move and perform all sorts of operations based on instructions we assign. The only ones you need as we start off are the direction instructions and the NEXT instruction. The NEXT instruction will cause your output to be verified and will advance the input(s) and output(s).</p>
+  */}
+  <p>Cells are too small for human hands, so we manipulate them using bots. Bots move and perform all sorts of operations based on instructions we assign. The only ones you need as we start off are the direction instructions, the START instruction, and the NEXT instruction. There is a single START instruction and it is where the bot starts its operation. The NEXT instruction will cause your output to be verified and will advance the input(s) and output(s).</p>
   <div className="row-line">
+    <Svgs.Start className="bot0"/>
+    <Svgs.Next className="bot0"/>
     <Svgs.DirectionLeft className="bot0"/>
     <Svgs.DirectionDown className="bot0"/>
     <Svgs.DirectionUp className="bot0"/>
     <Svgs.DirectionRight className="bot0"/>
-    <Svgs.Next className="bot0"/>
   </div>
   <p>You can check out the Reference for a complete description of cells and instructions.</p>
 </>;
@@ -91,7 +96,7 @@ const IntroAnd = <>
 </>;
 
 const IntroCrossing = <>
-  <p>You are on your own this time for instruction placement.</p>
+  <p>You are on your own this time for placing instructions.</p>
 </>;
 
 const IntroDelay = <>

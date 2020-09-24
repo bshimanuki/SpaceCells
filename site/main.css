@@ -91,6 +91,7 @@ body {
   width: 100%;
   text-align: center;
   color: lightgray;
+  user-select: none;
 }
 .square-drag-overlay {
   z-index: 5;
@@ -126,14 +127,13 @@ body {
   border-radius: 0 0 20px 20px;
   overflow: hidden;
 }
-.sim-running .symbol-bar svg {
+.symbol-bar .unclickable:not(.selected) svg {
   opacity: 0.5;
 }
 .symbol-grid-bar {
   background-color: lightgray;
 }
 .symbol-options-bar {
-  padding-left: 3%;
 }
 
 /* cell / instruction selection grid*/
@@ -179,6 +179,40 @@ body {
   grid-column-end: span 2;
   grid-row-start: 1;
   grid-row-end: span 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.symbol-options-grid > * {
+  width: min-content;
+}
+.symbol-options-grid > .svg-container {
+  width: min-content;
+}
+.symbol-options-grid {
+  height: 100%;
+  width: 100%;
+  padding: 0 5%;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  justify-items: center;
+}
+.symbol-options-grid input {
+  position: absolute !important;
+  clip: rect(0, 0, 0, 0);
+  overflow: hidden;
+}
+.symbol-options-grid label {
+}
+.symbol-options-grid svg {
+  height: 100%;
+}
+.symbol-options-grid input:checked + label svg {
+  filter: drop-shadow(0 0 1vmin black);
+}
+.symbol-options-title {
+  font-weight: bold;
 }
 
 /* symbols */

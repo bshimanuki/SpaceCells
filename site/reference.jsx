@@ -170,7 +170,7 @@ function Reference() {
       <Svgs.Power1 className="bot0"/>
       <Svgs.Power1 className="bot1"/>
     </div>
-    <p>Toggle the power for specified output cell (corresponding to the top or bottom output). This affects which cell(s) will light up when the I/O advances. Both outputs start powered at initialization.</p>
+    <p>Toggle the power for specified output cell. This affects which cell(s) will light up when the I/O advances. Both outputs start powered at initialization.</p>
 
     <h3>BRANCH Instructions</h3>
     <div className="row-line">
