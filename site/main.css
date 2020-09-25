@@ -15,7 +15,7 @@ textarea {
   cursor: pointer;
 }
 .clickable:hover {
-  filter: drop-shadow(0 0 0.5vmin cornflowerblue);
+  filter: brightness(90%) drop-shadow(0 0 0.5vmin cornflowerblue);
 }
 .level-selection .clickable:hover {
   filter: none;
@@ -242,10 +242,13 @@ body {
 .symbol.selected {
   filter: drop-shadow(0 0 1vmin black);
 }
+.symbol.instruction.selected svg { /* double for instructions */
+  filter: drop-shadow(0 0 1vmin black);
+}
 .symbolgroup.selected {
   filter: drop-shadow(0 0 1vmin black);
 }
-.symbolgroup.held {
+.symbolgroup.key-held {
   filter: drop-shadow(0 0 1vmin black);
 }
 /* .bot0 .square-overlay, .bot1 .square-overlay { */

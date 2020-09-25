@@ -317,7 +317,7 @@ class Symbol extends React.PureComponent {
       let Component = svgForCell(this.props.cell);
       return (
         <div className={classNames}>
-          <Component className="image-base symbol" {...props}/>
+          <Component className="image-base" {...props}/>
         </div>
       );
     } else {
@@ -616,7 +616,7 @@ class Game extends React.Component {
         clickHandler={this.symbolClickHandler}
         bot={this.state.bot}
         symbolState={symbolState}
-        held={symbolType.keyboard.includes(this.state.heldKey)}
+        keyHeld={symbolType.keyboard.includes(this.state.heldKey)}
         levelsUnlocked={this.state.levelsUnlocked}
       />
     );
@@ -811,6 +811,7 @@ class Game extends React.Component {
     if (this.state.dragOverFits) classNames.push("dragover-fits");
     if (this.state.dragOverPosition) classNames.push("dragover-active");
     if (this.state.dragOverPosition === "trash") classNames.push("dragover-trash");
+    if (this.selectedOnBoard()) classNames.push("selected-on-board");
     if (this.state.wasNext) classNames.push(`output-color-${this.state.lastColor}`);
     classNames.push(`sim-${this.state.simState}`);
     if (this.state.simState !== "stop") classNames.push("sim-running");
@@ -1645,7 +1646,7 @@ class SymbolGroup extends React.PureComponent {
     if (this.props.symbolState.selected) classNames.push("selected");
     classNames.push(symbolType.className || "");
     classNames.push(symbolType.multi || "");
-    if (this.props.held) classNames.push("held");
+    if (this.props.keyHeld) classNames.push("key-held");
     classNames = classNames.join(" ");
     return (
       <div className={classNames} onClick={this.clickHandler} onDrag={this.dragHandler} onDragStart={this.dragHandler} onDragEnd={this.dragHandler} draggable={available}>
