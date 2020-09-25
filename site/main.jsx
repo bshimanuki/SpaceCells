@@ -693,6 +693,9 @@ class Game extends React.Component {
             <div className="test-case">
               <span className="test-case-name">Test Case</span><span><span className="test-case-value">{this.state.testCase + 1}</span> / <span className="test-case-total">{this.state.outputColors.length}</span></span>
             </div>
+            <div className="test-arrow">
+              <span/><span className="test-arrow-symbol">{(this.state.outputColors[this.state.testCase]||[]).map((_, k) => <span key={k}>{k === this.state.step - this.state.wasNext ? "↓" : <>&nbsp;</>}</span>)}</span>
+            </div>
             {(this.state.inputBits[this.state.testCase] || []).map((input, i) => {
               const loc = this.state.inputs[i].location;
               const colors = getNested(this.state.squares, [loc.y, loc.x]).cellSymbol.value === "x" ? "GB" : "OR";

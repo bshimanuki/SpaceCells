@@ -361,15 +361,22 @@ body {
   display: table-cell;
   white-space: nowrap;
 }
-.colon-list > * > *:first-child::after {
+.colon-list > * > :first-child::after {
   content: ": ";
   white-space: pre;
+}
+.colon-list > .test-arrow > :first-child::after {
+  content: "";
 }
 .finished {
   height: 30px;
 }
 
 /* results info */
+.test-arrow * {
+  font-family: monospace, sans-serif;
+  font-weight: bold;
+}
 .colors * {
   font-family: monospace, sans-serif;
 }
