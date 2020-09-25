@@ -466,7 +466,8 @@ body {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding-left: 1ex;
+  padding-left: 7ex;
+  text-indent: -6ex;
   border-radius: 10px 0 0 10px;
   border: 2px solid #444;
   border-right-style: none;
@@ -480,7 +481,19 @@ body {
   background: #025;
   box-shadow: none;
 }
+.level-buttons {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
 .level-button {
+  background-color: #ccc;
+  border: 1pt solid black;
+  border-radius: 3px;
+  font-size: smaller;
+  text-align: center;
+  user-select: none;
+  padding: 1px;
 }
 .assignment-title::before {
   content: "★ ";
@@ -595,5 +608,5 @@ body {
   font-weight: bold;
 }
 #submission {
-  height: 30em;
+  height: 20em;
 }

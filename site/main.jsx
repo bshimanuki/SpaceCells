@@ -667,9 +667,15 @@ class Game extends React.Component {
           </React.Fragment>
           )}
         </div>
-        <div className={`level-buttons ${mainHidden}`} style={{display:"flex", flexDirection:"column"}}>
+        <div className={`level-buttons ${mainHidden}`}>
           <input className="clickable level-button level-information-button" type="button" value="Level Information" onClick={this.openModalHandler}/>
-          <div style={{paddingBottom: "60px"}}/>
+          <div style={{paddingBottom: "40px"}}/>
+          <input className="clickable level-button export-button" type="button" value="Export Grid" onClick={this.exportHandler}/>
+          <label className="clickable level-button import-button">
+            <input hidden type="file" accept=".sol" onChange={this.importHandler}/>
+            <span>Import Grid</span>
+          </label>
+          <div style={{paddingBottom: "40px"}}/>
           <input className="clickable level-button reset-button" type="button" value="Reset Board" onClick={this.clearBoardHandler}/>
           {/* TODO: replace with "Load Last Solution" */}
           <input className={`clickable level-button load-solution ${this.state.levelsSolved & (1 << this.state.levelNumber) ? "visible" : "hidden"}`} type="button" value="Load Last Solution (example for now)" onClick={this.loadLastSolutionHandler}/>
@@ -746,6 +752,7 @@ class Game extends React.Component {
           levelNumber={this.state.levelNumber}
           modalPage={this.state.modalPage}
         />
+        <a hidden id="download-anchor"/>
       </div>
     </>;
   }
@@ -1548,6 +1555,54 @@ class Game extends React.Component {
         });
         break;
       }
+    }
+  }
+
+  exportHandler = () => {
+    const levelNumber1Index = this.state.levelNumber + 1;
+    const data = {
+      levelNumber: levelNumber1Index,
+      levelName: this.state.levelName,
+      submission: this.state.submission,
+    };
+    const uri = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data));
+    const filename = `assignment-${levelNumber1Index}.sol`;
+    let anchor = document.getElementById("download-anchor");
+    anchor.setAttribute("href", uri);
+    anchor.setAttribute("download", filename);
+    anchor.click();
+  }
+  importHandler = event => {
+    const fileList = event.target.files;
+    var file = null;
+    if (fileList.length === 1) {
+      file = fileList[0];
+    }
+    event.target.value = "";
+    if (file) {
+      const reader = new FileReader();
+      reader.addEventListener("load", event => {
+        const result = event.target.result;
+        let json = {};
+        try {
+          json = JSON.parse(result);
+        } catch (error) {}
+        if (typeof json === "object" && json !== null) {
+          const levelNumber = json.levelNumber;
+          const levelName = json.levelName;
+          const submission = json.submission;
+          if (typeof levelNumber === "number" && typeof levelName === "string" && typeof submission === "string") {
+            if (levelName === this.state.levelName) {
+              this.loadSubmission(submission);
+            } else {
+              this.setState({error: "Error: Wrong assignment."});
+            }
+            return;
+          }
+        }
+        this.setState({error: "Error: Not a valid solution file."});
+      });
+      reader.readAsText(file);
     }
   }
 
