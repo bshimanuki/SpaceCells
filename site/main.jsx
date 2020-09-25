@@ -13,6 +13,7 @@ import EmbindingsWASM from "./embindings.wasm";
 
 const MAX_HISTORY = 1000;
 const NUM_LEVELS_TO_INITIALIZE_INSTRUCTIONS = 2;
+const NUM_TUTORIAL_LEVELS = 4;
 
 function nest(seq, value, obj={}, overwrite=true, start=0) {
   if (start === seq.length) {
@@ -26,6 +27,21 @@ function nest(seq, value, obj={}, overwrite=true, start=0) {
 function getNested(obj, seq, start=0) {
   if (start === seq.length) return obj;
   return getNested(obj[seq[start]], seq, start + 1);
+}
+
+function countOnes(x) {
+  let k = 0;
+  while (x) {
+    k += x & 1;
+    x >>= 1;
+  }
+  return k;
+}
+
+function numUnlockedLevels(levelsSolved) {
+  const numSolved = countOnes(levelsSolved);
+  if (numSolved < NUM_TUTORIAL_LEVELS) return numSolved + 1;
+  return Math.min(Levels.levels.length, numSolved + 2)
 }
 
 function mockNormal(mu, maxV) {
@@ -123,18 +139,18 @@ function svgForCell(c) {
 const botColors = ["red", "blue"];
 
 const symbolTypesCellSymbol = [
-  {type: "cellSymbol", keyboard: "q", availableFrom: 1, subtype: "/", value: "/", svg: Svgs.XCell, className: "resolved-1 latched"},
-  {type: "cellSymbol", keyboard: "w", availableFrom: 1, subtype: "\\", value: "\\", svg: Svgs.XCell, className: "resolved-0 latched"},
+  {type: "cellSymbol", keyboard: "q", availableFrom: 2, subtype: "/", value: "/", svg: Svgs.XCell, className: "resolved-1 latched"},
+  {type: "cellSymbol", keyboard: "w", availableFrom: 2, subtype: "\\", value: "\\", svg: Svgs.XCell, className: "resolved-0 latched"},
   {type: "cellSymbol", keyboard: "e", availableFrom: 0, subtype: "x", value: "x", svg: Svgs.XCell, className: "resolved-x unlatched"},
   {type: "cellSymbol", keyboard: "r", availableFrom: 1, subtype: "+", value: "+", svg: Svgs.PlusCell, className: "resolved-x unlatched"},
-  {type: "cellSymbol", keyboard: "a", availableFrom: 1, subtype: "-", value: "-", svg: Svgs.PlusCell, className: "resolved-1 latched"},
-  {type: "cellSymbol", keyboard: "s", availableFrom: 1, subtype: "|", value: "|", svg: Svgs.PlusCell, className: "resolved-0 latched"},
-  {type: "cellSymbol", keyboard: "df", availableFrom: 1, subtype: "][", value: "][", svg: Svgs.HorizontalCell, multi: "horizontal"},
-  {type: "cellSymbol", keyboard: "tg", availableFrom: 1, subtype: "W\nM", value: "WM", svg: Svgs.VerticalCell, multi: "vertical"},
-  {type: "cellSymbol", keyboard: "yu", availableFrom: 1, subtype: "<x", value: "<x", svg: Svgs.DiodeLeft, multi: "horizontal"},
-  {type: "cellSymbol", keyboard: "ik", availableFrom: 1, subtype: "x\nv", value: "xv", svg: Svgs.DiodeDown, multi: "vertical"},
-  {type: "cellSymbol", keyboard: "ol", availableFrom: 1, subtype: "^\nx", value: "^x", svg: Svgs.DiodeUp, multi: "vertical"},
-  {type: "cellSymbol", keyboard: "hj", availableFrom: 1, subtype: "x>", value: "x>", svg: Svgs.DiodeRight, multi: "horizontal"},
+  {type: "cellSymbol", keyboard: "a", availableFrom: 2, subtype: "-", value: "-", svg: Svgs.PlusCell, className: "resolved-1 latched"},
+  {type: "cellSymbol", keyboard: "s", availableFrom: 2, subtype: "|", value: "|", svg: Svgs.PlusCell, className: "resolved-0 latched"},
+  {type: "cellSymbol", keyboard: "df", availableFrom: 2, subtype: "][", value: "][", svg: Svgs.HorizontalCell, multi: "horizontal"},
+  {type: "cellSymbol", keyboard: "tg", availableFrom: 2, subtype: "W\nM", value: "WM", svg: Svgs.VerticalCell, multi: "vertical"},
+  {type: "cellSymbol", keyboard: "yu", availableFrom: 2, subtype: "<x", value: "<x", svg: Svgs.DiodeLeft, multi: "horizontal"},
+  {type: "cellSymbol", keyboard: "ik", availableFrom: 2, subtype: "x\nv", value: "xv", svg: Svgs.DiodeDown, multi: "vertical"},
+  {type: "cellSymbol", keyboard: "ol", availableFrom: 2, subtype: "^\nx", value: "^x", svg: Svgs.DiodeUp, multi: "vertical"},
+  {type: "cellSymbol", keyboard: "hj", availableFrom: 2, subtype: "x>", value: "x>", svg: Svgs.DiodeRight, multi: "horizontal"},
 ];
 const symbolTypesDirection = [
   {type: "direction", keyboard: "a", availableFrom: 0, subtype: "<", value: "<", svg: Svgs.DirectionLeft},
@@ -489,16 +505,19 @@ function parseSubmission(submission, m, n) {
 
 class Game extends React.Component {
   constructor(props) {
-    // TODO: get from server
-    const levelsUnlocked = Number(localStorage.getItem("levels-unlocked")) || 1;
     super(props);
+    // TODO: get from server
+    const levelsSolved = Number(localStorage.getItem("levels-solved")) || 0;
+    let firstUnsolved = 0;
+    while (levelsSolved & (1 << firstUnsolved)) ++firstUnsolved;
     this.state = {
       // level data
-      levelNumber: levelsUnlocked - 1,
-      levelName: Levels.levels[levelsUnlocked - 1].name,
+      levelNumber: firstUnsolved,
+      levelName: Levels.levels[firstUnsolved].name,
       levelData: null,
       background: null,
-      levelsUnlocked: levelsUnlocked,
+      levelsSolved: levelsSolved,
+      levelsUnlocked: numUnlockedLevels(levelsSolved),
       // submission data
       squares: Array.from({length: this.props.m}, e => Array.from({length: this.props.n}, makeEmptySquare)),
       submission: "",
@@ -618,7 +637,7 @@ class Game extends React.Component {
               readOnly
             />
             <label htmlFor={`radio-level-${Levels.levels[i].name}`} className={this.state.levelNumber === i ? "unclickable" : "clickable"}>
-              {Levels.levels[i].name === "epilogue" ? Levels.levels[i].title : `Assignment ${i+1}: ${Levels.levels[i].title}`}
+              <span className={`assignment-title ${this.state.levelsSolved & (1 << i) ? "solved" : "unsolved"}`}>{Levels.levels[i].name === "epilogue" ? Levels.levels[i].title : `Assignment ${i+1}: ${Levels.levels[i].title}`}</span>
             </label>
           </React.Fragment>
           )}
@@ -628,7 +647,7 @@ class Game extends React.Component {
           <div style={{paddingBottom: "60px"}}/>
           <input className="clickable level-button reset-button" type="button" value="Reset Board" onClick={this.clearBoardHandler}/>
           {/* TODO: replace with "Load Last Solution" */}
-          <input className={`clickable level-button load-solution ${this.state.levelNumber < this.state.levelsUnlocked - 1 ? "visible" : "hidden"}`} type="button" value="Load Last Solution (example for now)" onClick={this.loadLastSolutionHandler}/>
+          <input className={`clickable level-button load-solution ${this.state.levelsSolved & (1 << this.state.levelNumber) ? "visible" : "hidden"}`} type="button" value="Load Last Solution (example for now)" onClick={this.loadLastSolutionHandler}/>
         </div>
       </div>
     </>;
@@ -773,7 +792,8 @@ class Game extends React.Component {
     classNames = classNames.join(" ");
     return <>
       <h1 className="game-title">SpaceCells</h1>
-      <div id="main-content" style={{display:"flex"}} className={classNames}>
+      <div id="main-content" style={{display:"flex"}} className={classNames}
+        onDragEnter={this.trashDragOver} onDragOver={this.trashDragOver} onDragLeave={this.trashDragOver} onDrop={this.trashDragOver}>
         {this.renderLevelSidebar()}
         {this.renderCenter()}
         {this.renderStatsSidebar()}
@@ -1416,6 +1436,7 @@ class Game extends React.Component {
   }
 
   dragOverHandler = (event, {y, x, special, onDrop}) => {
+    event.stopPropagation();
     if (!this.state.draggedSymbolState.value) return;
     if (special) {
       switch (event.type) {
@@ -1540,9 +1561,10 @@ class Game extends React.Component {
             symbols: state.numSymbols,
           },
         };
-        if (state.levelNumber >= state.levelsUnlocked - 1) {
-          newState.levelsUnlocked = state.levelNumber + 2;
-          localStorage.setItem("levels-unlocked", newState.levelsUnlocked);
+        if (!(state.levelsSolved & (1 << state.levelNumber))) {
+          newState.levelsSolved = state.levelsSolved | (1 << state.levelNumber);
+          newState.levelsUnlocked = numUnlockedLevels(newState.levelsSolved);
+          localStorage.setItem("levels-solved", newState.levelsSolved);
         }
         return newState;
       });

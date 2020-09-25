@@ -428,14 +428,14 @@ body {
 .dragging .selected > * {
   opacity: 0.25;
 }
-.dragging.dragover-trash .selected > :not(.start) {
+.dragging.dragover-trash .symbol.selected > :not(.start) {
   opacity: 0.5;
 }
-.dragging.dragover-trash .selected > :not(.start) svg .cell-border,
-.dragging.dragover-trash .selected > :not(.start) svg .bot-fill {
+.dragging.dragover-trash .symbol.selected > :not(.start) svg .cell-border,
+.dragging.dragover-trash .symbol.selected > :not(.start) svg .bot-fill {
   fill: red;
 }
-.dragging.dragover-trash .selected > :not(.start) svg .bot-stroke {
+.dragging.dragover-trash .symbol.selected > :not(.start) svg .bot-stroke {
   stroke: red
 }
 .square.dragover .square-drag-overlay {
@@ -466,7 +466,7 @@ body {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding-left: 16px;
+  padding-left: 1ex;
   border-radius: 10px 0 0 10px;
   border: 2px solid #444;
   border-right-style: none;
@@ -481,6 +481,13 @@ body {
   box-shadow: none;
 }
 .level-button {
+}
+.assignment-title::before {
+  content: "★ ";
+  color: yellow;
+}
+.assignment-title.unsolved::before {
+  visibility: hidden;
 }
 
 /* results modal */

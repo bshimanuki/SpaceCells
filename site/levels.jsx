@@ -21,12 +21,12 @@ const LevelNot = <>
   <p>Turn the output green when the input is blue and blue when the input is green.</p>
 </>;
 
-const LevelAnd = <>
-  <p>Given two inputs, output blue if they are both blue and green otherwise.</p>
-</>;
-
 const LevelCrossing = <>
   <p>Propagate the top input to the bottom output and the bottom input to the top output.</p>
+</>;
+
+const LevelAnd = <>
+  <p>Given two inputs, output blue if they are both blue and green otherwise.</p>
 </>;
 
 const LevelDelay = <>
@@ -89,10 +89,16 @@ const IntroNot = <>
     <Svgs.DirectionUp className="bot0"/>
     <Svgs.DirectionRight className="bot0"/>
   </div>
-  <p>You can check out the Reference for a complete description of cells and instructions.</p>
+  <p>You can check out the Manual for a complete description of cells and instructions.</p>
+</>;
+
+const IntroCrossing = <>
+  <p>You are on your own this time for placing instructions.</p>
+  <p>There's no excitement like a little switcheroo.</p>
 </>;
 
 const IntroAnd = <>
+  <p>You will be placing your own instructions from now on. Check the Instructions tabs.</p>
   <p>I have found a truly marvelous demonstration of this configuration, which this note is too small to contain.</p>
   <div className="gridlines" style={{display:"grid", gridTemplateColumns:"repeat(5, min-content)"}}>
     <div/><div/><Svgs.DiodeDown/><div/><div/>
@@ -103,15 +109,13 @@ const IntroAnd = <>
   </div>
 </>;
 
-const IntroCrossing = <>
-  <p>You are on your own this time for placing instructions.</p>
-</>;
-
 const IntroDelay = <>
-  <p>Cells innately have no memories, but you know bots, they never forget a thing. Check the Instructions tabs for access to most instructions.</p>
+  <p>Most instructions are now available. Check the Manual for descriptions.</p>
+  <p>Cells innately have no memories, but you know bots, they never forget a thing.</p>
 </>;
 
 const IntroSwitch = <>
+  <p>From here on, you will have multiple assignments available at a time.</p>
   <p>You can use the POWER instructions to toggle the power to the outputs.</p>
   <div className="row-line">
     <Svgs.Power0 className="bot0"/>
@@ -137,18 +141,18 @@ export const levels = [
     preface: IntroNot,
   },
   {
-    name: "and",
-    title: "Unity",
-    data: require("../examples/and.lvl").default,
-    goal: LevelAnd,
-    preface: IntroAnd,
-  },
-  {
     name: "crossing",
     title: "X Crossing",
     data: require("../examples/crossing.lvl").default,
     goal: LevelCrossing,
     preface: IntroCrossing,
+  },
+  {
+    name: "and",
+    title: "Unity",
+    data: require("../examples/and.lvl").default,
+    goal: LevelAnd,
+    preface: IntroAnd,
   },
   {
     name: "delay",

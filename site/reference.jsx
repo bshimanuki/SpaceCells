@@ -24,7 +24,7 @@ const OL = (props={}) => <Svgs.PlusCell className={`latched resolved-0 ${props.c
 
 function Reference() {
   return <div className="reference information">
-    <h1>Reference</h1>
+    <h1>Manual</h1>
     <p>In this world, you are building systems of cells manipulated by bots. Bots move and follow instructions every cycle, with the eventual goal of using the input cells to construct a correct polarities at the output cells.</p>
 
     <h2>Controls</h2>
