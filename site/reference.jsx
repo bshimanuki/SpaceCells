@@ -79,8 +79,9 @@ function Reference() {
     </div>
     <p>Diode cells consist of two sets of square cavities, where the polarity of the source square determines the polarity of the destination square in the direction of the arrow.</p>
 
-    <h2>Unresolved Cells</h2>
-    <p>Cells whose polarity does not stabilize to one polarity or the other are considered unresolved. Unresolved cells will cause other cells that depend on them to also be unresolved. You will receive an error if branching or outputting is attempted on an unresolved cell. The middle two cells here are unresolved.</p>
+    <h2>Indeterminable Cells</h2>
+    <p>Cells whose polarity does not stabilize to one polarity or the other are considered indeterminable. Indeterminable cells will cause other cells that depend on them to also be indeterminable.</p>
+    <p><b>You will receive an error if branching or outputting is attempted on an indeterminable cell.</b> The middle two cells here are indeterminable.</p>
     <div className="gridlines" style={{display:"grid", gridTemplateColumns:"repeat(6, min-content)"}}>
       <Empty/><Empty/><Empty/><Empty/><Empty/><Empty/>
       <Empty/><BL/><X/><X/><GL/><Empty/>
@@ -91,7 +92,7 @@ function Reference() {
     <p>There are two bots: one red and one blue. Each bot moves according to direction instructions and performs actions based on operational instructions. Instructions are laid out on the grid, and bots operate based on the instructions on their current loation. Each grid space can have up to one direction instruction and one operation instruction for each bot.</p>
 
     <h2>Instructions</h2>
-    <p>Instructions that operate on a cell will be a no-op if there is no cell or if the cell does not match the valid types for the instruction.</p>
+    <p>Instructions that operate on a cell activate on the cell in the bot's square whether held or on the ground. This will be a no-op if there is no cell or if the cell does not match the valid types for the instruction.</p>
 
     <h3>Direction Instructions</h3>
     <div className="row-line">

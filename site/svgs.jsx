@@ -470,7 +470,7 @@ export function CleanCrystalTile(props) {
 export function SvgDefs() {
   const pattern = <Hatch fill="#abc"/>;
   const crystalPattern = <Star dx={0.25} fill="#cba"/>;
-  const cleanCrystalPattern = <Star dx={0.25} fill="#fba"/>;
+  const cleanCrystalPattern = <Star dx={0.25} fill="#dba"/>;
   return (
     <svg width={0} height={0}>
       <Pattern id="tile-pattern">

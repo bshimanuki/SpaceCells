@@ -89,47 +89,56 @@ const IntroNot = <>
     <Svgs.DirectionUp className="bot0"/>
     <Svgs.DirectionRight className="bot0"/>
   </div>
-  <p>You can check out the Manual for a complete description of cells and instructions.</p>
+  <p>You can check out the <em>Manual</em> for a complete description of cells and instructions.</p>
 </>;
 
 const IntroCrossing = <>
-  <p>You are on your own this time for placing instructions.</p>
-  <p>There's no excitement like a little switcheroo.</p>
+  <div class="note">
+    <p>There's no excitement like a little switcheroo.</p>
+  </div>
 </>;
 
 const IntroAnd = <>
-  <p>You will be placing your own instructions from now on. Check the Instructions tabs.</p>
-  <p>I have found a truly marvelous demonstration of this configuration, which this note is too small to contain.</p>
-  <div className="gridlines" style={{display:"grid", gridTemplateColumns:"repeat(5, min-content)"}}>
-    <div/><div/><Svgs.DiodeDown/><div/><div/>
-    <div/><div/><div/><div/>
-    <Svgs.DiodeRight/><Svgs.XCell/><Svgs.XCell/><Svgs.XCell/>
-    <div/><div/><Svgs.DiodeUp/><div/><div/>
-    <div/><div/><div/><div/>
+  <p>You will be placing your own instructions from now on. Check the <em>Instructions</em> tabs.</p>
+  <div class="note">
+    <p>I have found a truly marvelous demonstration of this configuration, which this note is too small to contain.</p>
+    <div className="gridlines" style={{display:"grid", gridTemplateColumns:"repeat(5, min-content)"}}>
+      <div/><div/><Svgs.DiodeDown/><div/><div/>
+      <div/><div/><div/><div/>
+      <Svgs.DiodeRight/><Svgs.XCell/><Svgs.XCell/><Svgs.XCell/>
+      <div/><div/><Svgs.DiodeUp/><div/><div/>
+      <div/><div/><div/><div/>
+    </div>
   </div>
 </>;
 
 const IntroDelay = <>
-  <p>Most instructions are now available. Check the Manual for descriptions.</p>
-  <p>Cells innately have no memories, but you know bots, they never forget a thing.</p>
+  <p>Most instructions are now available. Check the <em>Manual</em> for descriptions.</p>
+  <div class="note">
+    <p>Cells innately have no memories, but you know bots, they never forget a thing.</p>
+  </div>
 </>;
 
 const IntroSwitch = <>
   <p>From here on, you will have multiple assignments available at a time.</p>
-  <p>You can use the POWER instructions to toggle the power to the outputs.</p>
-  <div className="row-line">
-    <Svgs.Power0 className="bot0"/>
-    <Svgs.Power0 className="bot1"/>
-    <Svgs.Power1 className="bot0"/>
-    <Svgs.Power1 className="bot1"/>
+  <div class="note">
+    <p>You can use the POWER instructions to toggle the power to the outputs.</p>
+    <div className="row-line">
+      <Svgs.Power0 className="bot0"/>
+      <Svgs.Power0 className="bot1"/>
+      <Svgs.Power1 className="bot0"/>
+      <Svgs.Power1 className="bot1"/>
+    </div>
+    <p>Only powered outputs emit light. Both outputs start powered.</p>
   </div>
-  <p>Only powered outputs emit light. Both outputs start powered.</p>
 </>;
 
 export const Epilogue = <>
   <h2>Epilogue</h2>
-  <p>This is a final farewell. I am leaving in search of crystalized lattices which will allow for lightspeed computations. I have included a diagram here for you. With these at the table, we will have a key element towards advancing to the next age of innovation.</p>
-  <Svgs.CleanCrystalTile/>
+  <div class="note">
+    <p>This is a final farewell. I am leaving in search of crystalized lattices which will allow for lightspeed computations. I have included a diagram here for you. With these at the table, we will have a key element towards advancing to the next age of innovation.</p>
+    <Svgs.CleanCrystalTile/>
+  </div>
 </>;
 
 export const levels = [

@@ -39,6 +39,19 @@
   grid-row-end: span 2;
 }
 
+.information .note {
+  margin: 0 10%;
+  padding: 1em 10%;
+  background-color: #fe6;
+  filter: drop-shadow(4px 4px 4px black);
+}
+
 .level-info .row-line, .level-info .gridlines {
   justify-content: center;
+}
+
+.epilogue {
+  position: absolute;
+  width: 100%;
+  padding: 30px;
 }

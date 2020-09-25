@@ -108,6 +108,21 @@ function isTextBox(element) {
   return inputTypes.includes(type);
 }
 
+function unquartered(symbolState, y, x, quarter) {
+  const symbolType = symbolTypeByState(symbolState);
+  switch (symbolType.multi) {
+  case "horizontal":
+    if (!(quarter & 1)) x = Math.max(0, x - 1);
+    break;
+  case "vertical":
+    if (!(quarter & 2)) y = Math.max(0, y - 1);
+    break;
+  default:
+    break;
+  }
+  return [y, x];
+}
+
 function matchLocation(object, y, x) {
   let location = (object || {}).location || {};
   return location.valid && location.y === y && location.x === x;
@@ -322,15 +337,23 @@ class Symbol extends React.PureComponent {
   }
 }
 
-class Square extends React.PureComponent {
+class SquareQuarter extends React.PureComponent {
   clickHandler = event => {
-    this.props.clickHandler(event, this.props.y, this.props.x, null, null);
+    this.props.clickHandler(event, this.props.y, this.props.x, null, this.props.quarter);
   }
 
   dragOverHandler = event => {
-    this.props.dragOverHandler(event, {y: this.props.y, x: this.props.x});
+    this.props.dragOverHandler(event, {y: this.props.y, x: this.props.x, quarter: this.props.quarter});
   }
 
+  render() {
+    return (
+      <div className="square-quarter" onClick={this.clickHandler} onDragEnter={this.dragOverHandler} onDragOver={this.dragOverHandler} onDragLeave={this.dragOverHandler} onDrop={this.dragOverHandler}/>
+    );
+  }
+}
+
+class Square extends React.PureComponent {
   renderSymbol(props) {
     const selected = props.symbolState.selected;
     return (
@@ -390,11 +413,13 @@ class Square extends React.PureComponent {
       }
     }
     return (
-      <div className={classNames} onClick={this.clickHandler} onDragEnter={this.dragOverHandler} onDragOver={this.dragOverHandler} onDragLeave={this.dragOverHandler} onDrop={this.dragOverHandler}>
+      <div className={classNames}>
         <div className="square-background">
           {background}
         </div>
-        <div className="square-underlay"/>
+        <div className="square-underlay">
+          {Array.from({length: 4}).map((_, i) => <SquareQuarter key={i} quarter={i} {...this.props}/>)}
+        </div>
         <div className={`square-overlay ${cellBotClassNames}`}>
           {outputSymbol && <div className="output-symbol">{outputSymbol}</div>}
           <Svgs.CellBot/>
@@ -731,7 +756,7 @@ class Game extends React.Component {
     const mainHidden = this.state.levelName === "epilogue" ? "hidden" : "";
     return <>
       <div className="center-column">
-        {this.state.levelName === "epilogue" && <div className="epilogue">{Levels.Epilogue}</div>}
+        {this.state.levelName === "epilogue" && <div className="epilogue information">{Levels.Epilogue}</div>}
         <div className={`center-content ${mainHidden}`} style={{display:"flex", flexDirection:"column", alignItems:"center", width:"min-content"}}>
           <div style={{display:"flex", width:"min-content"}} className="game-board">
             <Board
@@ -1039,7 +1064,7 @@ class Game extends React.Component {
     );
   }
 
-  boardClickHandler = (event, y, x, symbolState) => {
+  boardClickHandler = (event, y, x, symbolState, quarter) => {
     if (this.state.simState !== "stop") return;
     if (this.state.heldKey) {
       let keyboardSymbolState = null;
@@ -1049,6 +1074,7 @@ class Game extends React.Component {
         if (symbolType.keyboard.includes(this.state.heldKey)) keyboardSymbolState = symbolState;
       }
       if (keyboardSymbolState) {
+        [y, x] = unquartered(keyboardSymbolState, y, x, quarter);
         this.copyOrMoveSymbols(keyboardSymbolState, [y, x], {noSelected: true});
         return;
       }
@@ -1071,6 +1097,7 @@ class Game extends React.Component {
     } else {
       if (this.state.selectedSymbolStates.size === 1) {
         const selectedSymbolState = this.state.selectedSymbolStates.values().next().value;
+        [y, x] = unquartered(selectedSymbolState, y, x, quarter);
         this.copyOrMoveSymbols(selectedSymbolState, [y, x]);
         return;
       }
@@ -1435,7 +1462,7 @@ class Game extends React.Component {
     }
   }
 
-  dragOverHandler = (event, {y, x, special, onDrop}) => {
+  dragOverHandler = (event, {y, x, quarter, special, onDrop}) => {
     event.stopPropagation();
     if (!this.state.draggedSymbolState.value) return;
     if (special) {
@@ -1472,6 +1499,7 @@ class Game extends React.Component {
         break;
       }
     } else {
+      [y, x] = unquartered(this.state.draggedSymbolState, y, x, quarter);
       let fits = true;
       this.state.selectedSymbolStates.forEach(symbolState => {
         if (symbolState.onBoard) {

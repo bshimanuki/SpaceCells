@@ -72,11 +72,17 @@ body {
   height: 60px;
   width: 60px;
 }
-.square-overlay,.square-underlay,.square-drag-overlay,.square-background {
+.square-overlay,.square-underlay,.square-drag-overlay,.square-background,.square-inset {
   position: absolute;
   width: 100%;
   height: 100%;
   pointer-events: none;
+}
+.square-underlay {
+  pointer-events: auto;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(2, 1fr);
 }
 .square-background {
   outline: 1px solid #000;
@@ -95,15 +101,6 @@ body {
 }
 .square-drag-overlay {
   z-index: 5;
-}
-.square-inset {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  /* width: calc(100% - 6px); */
-  /* height: calc(100% - 6px); */
-  /* top: 3px; */
-  /* left: 3px; */
 }
 .square-inset.horizontal {
   width: 200%;
@@ -581,17 +578,6 @@ body {
   font-size: larger;
 }
 .goal-content {
-}
-
-/* epilogue */
-.epilogue {
-  position: absolute;
-  width: 100%;
-  padding: 30px;
-}
-.epilogue svg {
-  height: 60px;
-  width: 60px;
 }
 
 /* debug sidebar */
