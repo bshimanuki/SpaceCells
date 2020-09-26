@@ -38,7 +38,8 @@ body {
 }
 .left-sidebar {
   /* padding: 0 1%; */
-  width: 15%;
+  width: 20%;
+  padding-left: 5%;
 }
 .center-column{
   position: relative;
@@ -58,7 +59,7 @@ body {
 
 /* board */
 .board {
-  background: beige;
+  background-color: beige;
   display: flex;
   flex-direction: column;
   font-family: monospace, sans-serif;
@@ -96,7 +97,7 @@ body {
   margin-top: 100%;
   width: 100%;
   text-align: center;
-  color: lightgray;
+  color: #222;
   user-select: none;
 }
 .square-drag-overlay {
@@ -119,7 +120,7 @@ body {
   align-items: center;
   background-color: tan;
 }
-.symbol-options-bar { background: tan; }
+.symbol-options-bar { background-color: tan; }
 .symbol-bar {
   border-radius: 0 0 20px 20px;
   overflow: hidden;
@@ -147,6 +148,7 @@ body {
 }
 .symbolgroup {
   padding-top: 100%;
+  border-radius: 5px;
 }
 .symbolgroup.horizontal {
   padding-top: 50%;
@@ -206,7 +208,7 @@ body {
   height: 100%;
 }
 .symbol-options-grid input:checked + label svg {
-  filter: drop-shadow(0 0 1vmin black);
+  /* filter: drop-shadow(0 0 1vmin black); */
 }
 .symbol-options-title {
   font-weight: bold;
@@ -248,8 +250,24 @@ body {
 .symbolgroup.selected {
   filter: drop-shadow(0 0 1vmin black);
 }
-.symbolgroup.key-held {
-  filter: drop-shadow(0 0 1vmin black);
+.symbol-option {
+  border-radius: 5px;
+  filter: none;
+}
+.symbol-option.selected {
+  background-color: rgba(0, 0, 0, 0.5);
+  box-shadow: 0 0 0.5vmin black;
+  filter: brightness(80%);
+}
+.symbol-option.clickable:hover {
+  background-color: rgba(0, 0, 0, 0.2);
+  box-shadow: 0 0 0.5vmin cornflowerblue;
+  filter: brightness(80%);
+}
+.symbolgroup.available.key-held {
+  /* filter: drop-shadow(0 0 1vmin black); */
+  background-color: rgba(0, 0, 0, 0.4);
+  filter: brightness(80%);
 }
 /* .bot0 .square-overlay, .bot1 .square-overlay { */
   /* border-style: solid; */
@@ -272,10 +290,7 @@ body {
 
 /* boundary cells */
 .untrespassable:not(.input):not(.output) {
-  background: saddlebrown;
-}
-.input,.output {
-  background: honeydew;
+  background-image: linear-gradient(to right, lightgray,#000,#333,#777,#aaa,#ccc,#ddd,#ccc,#aaa,#777,#333,#000,lightgray);
 }
 .output.unpowered svg { opacity: 0.5 }
 .output.powered .square-underlay {

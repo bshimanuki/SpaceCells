@@ -1085,6 +1085,8 @@ class Game extends React.Component {
         if (symbolType.keyboard.includes(this.state.heldKey)) keyboardSymbolState = symbolState;
       }
       if (keyboardSymbolState) {
+        const keyboardSymbolType = symbolTypeByState(keyboardSymbolState);
+        if (keyboardSymbolType.availableFrom >= this.state.levelsUnlocked) return;
         [y, x] = unquartered(keyboardSymbolState, y, x, quarter);
         this.copyOrMoveSymbols(keyboardSymbolState, [y, x], {noSelected: true});
         return;
@@ -1698,6 +1700,7 @@ class SymbolGroup extends React.PureComponent {
     let classNames = [];
     classNames.push("image-container");
     classNames.push("symbolgroup");
+    if (available) classNames.push("available");
     classNames.push(symbolState.type);
     classNames.push(`symbol-${symbolState.value}`);
     classNames.push(available && !this.props.symbolState.selected ? "clickable" : "unclickable")
@@ -1738,7 +1741,7 @@ class OptionItem extends React.PureComponent {
     const checked = this.props.selectedSymbolState && this.props.selectedSymbolState.value === this.props.value;
     console.log(this.props.value, checked);
     return (
-      <div className={checked ? "selected unclickable" : "clickable"} key={`radio-option-${this.props.option}`}>
+      <div className={`symbol-option ${checked ? "selected unclickable" : "clickable"}`} key={`radio-option-${this.props.option}`}>
         <input type="radio" id={`radio-${this.props.value}`} value={this.props.value} name={`radio-for-${this.props.subtype}`}
           checked={checked}
           onChange={this.props.changeOption}
