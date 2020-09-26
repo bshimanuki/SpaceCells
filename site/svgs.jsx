@@ -72,7 +72,7 @@ function XCellFill({x, y, offset, r1, r0, padding, ...props}) {
   offset *= 1 - padding;
   r1 *= 1 - padding;
   r0 *= 1 - padding;
-  return <g className="cell-fill cell-x">
+  return <g className="cell-fill">
     <circle className="circle-1" cx={x-offset} cy={y+offset} r={r1} {...props}/>
     <circle className="circle-1" cx={x+offset} cy={y-offset} r={r1} {...props}/>
     <circle className="circle-0" cx={x-offset} cy={y-offset} r={r0} {...props}/>
@@ -92,7 +92,7 @@ function PlusCellFill({x, y, offset, r1, r0, padding, ...props}) {
   offset *= 1 - padding;
   r1 *= 1 - padding;
   r0 *= 1 - padding;
-  return <g className="cell-fill cell-plus">
+  return <g className="cell-fill">
     <circle className="circle-1" cx={x-offset} cy={0} r={r1} {...props}/>
     <circle className="circle-1" cx={x+offset} cy={0} r={r1} {...props}/>
     <circle className="circle-0" cx={0} cy={x-offset} r={r0} {...props}/>
@@ -123,10 +123,10 @@ export function PlusCell({w, h, _className, className, ...props}) {
 }
 PlusCell.defaultProps = {w:1, h:1, _className:"cell-plus", className:""};
 export function HorizontalCell(props) {
-  return <XCell _className="horizontal cell-horizontal" w={2} {...props}/>;
+  return <XCell _className="cell-x horizontal cell-horizontal" w={2} {...props}/>;
 }
 export function VerticalCell(props) {
-  return <XCell _className="vertical cell-vertical" h={2} {...props}/>;
+  return <XCell _className="cell-x vertical cell-vertical" h={2} {...props}/>;
 }
 
 function Diode({dx, dy, headDistance, headLength, headAngle, className, ...props}) {
@@ -134,7 +134,7 @@ function Diode({dx, dy, headDistance, headLength, headAngle, className, ...props
   let y = dy * headDistance;
   let w = dx ? 2 : 1;
   let h = dy ? 2 : 1;
-  return <Svg w={w} h={h} className={`diode ${className}`} {...props}>
+  return <Svg w={w} h={h} className={`diode cell-x ${className}`} {...props}>
     <CellBorder w={w} h={h}/>
     <Arrow x1={-x} y1={-y} x2={x} y2={y} headLength={headLength} headAngle={headAngle} drawTail/>;
     <XCellFill x={-dx} y={-dy}/>
