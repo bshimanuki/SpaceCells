@@ -447,6 +447,9 @@ body {
 }
 
 /* drag n drop */
+.dragging.dragover-trash {
+  cursor: wait;
+}
 .dragging .selected > * {
   opacity: 0.25;
 }
@@ -461,12 +464,13 @@ body {
   stroke: red
 }
 .square.dragover .square-drag-overlay {
-  background-color: red;
-  opacity: 0.5;
+  background-color: rgba(255, 0, 0, 0.5);
 }
 .dragover-fits .square.dragover .square-drag-overlay {
-  background-color: green;
-  opacity: 0.5;
+  background-color: rgba(0, 255, 0, 0.5);
+}
+.rectangleSelected .square-drag-overlay {
+  background-color: rgba(0, 0, 255, 0.5);
 }
 
 /* level selection */

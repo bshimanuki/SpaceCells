@@ -42,7 +42,7 @@ const LevelXor = <>
 </>;
 
 const LevelRam = <>
-  <p>You have a blue/green input and a red/orange input. There is a red cubbie and a orange cubbie that each start with a blue light. Each step, use the bottom input to put the top input into that cubbie and output the color that was there before.</p>
+  <p>You have a blue/green input and a red/orange input. You should output the color of the top input the previous time the bottom input was that color. The first time red is input and the first time orange is input, you should output blue.</p>
 </>;
 
 const LevelRainbow = <>
@@ -58,7 +58,7 @@ const LevelAdder = <>
 </>;
 
 const LevelBattle = <>
-  <p>The top input is for a blue player and the bottom input is for a green player. The game starts neutral. A player fires by inputting blue. Whenever a player fires, the state moves one step in the direction of the player (green, white, blue) or stays the same if already at an end. If both players fire, they both lose and you should output purple once and reset the state to neutral.</p>
+  <p>Simulate the status of a game with a blue player using the top input and a green player using the bottom input. The game starts neutral (white). A player fires their gun by inputting red. If exactly one player fires, the state moves one step in the direction of that player (green, white, blue) or stays the same if already the color of that player. If neither fires, nothing happens. If both players fire, they both lose and you should output purple and reset the state to neutral.</p>
 </>;
 
 const LevelStack = <>
@@ -93,14 +93,14 @@ const IntroNot = <>
 </>;
 
 const IntroCrossing = <>
-  <div class="note">
+  <div className="note">
     <p>There's no excitement like a little switcheroo.</p>
   </div>
 </>;
 
 const IntroAnd = <>
   <p>You will be placing your own instructions from now on. Check the <em>Instructions</em> tabs.</p>
-  <div class="note">
+  <div className="note">
     <p>I have found a truly marvelous demonstration of this configuration, which this note is too small to contain.</p>
     <div className="gridlines" style={{display:"grid", gridTemplateColumns:"repeat(5, min-content)"}}>
       <div/><div/><Svgs.DiodeDown/><div/><div/>
@@ -114,14 +114,14 @@ const IntroAnd = <>
 
 const IntroDelay = <>
   <p>Most instructions are now available. Check the <em>Manual</em> for descriptions.</p>
-  <div class="note">
+  <div className="note">
     <p>Cells innately have no memories, but you know bots, they never forget a thing.</p>
   </div>
 </>;
 
 const IntroSwitch = <>
   <p>From here on, you will have multiple assignments available at a time.</p>
-  <div class="note">
+  <div className="note">
     <p>You can use the POWER instructions to toggle the power to the outputs.</p>
     <div className="row-line">
       <Svgs.Power0 className="bot0"/>
@@ -135,7 +135,7 @@ const IntroSwitch = <>
 
 export const Epilogue = <>
   <h2>Epilogue</h2>
-  <div class="note">
+  <div className="note">
     <p>This is a final farewell. I am leaving in search of crystalized lattices which will allow for lightspeed computations. I have included a diagram here for you. With these at the table, we will have a key element towards advancing to the next age of innovation.</p>
     <Svgs.CleanCrystalTile/>
   </div>

@@ -29,7 +29,8 @@ function Reference() {
 
     <h2>Controls</h2>
     <p>The bottom bar contains cell and instruction symbols, which you can place on the grid by clicking or dragging. (Alternatively, you can hold the top two rows of a QWERTY keyboard to select and then click to place.)</p>
-    <p>Symbols on the grid can be dragged around or removed by dragging to or clicking the trash can. Hold Shift while clicking to select multiple symbols. The START symbols can be moved but not removed.</p>
+    <p>Symbols on the grid can be dragged around or removed by clicking the trash can or dragging off the grid. Hold Shift while clicking to select multiple symbols. You can also select a rectangle of symbols at a time.</p>
+    <p>The START symbols can be moved but not removed.</p>
     <p>Run your system by using the playback toggles. (There are also keyboard shortcuts for the symbol type with keys 1-3 and playback with keys 4-0.)</p>
     <p>Ctrl+Z and Ctrl+Shift+Z will undo/redo, and Delete/Backspace will remove the selected symbols.</p>
 

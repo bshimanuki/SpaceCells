@@ -109,16 +109,18 @@ function isTextBox(element) {
 }
 
 function unquartered(symbolState, y, x, quarter) {
-  const symbolType = symbolTypeByState(symbolState);
-  switch (symbolType.multi) {
-  case "horizontal":
-    if (!(quarter & 1)) x = Math.max(0, x - 1);
-    break;
-  case "vertical":
-    if (!(quarter & 2)) y = Math.max(0, y - 1);
-    break;
-  default:
-    break;
+  if (quarter !== undefined) {
+    const symbolType = symbolTypeByState(symbolState);
+    switch (symbolType.multi) {
+    case "horizontal":
+      if (!(quarter & 1)) x = Math.max(0, x - 1);
+      break;
+    case "vertical":
+      if (!(quarter & 2)) y = Math.max(0, y - 1);
+      break;
+    default:
+      break;
+    }
   }
   return [y, x];
 }
@@ -342,13 +344,28 @@ class SquareQuarter extends React.PureComponent {
     this.props.clickHandler(event, this.props.y, this.props.x, null, this.props.quarter);
   }
 
+  dragHandler = event => {
+    this.props.dragHandler(event, null, this.props.y, this.props.x);
+  }
+
   dragOverHandler = event => {
     this.props.dragOverHandler(event, {y: this.props.y, x: this.props.x, quarter: this.props.quarter});
   }
 
   render() {
     return (
-      <div className="square-quarter" onClick={this.clickHandler} onDragEnter={this.dragOverHandler} onDragOver={this.dragOverHandler} onDragLeave={this.dragOverHandler} onDrop={this.dragOverHandler}/>
+      <div
+        className="square-quarter"
+        onClick={this.clickHandler}
+        onDragStart={this.dragHandler}
+        onDrag={this.dragHandler}
+        onDragEnd={this.dragHandler}
+        onDragEnter={this.dragOverHandler}
+        onDragOver={this.dragOverHandler}
+        onDragLeave={this.dragOverHandler}
+        onDrop={this.dragOverHandler}
+        draggable
+      />
     );
   }
 }
@@ -373,6 +390,10 @@ class Square extends React.PureComponent {
     );
   }
 
+  dragOverHandler = event => {
+    this.props.dragOverHandler(event, {y: this.props.y, x: this.props.x});
+  }
+
   render() {
     var classNames = [];
     classNames.push("square");
@@ -385,6 +406,8 @@ class Square extends React.PureComponent {
       classNames.push(this.props.powered ? "powered" : "unpowered");
     }
     if (this.props.dragOver) classNames.push("dragover");
+    if (this.props.rectangleSelected) classNames.push("rectangleSelected");
+
     classNames = classNames.join(" ");
     var cellBotClassNames = [];
     if (this.props.bot0) cellBotClassNames.push("bot0");
@@ -413,7 +436,13 @@ class Square extends React.PureComponent {
       }
     }
     return (
-      <div className={classNames}>
+      <div
+        className={classNames}
+        onDragEnter={this.dragOverHandler}
+        onDragOver={this.dragOverHandler}
+        onDragLeave={this.dragOverHandler}
+        onDrop={this.dragOverHandler}
+      >
         <div className="square-background">
           {background}
         </div>
@@ -442,6 +471,7 @@ class Square extends React.PureComponent {
 class Board extends React.PureComponent {
   renderSquare(props) {
     const dragOver = ((this.props.dragOverSet || {})[props.y] || {})[props.x];
+    const rectangleSelected = this.props.draggedSymbolState && (props.y - this.props.draggedSymbolState.y0) * (props.y - this.props.draggedSymbolState.y1) <= 0 && (props.x - this.props.draggedSymbolState.x0) * (props.x - this.props.draggedSymbolState.x1) <= 0;
     return (<Square
       key={props.y,props.x}
       clickHandler={this.props.clickHandler}
@@ -449,6 +479,7 @@ class Board extends React.PureComponent {
       dragOverHandler={this.props.dragOverHandler}
       simBoard={this.props.simBoard}
       dragOver={dragOver}
+      rectangleSelected={rectangleSelected}
       stopped={this.props.stopped}
       heldShift={this.props.heldShift}
       flipflop={dragOver && this.props.flipflop}
@@ -676,7 +707,7 @@ class Game extends React.Component {
             <span>Import Grid</span>
           </label>
           <div style={{paddingBottom: "40px"}}/>
-          <input className="clickable level-button reset-button" type="button" value="Reset Board" onClick={this.clearBoardHandler}/>
+          <input className="clickable level-button reset-button" type="button" value="Reset Grid" onClick={this.clearBoardHandler}/>
           {/* TODO: replace with "Load Last Solution" */}
           <input className={`clickable level-button load-solution ${this.state.levelsSolved & (1 << this.state.levelNumber) ? "visible" : "hidden"}`} type="button" value="Load Last Solution (example for now)" onClick={this.loadLastSolutionHandler}/>
         </div>
@@ -774,6 +805,7 @@ class Game extends React.Component {
               dragHandler={this.dragHandler}
               dragOverHandler={this.dragOverHandler}
               dragOverSet={this.state.dragOverSet}
+              draggedSymbolState={this.state.draggedSymbolState}
               simBoard={this.state.validBoard || this.state.cycle}
               stopped={this.state.simState==="stop"}
               heldShift={this.state.heldShift}
@@ -817,9 +849,9 @@ class Game extends React.Component {
 
   render() {
     let classNames = [];
-    if (this.state.draggedSymbolState.value) classNames.push("dragging");
+    if (this.state.draggedSymbolState.value && this.state.draggedSymbolState.value !== "rectangleSelected") classNames.push("dragging");
     if (this.state.dragOverFits) classNames.push("dragover-fits");
-    if (this.state.dragOverPosition) classNames.push("dragover-active");
+    if (this.state.dragOverPosition || this.state.draggedSymbolState.value === "rectangleSelected") classNames.push("dragover-active");
     if (this.state.dragOverPosition === "trash") classNames.push("dragover-trash");
     if (this.selectedOnBoard()) classNames.push("selected-on-board");
     if (this.state.wasNext) classNames.push(`output-color-${this.state.lastColor}`);
@@ -827,13 +859,20 @@ class Game extends React.Component {
     if (this.state.simState !== "stop") classNames.push("sim-running");
     classNames = classNames.join(" ");
     return <>
-      <h1 className="game-title">SpaceCells</h1>
-      <div id="main-content" style={{display:"flex"}} className={classNames}
-        onDragEnter={this.trashDragOver} onDragOver={this.trashDragOver} onDragLeave={this.trashDragOver} onDrop={this.trashDragOver}>
-        {this.renderLevelSidebar()}
-        {this.renderCenter()}
-        {this.renderStatsSidebar()}
-        <Svgs.SvgDefs/>
+      <div
+        className={classNames}
+        onDragEnter={this.trashDragOver}
+        onDragOver={this.trashDragOver}
+        onDragLeave={this.trashDragOver}
+        onDrop={this.trashDragOver}
+      >
+        <h1 className="game-title">SpaceCells</h1>
+        <div id="main-content" style={{display:"flex"}}>
+          {this.renderLevelSidebar()}
+          {this.renderCenter()}
+          {this.renderStatsSidebar()}
+          <Svgs.SvgDefs/>
+        </div>
       </div>
     </>;
   }
@@ -983,29 +1022,60 @@ class Game extends React.Component {
   }
 
   // keepOldAndToggle used for shift select
-  setSelected = (symbolState, keepOldAndToggle=false) => {
-    const symbolType = symbolTypeByState(symbolState);
+  setSelected = (symbolState, keepOldAndToggle=false, symbolStates=[symbolState]) => {
     this.setState((state, props) => {
       let newState = keepOldAndToggle ? state : this.getClearSelected(state, props);
-      if (keepOldAndToggle && getNested(newState, symbolState.trace).selected) {
-        newState.selectedSymbolStates = update(newState.selectedSymbolStates, {$remove: [getNested(newState, symbolState.trace)]});
-        newState = update(newState, nest(symbolState.trace, {selected: {$set: false}}));
-        if (symbolState.onBoard) {
-          const [y, x] = symbolState.trace.slice(1, 3);
-          if (symbolType.multi === "horizontal") newState = update(newState, nest(["squares", y, x+1, ...symbolState.trace.slice(3)], {selected: {$set: false}}));
-          else if (symbolType.multi === "vertical") newState = update(newState, nest(["squares", y+1, x, ...symbolState.trace.slice(3)], {selected: {$set: false}}));
+      for (const symbolState of symbolStates) {
+        const symbolType = symbolTypeByState(symbolState);
+        if (keepOldAndToggle && getNested(newState, symbolState.trace).selected) {
+          newState.selectedSymbolStates = update(newState.selectedSymbolStates, {$remove: [getNested(newState, symbolState.trace)]});
+          newState = update(newState, nest(symbolState.trace, {selected: {$set: false}}));
+          if (symbolState.onBoard) {
+            const [y, x] = symbolState.trace.slice(1, 3);
+            if (symbolType.multi === "horizontal") newState = update(newState, nest(["squares", y, x+1, ...symbolState.trace.slice(3)], {selected: {$set: false}}));
+            else if (symbolType.multi === "vertical") newState = update(newState, nest(["squares", y+1, x, ...symbolState.trace.slice(3)], {selected: {$set: false}}));
+          }
+        } else {
+          newState = update(newState, nest(symbolState.trace, {selected: {$set: true}}));
+          if (symbolState.onBoard) {
+            const [y, x] = symbolState.trace.slice(1, 3);
+            if (symbolType.multi === "horizontal") newState = update(newState, nest(["squares", y, x+1, ...symbolState.trace.slice(3)], {selected: {$set: true}}));
+            else if (symbolType.multi === "vertical") newState = update(newState, nest(["squares", y+1, x, ...symbolState.trace.slice(3)], {selected: {$set: true}}));
+          }
+          newState.selectedSymbolStates = update(newState.selectedSymbolStates, {$add: [getNested(newState, symbolState.trace)]});
         }
-      } else {
-        newState = update(newState, nest(symbolState.trace, {selected: {$set: true}}));
-        if (symbolState.onBoard) {
-          const [y, x] = symbolState.trace.slice(1, 3);
-          if (symbolType.multi === "horizontal") newState = update(newState, nest(["squares", y, x+1, ...symbolState.trace.slice(3)], {selected: {$set: true}}));
-          else if (symbolType.multi === "vertical") newState = update(newState, nest(["squares", y+1, x, ...symbolState.trace.slice(3)], {selected: {$set: true}}));
-        }
-        newState.selectedSymbolStates = update(newState.selectedSymbolStates, {$add: [getNested(newState, symbolState.trace)]});
       }
       return newState;
     });
+  }
+
+  setRectangleSelected = draggedSymbolState => {
+    const y0 = Math.min(draggedSymbolState.y0, draggedSymbolState.y1);
+    const x0 = Math.min(draggedSymbolState.x0, draggedSymbolState.x1);
+    const y1 = Math.max(draggedSymbolState.y0, draggedSymbolState.y1);
+    const x1 = Math.max(draggedSymbolState.x0, draggedSymbolState.x1);
+    if (!isNaN(y0) && !isNaN(x0) && !isNaN(y1) && !isNaN(x1)) {
+      let newState = {};
+      const symbolStates = this.state.squares.slice(y0, y1 + 1).map((row, dy) => row.slice(x0, x1 + 1).map((square, dx) => this.state.inputs.concat(this.state.outputs).some(square => matchLocation(square, y0 + dy, x0 + dx)) ? [] : [square.cellSymbol, square.direction, square.operation].flat().filter(symbolState => symbolState.value)).flat()).flat();
+      let traces = new Set();
+      const dedupedSymbolStates = [];
+      for (const symbolState of symbolStates) {
+        const key = JSON.stringify(symbolState.trace);
+        if (!traces.has(key)) {
+          traces.add(key);
+          dedupedSymbolStates.push(symbolState);
+        }
+      }
+      const unselectedSymbolStates = dedupedSymbolStates.filter(symbolState => !symbolState.selected);
+      const allSelected = unselectedSymbolStates.length === 0;
+      if (dedupedSymbolStates) {
+        if (allSelected) {
+          this.setSelected(null, true, dedupedSymbolStates);
+        } else {
+          this.setSelected(null, true, unselectedSymbolStates);
+        }
+      }
+    }
   }
 
   jointSymbolTypeHandler = value => {
@@ -1453,32 +1523,84 @@ class Game extends React.Component {
     }
   }
 
-  dragHandler = (event, symbolState) => {
+  dragHandler = (event, symbolState, y, x) => {
     if (this.state.simState !== "stop") {
       event.preventDefault();
       return;
     }
-    switch (event.type) {
-    case "dragstart":
-      let symbolType = symbolTypeByState(symbolState);
-      if (symbolState.onBoard) event.dataTransfer.effectAllowed = "move";
-      else event.dataTransfer.effectAllowed = "copy";
-      if (!symbolState.selected) this.setSelected(symbolState);
-      this.setState({draggedSymbolState: symbolState});
-      break;
-    case "drag":
-      break;
-    case "drop": // control received from dragOverHandler
-    case "dragend":
-      this.setState({draggedSymbolState: nullSymbolState});
-      break;
+    if (symbolState) {
+      switch (event.type) {
+      case "dragstart":
+        let symbolType = symbolTypeByState(symbolState);
+        if (symbolState.onBoard) event.dataTransfer.effectAllowed = "move";
+        else event.dataTransfer.effectAllowed = "copy";
+        if (!symbolState.selected) this.setSelected(symbolState);
+        this.setState({draggedSymbolState: symbolState});
+        break;
+      case "drag":
+        break;
+      case "drop": // control received from dragOverHandler
+      case "dragend":
+        this.setState({draggedSymbolState: nullSymbolState});
+        break;
+      }
+    } else {
+      switch (event.type) {
+      case "dragstart":
+        event.dataTransfer.setDragImage(new Image(), 0, 0);
+        const shiftKey = event.shiftKey;
+        this.setState((state, props) => {
+          let newState = {};
+          if (!shiftKey) newState = this.getClearSelected(state, props);
+          newState.draggedSymbolState = {
+            value: "rectangleSelected",
+            y0: y,
+            x0: x,
+            y1: y,
+            x1: x,
+            shift: shiftKey,
+          };
+          return newState;
+        });
+        break;
+      case "drag":
+        break;
+      case "drop": // control received from dragOverHandler
+      case "dragend":
+        this.setState({draggedSymbolState: nullSymbolState});
+        break;
+      }
     }
   }
 
   dragOverHandler = (event, {y, x, quarter, special, onDrop}) => {
     event.stopPropagation();
     if (!this.state.draggedSymbolState.value) return;
-    if (special) {
+    if (this.state.draggedSymbolState.value === "rectangleSelected") {
+      switch (event.type) {
+      case "dragenter":
+        event.preventDefault(); // allow drop
+        if (y === undefined || x === undefined) return;
+        this.setState((state, props) => ({
+          draggedSymbolState: update(state.draggedSymbolState, {
+            y1: {$set: y},
+            x1: {$set: x},
+            quarter1: {$set: quarter},
+          }),
+        }));
+        break;
+      case "dragover":
+        event.preventDefault(); // allow drop
+        break;
+      case "drop":
+        this.setRectangleSelected(this.state.draggedSymbolState);
+        // dragend doesn't trigger, so trigger it manually
+        this.dragHandler(event, this.state.draggedSymbolState);
+        // waterfall
+      case "dragleave":
+        break;
+      }
+    } else if (special) {
       switch (event.type) {
       case "dragenter":
         event.preventDefault(); // allow drop
