@@ -58,7 +58,7 @@ const LevelAdder = <>
 </>;
 
 const LevelBattle = <>
-  <p>Simulate the status of a game with a blue player using the top input and a green player using the bottom input. The game starts neutral (white). A player fires their gun by inputting red. If exactly one player fires, the state moves one step in the direction of that player (green, white, blue) or stays the same if already the color of that player. If neither fires, nothing happens. If both players fire, they both lose and you should output purple and reset the state to neutral.</p>
+  <p>Simulate the status of a game with a blue player using the top input and a green player using the bottom input. The game starts neutral (white). A player fires their gun by inputting red. If exactly one player fires, the state moves one step in the direction of that player (green, white, blue) or stays the same if already the color of that player. If neither fires, nothing changes. If both players fire, they both lose and you should output purple and reset the state to neutral.</p>
 </>;
 
 const LevelStack = <>

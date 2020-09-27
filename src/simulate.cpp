@@ -6,6 +6,7 @@
 #include <functional>
 #include <iostream>
 #include <queue>
+#include <set>
 #include <sstream>
 #include <string>
 #include <stack>
@@ -1073,6 +1074,112 @@ int Board::get_num_symbols() const {
   symbols -= inputs.size();
   symbols -= outputs.size();
   return symbols;
+}
+
+static uint8_t segment(const Direction &moving, const Direction &to) {
+  switch (moving) {
+  case Direction_::NONE:
+    switch (to) {
+    case Direction_::NONE:
+      return 0;
+    case Direction_::LEFT:
+      return 1 << Path::LEFT;
+    case Direction_::DOWN:
+      return 1 << Path::DOWN;
+    case Direction_::RIGHT:
+      return 1 << Path::RIGHT;
+    case Direction_::UP:
+      return 1 << Path::UP;
+    }
+  case Direction_::LEFT:
+    switch (to) {
+    case Direction_::NONE:
+    case Direction_::RIGHT:
+      return 1 << Path::RIGHT;
+    case Direction_::LEFT:
+      return (1 << Path::LEFT) | (1 << Path::RIGHT);
+    case Direction_::DOWN:
+      return 1 << Path::DOWNRIGHT;
+    case Direction_::UP:
+      return 1 << Path::UPRIGHT;
+    }
+  case Direction_::DOWN:
+    switch (to) {
+    case Direction_::NONE:
+    case Direction_::UP:
+      return 1 << Path::UP;
+    case Direction_::DOWN:
+      return (1 << Path::DOWN) | (1 << Path::UP);
+    case Direction_::LEFT:
+      return 1 << Path::UPLEFT;
+    case Direction_::RIGHT:
+      return 1 << Path::UPRIGHT;
+    }
+  case Direction_::RIGHT:
+    switch (to) {
+    case Direction_::NONE:
+    case Direction_::LEFT:
+      return 1 << Path::LEFT;
+    case Direction_::RIGHT:
+      return (1 << Path::LEFT) | (1 << Path::RIGHT);
+    case Direction_::DOWN:
+      return 1 << Path::DOWNLEFT;
+    case Direction_::UP:
+      return 1 << Path::UPLEFT;
+    }
+  case Direction_::UP:
+    switch (to) {
+    case Direction_::NONE:
+    case Direction_::DOWN:
+      return 1 << Path::DOWN;
+    case Direction_::UP:
+      return (1 << Path::DOWN) | (1 << Path::UP);
+    case Direction_::LEFT:
+      return 1 << Path::DOWNLEFT;
+    case Direction_::RIGHT:
+      return 1 << Path::DOWNRIGHT;
+    }
+  }
+  return 0;
+}
+
+std::vector<Grid<uint8_t>> Board::get_paths() const {
+  std::vector<Grid<uint8_t>> paths(nbots, {m, n});
+  for (auto &grid : paths) grid.memset(0);
+  for (size_t k=0; k<nbots; ++k) {
+    std::set<Bot> done;
+    std::queue<Bot> que;
+    for (int y=0; y<static_cast<int>(m); ++y) for (int x=0; x<static_cast<int>(n); ++x) {
+      if (operations[k][y][x].type == Operation::Type::START) {
+        Bot bot({y, x});
+        bot.moving = Direction_::NONE;
+        done.insert(bot);
+        que.push(bot);
+      }
+    }
+    while (!que.empty()) {
+      Bot bot = que.front();
+      que.pop();
+      const Operation &op = operations[k].at(bot.location);
+      std::vector<Direction> nexts;
+      if (op.type == Operation::Type::BRANCH) nexts.push_back(op.direction);
+      Direction direction = directions[k].at(bot.location);
+      if (!direction) direction = bot.moving;
+      if (!direction) direction = Bot().moving;
+      nexts.push_back(direction);
+      for (const Direction &direction : nexts) {
+        paths[k].at(bot.location) |= segment(bot.moving, direction);
+        Bot next(bot);
+        next.moving = direction;
+        next.location = bot.location + direction;
+        if (paths[k].valid(next.location) && trespassable.at(next.location) && !done.count(next)) {
+          done.insert(next);
+          que.push(next);
+        }
+      }
+    }
+  }
+  return paths;
 }
 
 } // namespace puzzle

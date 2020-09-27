@@ -11,6 +11,7 @@ EMSCRIPTEN_BINDINGS(puzzle_bindings) {
     .constructor<size_t, size_t, size_t>()
     .property("m", &Board::get_m)
     .property("n", &Board::get_n)
+    .property("nbots", &Board::get_nbots)
     .function("get_bots", &Board::get_bots)
     .function("get_inputs", &Board::get_inputs)
     .function("get_outputs", &Board::get_outputs)
@@ -24,6 +25,7 @@ EMSCRIPTEN_BINDINGS(puzzle_bindings) {
     .property("step", &Board::get_step)
     .property("cycle", &Board::get_cycle)
     .function("get_cells", &Board::get_cells)
+    .function("get_paths", &Board::get_paths)
     .function("add_input", &Board::add_input)
     .function("add_output", &Board::add_output)
     .function("set_input_bits", &Board::set_input_bits)
@@ -64,6 +66,17 @@ EMSCRIPTEN_BINDINGS(puzzle_bindings) {
   class_<Direction>("Direction")
     .constructor<char>()
     .property("as_char", &Direction::operator char)
+    ;
+
+  enum_<Path_>("Path")
+    .value("LEFT", static_cast<Path_>(Path::LEFT))
+    .value("DOWN", static_cast<Path_>(Path::DOWN))
+    .value("RIGHT", static_cast<Path_>(Path::RIGHT))
+    .value("UP", static_cast<Path_>(Path::UP))
+    .value("DOWNLEFT", static_cast<Path_>(Path::DOWNLEFT))
+    .value("DOWNRIGHT", static_cast<Path_>(Path::DOWNRIGHT))
+    .value("UPLEFT", static_cast<Path_>(Path::UPLEFT))
+    .value("UPRIGHT", static_cast<Path_>(Path::UPRIGHT))
     ;
 
   enum_<Status>("Status")
@@ -140,6 +153,10 @@ EMSCRIPTEN_BINDINGS(puzzle_bindings) {
     .function("at", static_cast<char&(Grid<char>::*)(size_t, size_t)>(&Grid<char>::at))
     ;
 
+  class_<Grid<uint8_t>>("Grid<uint8_t>")
+    .function("at", static_cast<uint8_t&(Grid<uint8_t>::*)(size_t, size_t)>(&Grid<uint8_t>::at))
+    ;
+
   register_vector<uint8_t>("vector<uint8_t>");
   register_vector<std::vector<uint8_t>>("vector<vector<uint8_t>>");
   register_vector<std::vector<std::vector<uint8_t>>>("vector<vector<vector<uint8_t>>>");
@@ -148,4 +165,5 @@ EMSCRIPTEN_BINDINGS(puzzle_bindings) {
   register_vector<Output>("vector<Output>");
   register_vector<Color>("vector<Color>");
   register_vector<std::vector<Color>>("vector<vector<Color>>");
+  register_vector<Grid<uint8_t>>("vector<Grid<uint8_t>>");
 }

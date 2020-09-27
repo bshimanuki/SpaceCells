@@ -449,6 +449,20 @@ class Square extends React.PureComponent {
         <div className="square-underlay">
           {Array.from({length: 4}).map((_, i) => <SquareQuarter key={i} quarter={i} {...this.props}/>)}
         </div>
+        <div className="square-paths">
+          {(this.props.paths || []).map((paths, k) => {
+            let path = {};
+            if (paths & (1 << Module.Path.LEFT.value)) path.left = true;
+            if (paths & (1 << Module.Path.DOWN.value)) path.down = true;
+            if (paths & (1 << Module.Path.RIGHT.value)) path.right = true;
+            if (paths & (1 << Module.Path.UP.value)) path.up = true;
+            if (paths & (1 << Module.Path.DOWNLEFT.value)) path.downleft = true;
+            if (paths & (1 << Module.Path.DOWNRIGHT.value)) path.downright = true;
+            if (paths & (1 << Module.Path.UPLEFT.value)) path.upleft = true;
+            if (paths & (1 << Module.Path.UPRIGHT.value)) path.upright = true;
+            return <Svgs.Path key={k} path={path} className={`symbol-shift bot${k}`}/>;
+          })}
+        </div>
         <div className={`square-overlay ${cellBotClassNames}`}>
           {outputSymbol && <div className="output-symbol">{outputSymbol}</div>}
           <Svgs.CellBot/>
@@ -499,6 +513,7 @@ class Board extends React.PureComponent {
               y: y,
               x: x,
               cell: ((this.props.cells || {})[y] || {})[x],
+              paths: ((this.props.paths || {})[y] || {})[x],
               background: ((this.props.background || {})[y] || {})[x],
               trespassable: ((this.props.trespassable || {})[y] || {})[x],
               bot0: matchLocation(this.props.bots[0], y, x),
@@ -583,6 +598,7 @@ class Game extends React.Component {
       board: null, // Emscripten pointer
       cells: [], // 2D array of Emscripten pointers
       trespassable: [], // 2D array of bools
+      paths: [], // (y, x, bot) -> uint8_t
       bots: [null, null], // converted to javascript objects
       levelGrid: [], // array of chars
       inputs: [], // converted to javascript objects
@@ -815,6 +831,7 @@ class Game extends React.Component {
               cells={this.state.cells}
               background={this.state.background}
               trespassable={this.state.trespassable}
+              paths={this.state.paths}
               inputs={this.state.inputs}
               outputs={this.state.outputs}
               levelGrid={this.state.levelGrid}
@@ -1321,6 +1338,11 @@ class Game extends React.Component {
         return cells.at(y, x);
       }));
       cells.delete();
+      var paths = state.board.get_paths();
+      var bot_paths = Array.from({length: state.board.nbots}).map((_, k) => paths.get(k));
+      newState.paths = Array.from({length: state.board.m}).map((_, y) => Array.from({length: state.board.n}).map((_, x) => Array.from({length: state.board.nbots}).map((_, k) => bot_paths[k].at(y, x))));
+      for (let _bot_paths of bot_paths) _bot_paths.delete();
+      paths.delete();
       // output power is dynamic
       var outputs = state.board.get_outputs();
       newState.outputs = Array.from({length: outputs.size()}).map((_, i) => outputs.get(i));

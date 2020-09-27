@@ -128,3 +128,9 @@
   stroke: black;
   stroke-width: 0.2;
 }
+
+.path {
+  stroke-width: 0.025;
+  fill: none;
+  opacity: 75%;
+}

@@ -361,6 +361,29 @@ export function RightArrow(props) {
   );
 }
 
+export function Path({path, radius, className, props}) {
+  const r = radius;
+  return (
+    <Svg className={`path ${className}`} {...props}>
+      <g className="bot-stroke">
+        {path.up && <line x1={0} y1={0} x2={0} y2={-1}/>}
+        {path.down && <line x1={0} y1={0} x2={0} y2={1}/>}
+        {path.left && <line x1={0} y1={0} x2={-1} y2={0}/>}
+        {path.right && <line x1={0} y1={0} x2={1} y2={0}/>}
+        {path.upleft && <path d={`M 0 -1 L 0 ${-r} A ${r} ${r} 0 0 1 ${-r} 0 L -1 0`}/>}
+        {path.upright && <path d={`M 0 -1 L 0 ${-r} A ${r} ${r} 0 0 0 ${r} 0 L 1 0`}/>}
+        {path.downleft && <path d={`M 0 1 L 0 ${r} A ${r} ${r} 0 0 0 ${-r} 0 L -1 0`}/>}
+        {path.downright && <path d={`M 0 1 L 0 ${r} A ${r} ${r} 0 0 1 ${r} 0 L 1 0`}/>}
+      </g>
+    </Svg>
+  );
+}
+Path.defaultProps = {
+  path: {},
+  className: "",
+  radius: 0.2,
+};
+
 function Star(props) {
   const dx = props.dx;
   return (

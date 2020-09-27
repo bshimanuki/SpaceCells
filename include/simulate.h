@@ -146,6 +146,30 @@ struct Location {
   }
   bool operator!=(const Location &oth) const { return !(*this == oth); }
   friend std::ostream& operator<<(std::ostream &os, const Location &location) { return os << "[" << location.y << "," << location.x << "]"; }
+  bool operator<(const Location &location) const {
+    if (valid < location.valid) return true;
+    if (location.valid < valid) return false;
+    if (y < location.y) return true;
+    if (location.y < y) return false;
+    if (x < location.x) return true;
+    if (location.x < x) return false;
+    return false;
+  }
+};
+
+
+enum Path_ {};
+struct Path {
+  enum { 
+    LEFT,
+    DOWN,
+    RIGHT,
+    UP,
+    DOWNLEFT,
+    DOWNRIGHT,
+    UPLEFT,
+    UPRIGHT,
+  };
 };
 
 
@@ -333,6 +357,17 @@ struct Bot {
       holding == bot.holding &&
       rotating == bot.rotating;
   }
+  bool operator<(const Bot &bot) const {
+    if (location < bot.location) return true;
+    if (bot.location < location) return false;
+    if (moving < bot.moving) return true;
+    if (bot.moving < moving) return false;
+    if (holding < bot.holding) return true;
+    if (bot.holding < holding) return false;
+    if (rotating < bot.rotating) return true;
+    if (bot.rotating < rotating) return false;
+    return false;
+  }
 };
 
 
@@ -495,6 +530,7 @@ class Board {
 public:
   size_t get_m() const { return m; }
   size_t get_n() const { return n; }
+  size_t get_nbots() const { return nbots; }
   const std::vector<Bot>& get_bots() const { return bots; }
   const std::vector<Input>& get_inputs() const { return inputs; }
   const std::vector<Output>& get_outputs() const { return outputs; }
@@ -544,6 +580,8 @@ public:
   std::pair<bool, bool> run(size_t max_cycles) { return run(max_cycles, nullptr); }
 
   // Output
+  // get paths
+  std::vector<Grid<uint8_t>> get_paths() const;
   // check status
   Status check_status() const;
   // read value of last error

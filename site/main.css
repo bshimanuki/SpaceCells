@@ -73,7 +73,7 @@ body {
   height: 60px;
   width: 60px;
 }
-.square-overlay,.square-underlay,.square-drag-overlay,.square-background,.square-inset {
+.square-overlay,.square-underlay,.square-drag-overlay,.square-background,.square-inset,.square-paths {
   position: absolute;
   width: 100%;
   height: 100%;
@@ -90,7 +90,11 @@ body {
   outline-offset: -1px;
 }
 .square-overlay {
-  z-index: 4;
+  z-index: 50;
+}
+.square-paths {
+  overflow: hidden;
+  z-index: 20;
 }
 .output-symbol {
   position: absolute;
@@ -101,7 +105,7 @@ body {
   user-select: none;
 }
 .square-drag-overlay {
-  z-index: 5;
+  z-index: 60;
 }
 .square-inset.horizontal {
   width: 200%;
@@ -215,9 +219,9 @@ body {
 }
 
 /* symbols */
-.symbol { z-index: 1; }
-.direction,.operation { z-index: 2; }
-.instruction.selected { z-index: 3; }
+.symbol { z-index: 10; }
+.direction,.operation { z-index: 30; }
+.instruction.selected { z-index: 40; }
 .image-container.symbol {
   position: absolute;
 }
@@ -234,10 +238,18 @@ body {
   width: 100%;
 }
 .symbol-shift.bot0 {
-  transform: scale(0.667) translate(-33%, -33%);
+  transform: translate(-22.5%, -22.5%) scale(0.667);
 }
 .symbol-shift.bot1 {
-  transform: scale(0.667) translate(33%, 33%);
+  transform: translate(22.5%, 22.5%) scale(0.667);
+}
+.symbol-shift.bot0.path {
+  transform: translate(-22.5%, -22.5%) scale(2);
+  overflow: hidden;
+}
+.symbol-shift.bot1.path {
+  transform: translate(22.5%, 22.5%) scale(2);
+  overflow: hidden;
 }
 
 /* cell and symbol highlights */
