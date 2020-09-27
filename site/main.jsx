@@ -866,6 +866,7 @@ class Game extends React.Component {
 
   render() {
     let classNames = [];
+    classNames.push("game-all");
     if (this.state.draggedSymbolState.value && this.state.draggedSymbolState.value !== "rectangleSelected") classNames.push("dragging");
     if (this.state.dragOverFits) classNames.push("dragover-fits");
     if (this.state.dragOverPosition || this.state.draggedSymbolState.value === "rectangleSelected") classNames.push("dragover-active");

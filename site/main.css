@@ -28,9 +28,19 @@ body {
   color: #000;
 }
 #game {
+  text-align: center;
+}
+#game > * {
+  text-align: initial;
+}
+.game-all {
+  display: inline-flex;
+  flex-direction: column;
+}
+.game-all > * {
+  margin: auto;
 }
 .game-title {
-  text-align: center;
 }
 #main-content {
   justify-content: center;
@@ -38,7 +48,7 @@ body {
 }
 .left-sidebar {
   /* padding: 0 1%; */
-  width: 20%;
+  width: 30%;
   padding-left: 5%;
 }
 .center-column{
@@ -54,7 +64,7 @@ body {
 }
 .stats-sidebar {
   padding: 0 1%;
-  width: 20%;
+  width: 30%;
 }
 
 /* board */
