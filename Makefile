@@ -3,8 +3,8 @@ SHELL := bash -O extglob
 CC = g++
 EMCC = em++
 
-PYTHON_VERSION = 3.8
-LBOOST_PYTHON = -lboost_python38
+PYTHON_VERSION = $(shell python3 -c "import sys;sys.stdout.write('{v[0]}.{v[1]}'.format(v=sys.version_info))")
+LBOOST_PYTHON = -lboost_python$(subst .,,$(PYTHON_VERSION))
 
 OPT_LVL += -O3
 # OPT_LVL += -g

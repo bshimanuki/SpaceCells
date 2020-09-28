@@ -11,6 +11,11 @@ Open a browser and go to `localhost:8000/build`.
 
 If you don't have python 3, you can run `python -m SimpleHTTPServer 8000` instead.
 
+## Build Dependencies
+The python bindings depend on Boost.Python. The wasm bindings depend on emscripten. The UI is built with React packaged with webpack via npm.
+
+On Ubuntu, you will need the `libboost-python-dev` package to use with python.
+
 ## Interface
 
 There are 3 different ways to input symbols.
