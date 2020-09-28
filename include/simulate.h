@@ -97,7 +97,7 @@ class Color {
 public:
   constexpr Color() : v() {}
   Color(Color_ v) : v(v) {}
-  Color(char c);
+  explicit Color(char c);
   operator Color_() const { return v; }
   explicit operator char() const;
   friend std::ostream& operator<<(std::ostream &os, const Color &color) {
@@ -160,7 +160,7 @@ struct Location {
 
 enum Path_ {};
 struct Path {
-  enum { 
+  enum {
     LEFT,
     DOWN,
     RIGHT,

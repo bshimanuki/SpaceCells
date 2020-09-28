@@ -527,7 +527,7 @@ bool Board::set_output_colors(const std::vector<std::string> &colors) {
   output_colors.resize(colors.size());
   for (size_t t=0; t<colors.size(); ++t) {
     output_colors[t].resize(colors[t].size());
-    std::copy(colors[t].begin(), colors[t].end(), output_colors[t].begin());
+    std::transform(colors[t].begin(), colors[t].end(), output_colors[t].begin(), [](char c){ return Color(c); });
   }
   return false;
 }
@@ -963,7 +963,7 @@ bool Board::move() {
     last_color = Color_::BLACK;
     for (const auto& output : outputs) {
       if (output.power) {
-        last_color = last_color + Color(cells.at(output.location));
+        last_color = last_color + cells.at(output.location).operator Color();
       }
     }
     if (last_color == Color_::INVALID) {
