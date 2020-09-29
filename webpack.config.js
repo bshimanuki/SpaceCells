@@ -7,7 +7,7 @@ var HTMLWebpackPluginConfig = new HTMLWebpackPlugin({
 });
 
 module.exports = {
-  entry: __dirname + '/site/main.jsx',
+  entry: __dirname + '/site/inject.jsx',
   output: {
     filename: 'bundle.js',
     path: __dirname + '/build'

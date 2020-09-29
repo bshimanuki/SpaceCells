@@ -1,3 +1,7 @@
+import React from "react";
+
+export default <style>{`
+
 * {
   font-family: Verdana;
   box-sizing: border-box;
@@ -658,3 +662,5 @@ body {
 #submission {
   height: 20em;
 }
+
+`}</style>

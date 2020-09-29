@@ -1,3 +1,7 @@
+import React from "react";
+
+export default <style>{`
+
 .symbol svg, .symbolgroup svg {
   position: absolute;
   top: 50%;
@@ -134,3 +138,5 @@
   fill: none;
   opacity: 75%;
 }
+
+`}</style>

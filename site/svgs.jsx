@@ -1,7 +1,5 @@
 import React from "react";
 
-import "./svgs.css";
-
 // Cells are overlaid over grid squares without padding and we take care of padding here.
 // This is necessary for sizing to be correct on cells spanning multiple squares.
 const PADDING = 0.06;

@@ -7,8 +7,10 @@ import * as Charts from "@data-ui/histogram";
 import * as Svgs from "./svgs.jsx";
 import * as Levels from "./levels.jsx";
 import Reference from "./reference.jsx";
-import "./main.css"; // after svgs with its own css
-import Embindings from "./embindings.js";
+import SvgsStyle from "./svgs-style.jsx";
+import InfoStyle from "./info-style.jsx";
+import MainStyle from "./main-style.jsx"; // after svgs with its own css
+// import Embindings from "./embindings.js";
 import EmbindingsWASM from "./embindings.wasm";
 
 const MAX_HISTORY = 1000;
@@ -70,18 +72,22 @@ function makeMockData() {
 const mockData = makeMockData();
 
 var Module;
-const EmbindingsLoader = Embindings({
-  locateFile: () => EmbindingsWASM,
-});
-EmbindingsLoader.then((core) => {
-  Module = core;
-  ReactDOM.render(
-    <Game m={10} n={12}/>,
-    document.getElementById("game")
-  );
-  Modal.setAppElement("#game");
-  console.log("loaded");
-});
+export function loadModule(callback) {
+  const Embindings = require("./embindings.js");
+  const EmbindingsLoader = Embindings({
+    locateFile: () => EmbindingsWASM,
+  });
+  EmbindingsLoader.then((core) => {
+    Module = core;
+    // ReactDOM.render(
+      // <Game m={10} n={12}/>,
+      // document.getElementById("game")
+    // );
+    Modal.setAppElement("#game");
+    if (callback) callback();
+    console.log("loaded");
+  });
+}
 
 const startSquares = [
   [2, 5], // red
@@ -574,77 +580,84 @@ function parseSubmission(submission, m, n) {
   return [null, squares];
 };
 
-class Game extends React.Component {
+export class Game extends React.Component {
   constructor(props) {
     super(props);
-    // TODO: get from server
-    const levelsSolved = Number(localStorage.getItem("levels-solved")) || 0;
-    let firstUnsolved = 0;
-    while (levelsSolved & (1 << firstUnsolved)) ++firstUnsolved;
     this.state = {
-      // level data
-      levelNumber: firstUnsolved,
-      levelName: Levels.levels[firstUnsolved].name,
-      levelData: null,
-      background: null,
-      levelsSolved: levelsSolved,
-      levelsUnlocked: numUnlockedLevels(levelsSolved),
-      // submission data
-      squares: Array.from({length: this.props.m}, e => Array.from({length: this.props.n}, makeEmptySquare)),
-      submission: "",
-      submissionHistory: [],
-      submissionFuture: [],
-      // backend
-      board: null, // Emscripten pointer
-      cells: [], // 2D array of Emscripten pointers
-      trespassable: [], // 2D array of bools
-      paths: [], // (y, x, bot) -> uint8_t
-      bots: [null, null], // converted to javascript objects
-      levelGrid: [], // array of chars
-      inputs: [], // converted to javascript objects
-      outputs: [], // converted to javascript objects
-      inputBits: [], // (test_case, input, step) -> bool
-      outputColors: [], // (test_case, step) -> char
-      lastColor: null, // last output color as char
-      testCase: 0,
-      step: 0,
-      cycle: 0,
-      numSymbols: 0,
-      error: "", // if any errors
-      errorReason: null,
-      status: null, // from check_status()
-      validBoard: false, // set from reset_and_validate()
-      // simulation
-      simState: "stop",
-      simTimeout: null,
-      // selection
-      symbolType: "cellSymbol",
-      bot: 0,
-      selectedSymbolStates: new Set(),
-      selectionSymbolStateCellSymbols: initialSelectionSymbolStates("selectionSymbolStateCellSymbols", symbolTypesCellSymbol),
-      selectionSymbolStateInstructions: initialSelectionSymbolStates("selectionSymbolStateInstructions", [...symbolTypesDirection, ...symbolTypesOperation]),
-      // events
-      heldShift: null,
-      heldKey: null,
-      draggedSymbolState: nullSymbolState,
-      dragOverPosition: null,
-      dragOverPositionSemaphore: 0, // count dragenter vs dragleave (for children)
-      dragOverSet: null,
-      dragOverFits: false,
-      // state change indicator alternate between +/-1
-      flipflop: 1,
-      // modal (results and level information)
-      showModal: false,
-      lastResults: null,
-      modalLevelEnd: false,
-      modalPage: 0, // -1 for results, 0 for info
+      doneLoading: false,
     };
   }
 
   componentDidMount() {
-    window.addEventListener("keydown", this.keyboardHandler)
-    window.addEventListener("keyup", this.keyboardHandler)
-    this.setLevelHandler({target: {value: this.state.levelNumber}});
+    loadModule(() => {
+      // TODO: get from server
+      const levelsSolved = Number(localStorage.getItem("levels-solved")) || 0;
+      let firstUnsolved = 0;
+      while (levelsSolved & (1 << firstUnsolved)) ++firstUnsolved;
+      this.setState({
+        doneLoading: true,
+        // level data
+        levelNumber: firstUnsolved,
+        levelName: Levels.levels[firstUnsolved].name,
+        levelData: null,
+        background: null,
+        levelsSolved: levelsSolved,
+        levelsUnlocked: numUnlockedLevels(levelsSolved),
+        // submission data
+        squares: Array.from({length: this.props.m}, e => Array.from({length: this.props.n}, makeEmptySquare)),
+        submission: "",
+        submissionHistory: [],
+        submissionFuture: [],
+        // backend
+        board: null, // Emscripten pointer
+        cells: [], // 2D array of Emscripten pointers
+        trespassable: [], // 2D array of bools
+        paths: [], // (y, x, bot) -> uint8_t
+        bots: [null, null], // converted to javascript objects
+        levelGrid: [], // array of chars
+        inputs: [], // converted to javascript objects
+        outputs: [], // converted to javascript objects
+        inputBits: [], // (test_case, input, step) -> bool
+        outputColors: [], // (test_case, step) -> char
+        lastColor: null, // last output color as char
+        testCase: 0,
+        step: 0,
+        cycle: 0,
+        numSymbols: 0,
+        error: "", // if any errors
+        errorReason: null,
+        status: null, // from check_status()
+        validBoard: false, // set from reset_and_validate()
+        // simulation
+        simState: "stop",
+        simTimeout: null,
+        // selection
+        symbolType: "cellSymbol",
+        bot: 0,
+        selectedSymbolStates: new Set(),
+        selectionSymbolStateCellSymbols: initialSelectionSymbolStates("selectionSymbolStateCellSymbols", symbolTypesCellSymbol),
+        selectionSymbolStateInstructions: initialSelectionSymbolStates("selectionSymbolStateInstructions", [...symbolTypesDirection, ...symbolTypesOperation]),
+        // events
+        heldShift: null,
+        heldKey: null,
+        draggedSymbolState: nullSymbolState,
+        dragOverPosition: null,
+        dragOverPositionSemaphore: 0, // count dragenter vs dragleave (for children)
+        dragOverSet: null,
+        dragOverFits: false,
+        // state change indicator alternate between +/-1
+        flipflop: 1,
+        // modal (results and level information)
+        showModal: false,
+        lastResults: null,
+        modalLevelEnd: false,
+        modalPage: 0, // -1 for results, 0 for info
+      }, () => {
+        window.addEventListener("keydown", this.keyboardHandler)
+        window.addEventListener("keyup", this.keyboardHandler)
+        this.setLevelHandler({target: {value: this.state.levelNumber}});
+      });
+    });
   }
 
   componentWillUnmount() {
@@ -865,6 +878,7 @@ class Game extends React.Component {
   }
 
   render() {
+    if (!this.state.doneLoading) return null;
     let classNames = [];
     classNames.push("game-all");
     if (this.state.draggedSymbolState.value && this.state.draggedSymbolState.value !== "rectangleSelected") classNames.push("dragging");
@@ -891,6 +905,9 @@ class Game extends React.Component {
           {this.renderStatsSidebar()}
           <Svgs.SvgDefs/>
         </div>
+        {MainStyle}
+        {SvgsStyle}
+        {InfoStyle}
       </div>
     </>;
   }
@@ -1258,15 +1275,15 @@ class Game extends React.Component {
     }
   }
 
-  resetBoard = ({...args}) => {
+  resetBoard = ({makeNewState, undoredo}={}) => {
     this.setState((state, props) => {
-      if (args.makeNewState) {
-        var newState = args.makeNewState(state, props);
+      if (makeNewState) {
+        var newState = makeNewState(state, props);
         if (newState.error) return newState;
       } else var newState = {};
       let stateGet = key => newState[key] || state[key];
       newState.submission = makeSubmission(stateGet("squares"), props.m, props.n);
-      if (args.undoredo) {
+      if (undoredo) {
         // don't have to reset each square's selected field because they were newly created by undo/redo
         if (this.selectedOnBoard(state, props)) stateGet("selectedSymbolStates").clear();
       } else {

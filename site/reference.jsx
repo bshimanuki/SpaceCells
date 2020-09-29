@@ -1,8 +1,6 @@
 import React, {memo} from "react";
 
 import * as Svgs from "./svgs.jsx";
-import "./svgs.css";
-import "./info.css";
 
 function Empty() {
   return <div><Svgs.XCell className="hidden"/></div>;

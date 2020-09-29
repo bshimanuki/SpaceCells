@@ -1,3 +1,7 @@
+import React from "react";
+
+export default <style>{`
+
 .information .hidden {
   visibility: hidden;
 }
@@ -55,3 +59,5 @@
   width: 100%;
   padding: 30px;
 }
+
+`}</style>
