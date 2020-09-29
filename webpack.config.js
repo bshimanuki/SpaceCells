@@ -38,21 +38,9 @@ module.exports = {
         loader: 'raw-loader',
       },
       {
-        test: /\.svg$/,
-        exclude: /node_modules/,
-        use: [
-          {
-            loader: '@svgr/webpack',
-            options: {
-              svgoConfig: {
-                plugins: {
-                  collapseGroups: false,
-                  removeUselessStrokeAndFill: false,
-                },
-              },
-            },
-          },
-        ],
+        test: /\.ya?ml$/,
+        type: 'json',
+        loader: 'yaml-loader',
       },
     ],
   },

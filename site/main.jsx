@@ -1438,7 +1438,7 @@ export class Game extends React.Component {
   setBoardToLevel = (levelNumber, {keepHistory, clearBoard, loadCookie}={}) => {
     if (this.state.simState !== "stop") this.simHandler("stop");
     const level = Levels.levels[levelNumber];
-    const background = Levels.backgrounds[levelNumber].split('\n');
+    const background = Levels.levels[levelNumber].background.split('\n');
     var newState = {
       levelNumber: levelNumber,
       levelName: level.name,
