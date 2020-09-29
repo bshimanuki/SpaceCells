@@ -826,7 +826,7 @@ export class Game extends React.Component {
     const mainHidden = this.state.levelName === "epilogue" ? "hidden" : "";
     return <>
       <div className="center-column">
-        {this.state.levelName === "epilogue" && <div className="epilogue information">{Levels.Epilogue}</div>}
+        {this.state.levelName === "epilogue" && <div className="epilogue information">{DynamicComponent(Levels.Epilogue)}</div>}
         <div className={`center-content ${mainHidden}`} style={{display:"flex", flexDirection:"column", alignItems:"center", width:"min-content"}}>
           <div style={{display:"flex", width:"min-content"}} className="game-board">
             <Board
@@ -2001,13 +2001,13 @@ class GameModal extends React.PureComponent {
               </div>
             </div>
             : <div className="level-info information">
-              {Levels.levels[levelNumberForInfo].preface && <div className="level-preface">{Levels.levels[levelNumberForInfo].preface}</div>}
+              {Levels.levels[levelNumberForInfo].preface && <div className="level-preface">{DynamicComponent(Levels.levels[levelNumberForInfo].preface)}</div>}
               <div className="modal-title">
                 Assignment {levelNumberForInfo+1}: {Levels.levels[levelNumberForInfo].title}
               </div>
               <div className="modal-goal">
                 <span className="goal-title">Goal: </span>
-                <span className="goal-content">{Levels.levels[levelNumberForInfo].goal}</span>
+                <span className="goal-content">{DynamicComponent(Levels.levels[levelNumberForInfo].goal)}</span>
               </div>
             </div>
           }
@@ -2034,4 +2034,28 @@ class GameModal extends React.PureComponent {
       </Modal>
     );
   }
+}
+
+function Svg({value, ...props}) {
+  const Component = Svgs[value];
+  return <Component {...props}/>;
+}
+
+const DynamicComponents = {
+  Svg: Svg,
+};
+
+function DynamicComponent(json, key=0) {
+  if (!json) return null;
+  if (!Array.isArray(json)) json = [json];
+  return json.map((element, i) => {
+    const {tag, children, content, ...props} = element;
+    const Component = DynamicComponents[tag] || tag;
+    return (
+      <Component key={i} {...props}>
+        {(children || []).map((child, j) => DynamicComponent(child, j))}
+        {content}
+      </Component>
+    );
+  });
 }

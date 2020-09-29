@@ -636,7 +636,7 @@ body {
   flex: 1;
 }
 .level-preface {
-  /* min-height: 50%; */
+  min-height: 50%;
   padding-bottom: 30px;
 }
 .modal-goal {
