@@ -5,7 +5,8 @@ import Modal from 'react-modal';
 import * as Charts from "@data-ui/histogram";
 
 import * as Svgs from "./svgs.jsx";
-import * as Levels from "./levels.jsx";
+// import {get_data, get_submission, make_submission} from "./server_api.jsx";
+import {get_data, get_submission, make_submission} from "./server_api_local.jsx";
 import Reference from "./reference.jsx";
 import SvgsStyle from "./svgs-style.jsx";
 import InfoStyle from "./info-style.jsx";
@@ -40,36 +41,12 @@ function countOnes(x) {
   return k;
 }
 
-function numUnlockedLevels(levelsSolved) {
+function numUnlockedLevels(levels, levelsSolved) {
   const numSolved = countOnes(levelsSolved);
   if (numSolved < NUM_TUTORIAL_LEVELS) return numSolved + 1;
-  return Math.min(Levels.levels.length, numSolved + 2)
+  return Math.min(Object.keys(levels).length, numSolved + 2)
 }
 
-function mockNormal(mu, maxV) {
-  const n = 200;
-  const normalFidelity = 6;
-  const values = Array.from({length: n}).map(_ => Array.from({length: normalFidelity}).map(Math.random).reduce((acc, x) => acc + x) / normalFidelity * 2 * mu);
-  const nbins = 20;
-  const width = maxV / nbins;
-  const bins = Array(nbins).map((_, i) => i * width);
-  let counts = Array(nbins).fill(0);;
-  for (const value of values) {
-    ++counts[Math.floor(value / width)];
-  }
-  return {
-    bin0: 0,
-    binWidth: width,
-    counts: counts,
-  };
-}
-function makeMockData() {
-  return {
-    cycles: mockNormal(200, 500),
-    symbols: mockNormal(30, 80),
-  };
-}
-const mockData = makeMockData();
 
 var Module;
 export function loadModule(callback) {
@@ -93,17 +70,6 @@ const startSquares = [
   [2, 5], // red
   [7, 5], // blue
 ];
-
-function getFileFromServer(url, doneCallback) {
-  var xhr = new XMLHttpRequest();
-  xhr.onreadystatechange = function() {
-    if (xhr.readyState === 4) {
-      doneCallback(xhr.status == 200 ? xhr.responseText : null);
-    }
-  }
-  xhr.open("GET", url, true);
-  xhr.send();
-}
 
 function isTextBox(element) {
   let tagName = element.tagName.toLowerCase();
@@ -588,75 +554,103 @@ export class Game extends React.Component {
     };
   }
 
+  finishInitialize() {
+    let firstUnsolvedNumber = 0;
+    while (this.state.levelsSolved & (1 << firstUnsolvedNumber)) ++firstUnsolvedNumber;
+    const firstUnsolvedLevel = this.state.levels[firstUnsolvedNumber];
+    const levelsUnlocked = numUnlockedLevels(this.state.levels, this.state.levelsSolved);
+    this.setState({
+      doneLoading: true,
+      // level data
+      levelNumber: firstUnsolvedNumber,
+      levelName: firstUnsolvedLevel.name,
+      levelData: null,
+      background: null,
+      levelsUnlocked: levelsUnlocked,
+      levelStats: null,
+      ownBestStats: null,
+      ownCurrentStats: null,
+      // submission data
+      squares: Array.from({length: this.props.m}, e => Array.from({length: this.props.n}, makeEmptySquare)),
+      submission: "",
+      submissionHistory: [],
+      submissionFuture: [],
+      // backend
+      board: null, // Emscripten pointer
+      cells: [], // 2D array of Emscripten pointers
+      trespassable: [], // 2D array of bools
+      paths: [], // (y, x, bot) -> uint8_t
+      bots: [null, null], // converted to javascript objects
+      levelGrid: [], // array of chars
+      inputs: [], // converted to javascript objects
+      outputs: [], // converted to javascript objects
+      inputBits: [], // (test_case, input, step) -> bool
+      outputColors: [], // (test_case, step) -> char
+      lastColor: null, // last output color as char
+      testCase: 0,
+      step: 0,
+      cycle: 0,
+      numSymbols: 0,
+      error: "", // if any errors
+      errorReason: null,
+      status: null, // from check_status()
+      validBoard: false, // set from reset_and_validate()
+      // simulation
+      simState: "stop",
+      simTimeout: null,
+      // selection
+      symbolType: "cellSymbol",
+      bot: 0,
+      selectedSymbolStates: new Set(),
+      selectionSymbolStateCellSymbols: initialSelectionSymbolStates("selectionSymbolStateCellSymbols", symbolTypesCellSymbol),
+      selectionSymbolStateInstructions: initialSelectionSymbolStates("selectionSymbolStateInstructions", [...symbolTypesDirection, ...symbolTypesOperation]),
+      // events
+      heldShift: null,
+      heldKey: null,
+      draggedSymbolState: nullSymbolState,
+      dragOverPosition: null,
+      dragOverPositionSemaphore: 0, // count dragenter vs dragleave (for children)
+      dragOverSet: null,
+      dragOverFits: false,
+      // state change indicator alternate between +/-1
+      flipflop: 1,
+      // modal (results and level information)
+      showModal: false,
+      ownCurrentStats: null,
+      modalLevelEnd: false,
+      modalPage: 0, // -1 for results, 0 for info
+    }, () => {
+      window.addEventListener("keydown", this.keyboardHandler)
+      window.addEventListener("keyup", this.keyboardHandler)
+      this.setLevelHandler({target: {value: this.state.levelNumber}});
+    });
+  }
+
+  getMergeState(data, state, props) {
+    let newState = {};
+    if (data.levelsSolved) {
+      newState.levelsSolved = data.levelsSolved;
+    }
+    if (data.levels) {
+      let levels = [...(state.levels || [])];
+      data.levels.forEach(level => levels[level.levelNumber] = level);
+      newState.levels = levels;
+      newState.levelsUnlocked = numUnlockedLevels(levels, newState.levelsSolved || state.levelsSolved);
+    }
+    if (data.level_stats) newState.levelStats = data.level_stats;
+    if (data.team_level_stats) newState.ownBestStats = data.team_level_stats;
+    return newState;
+  }
+
   componentDidMount() {
-    loadModule(() => {
-      // TODO: get from server
-      const levelsSolved = Number(localStorage.getItem("levels-solved")) || 0;
-      let firstUnsolved = 0;
-      while (levelsSolved & (1 << firstUnsolved)) ++firstUnsolved;
-      this.setState({
-        doneLoading: true,
-        // level data
-        levelNumber: firstUnsolved,
-        levelName: Levels.levels[firstUnsolved].name,
-        levelData: null,
-        background: null,
-        levelsSolved: levelsSolved,
-        levelsUnlocked: numUnlockedLevels(levelsSolved),
-        // submission data
-        squares: Array.from({length: this.props.m}, e => Array.from({length: this.props.n}, makeEmptySquare)),
-        submission: "",
-        submissionHistory: [],
-        submissionFuture: [],
-        // backend
-        board: null, // Emscripten pointer
-        cells: [], // 2D array of Emscripten pointers
-        trespassable: [], // 2D array of bools
-        paths: [], // (y, x, bot) -> uint8_t
-        bots: [null, null], // converted to javascript objects
-        levelGrid: [], // array of chars
-        inputs: [], // converted to javascript objects
-        outputs: [], // converted to javascript objects
-        inputBits: [], // (test_case, input, step) -> bool
-        outputColors: [], // (test_case, step) -> char
-        lastColor: null, // last output color as char
-        testCase: 0,
-        step: 0,
-        cycle: 0,
-        numSymbols: 0,
-        error: "", // if any errors
-        errorReason: null,
-        status: null, // from check_status()
-        validBoard: false, // set from reset_and_validate()
-        // simulation
-        simState: "stop",
-        simTimeout: null,
-        // selection
-        symbolType: "cellSymbol",
-        bot: 0,
-        selectedSymbolStates: new Set(),
-        selectionSymbolStateCellSymbols: initialSelectionSymbolStates("selectionSymbolStateCellSymbols", symbolTypesCellSymbol),
-        selectionSymbolStateInstructions: initialSelectionSymbolStates("selectionSymbolStateInstructions", [...symbolTypesDirection, ...symbolTypesOperation]),
-        // events
-        heldShift: null,
-        heldKey: null,
-        draggedSymbolState: nullSymbolState,
-        dragOverPosition: null,
-        dragOverPositionSemaphore: 0, // count dragenter vs dragleave (for children)
-        dragOverSet: null,
-        dragOverFits: false,
-        // state change indicator alternate between +/-1
-        flipflop: 1,
-        // modal (results and level information)
-        showModal: false,
-        lastResults: null,
-        modalLevelEnd: false,
-        modalPage: 0, // -1 for results, 0 for info
-      }, () => {
-        window.addEventListener("keydown", this.keyboardHandler)
-        window.addEventListener("keyup", this.keyboardHandler)
-        this.setLevelHandler({target: {value: this.state.levelNumber}});
-      });
+    loadModule(() => this.state.levels && this.finishInitialize());
+    const promise = get_data(0);
+    promise.then(response => {
+      if (response.data) {
+        this.setState((state, props) => this.getMergeState(response.data, state, props));
+      } else {
+        console.log(response);
+      }
     });
   }
 
@@ -699,7 +693,7 @@ export class Game extends React.Component {
         <div>
           <label htmlFor="level_select">Choose level:</label>
           <select name="level_select" id="level_select" value={this.state.levelNumber} onChange={this.setLevelHandler}>
-            {Levels.levels.map((level, i) => <option key={i} value={i}>{level.title}</option>)}
+            {this.state.levels.map((level, i) => <option key={i} value={i}>{level.title}</option>)}
           </select>
         </div>
         <textarea name="submission" id="submission" value={this.state.submission} onChange={this.setSubmission}/>
@@ -715,14 +709,14 @@ export class Game extends React.Component {
         <div className="level-selection">
           {Array.from({length: this.state.levelsUnlocked}).map((_, i) =>
           <React.Fragment key={i}>
-            <input type="radio" id={`radio-level-${Levels.levels[i].name}`}
+            <input type="radio" id={`radio-level-${this.state.levels[i].name}`}
               value={i} name="level-selection"
               checked={this.state.levelNumber === i}
               onClick={this.setLevelHandler}
               readOnly
             />
-            <label htmlFor={`radio-level-${Levels.levels[i].name}`} className={this.state.levelNumber === i ? "unclickable" : "clickable"}>
-              <span className={`assignment-title ${this.state.levelsSolved & (1 << i) ? "solved" : "unsolved"}`}>{Levels.levels[i].name === "epilogue" ? Levels.levels[i].title : `Assignment ${i+1}: ${Levels.levels[i].title}`}</span>
+            <label htmlFor={`radio-level-${this.state.levels[i].name}`} className={this.state.levelNumber === i ? "unclickable" : "clickable"}>
+              <span className={`assignment-title ${this.state.levelsSolved & (1 << i) ? "solved" : "unsolved"}`}>{this.state.levels[i].name === "epilogue" ? this.state.levels[i].title : `Assignment ${i+1}: ${this.state.levels[i].title}`}</span>
             </label>
           </React.Fragment>
           )}
@@ -802,15 +796,17 @@ export class Game extends React.Component {
             Finished level!
           </div>
         </div>
-        {this.renderDebugWindow()}
+        {/*this.renderDebugWindow()*/}
         <GameModal
+          levels={this.state.levels}
           isOpen={this.state.showModal}
           modalHandlerClose={this.modalHandlerClose}
           modalHandlerNext={this.modalHandlerNext}
           modalHandlerPrev={this.modalHandlerPrev}
           modalHandlerStart={this.modalHandlerStart}
-          stats={mockData}
-          results={this.state.lastResults}
+          levelStats={this.state.levelStats}
+          ownBestStats={this.state.ownBestStats}
+          ownCurrentStats={this.state.ownCurrentStats}
           modalLevelEnd={this.state.modalLevelEnd}
           levelNumber={this.state.levelNumber}
           modalPage={this.state.modalPage}
@@ -826,7 +822,7 @@ export class Game extends React.Component {
     const mainHidden = this.state.levelName === "epilogue" ? "hidden" : "";
     return <>
       <div className="center-column">
-        {this.state.levelName === "epilogue" && <div className="epilogue information">{DynamicComponent(Levels.Epilogue)}</div>}
+        {this.state.levelName === "epilogue" && <div className="epilogue information">{DynamicComponent(this.state.levels[this.state.levelNumber].preface)}</div>}
         <div className={`center-content ${mainHidden}`} style={{display:"flex", flexDirection:"column", alignItems:"center", width:"min-content"}}>
           <div style={{display:"flex", width:"min-content"}} className="game-board">
             <Board
@@ -1422,23 +1418,21 @@ export class Game extends React.Component {
   setLevelHandler = (event, {loadCookie, clearBoard}={loadCookie:true, clearBoard:true}) => {
     var value = Number(event.target.value);
     if (this.state.levelData === null || value !== this.state.levelNumber) {
-      if (Levels.levels[value].name === "epilogue") {
+      if (this.state.levels[value].name === "epilogue") {
         this.setState({
           levelNumber: value,
-          levelName: Levels.levels[value].name,
+          levelName: "epilogue",
         });
         return;
       }
-      // var path = levels[value];
-      // getFileFromServer(path, text => this.setBoardToLevel(value, text, {loadCookie, clearBoard}));
       this.setBoardToLevel(value, {loadCookie, clearBoard});
     }
   }
 
   setBoardToLevel = (levelNumber, {keepHistory, clearBoard, loadCookie}={}) => {
     if (this.state.simState !== "stop") this.simHandler("stop");
-    const level = Levels.levels[levelNumber];
-    const background = Levels.levels[levelNumber].background.split('\n');
+    const level = this.state.levels[levelNumber];
+    const background = this.state.levels[levelNumber].background.split('\n');
     var newState = {
       levelNumber: levelNumber,
       levelName: level.name,
@@ -1536,10 +1530,15 @@ export class Game extends React.Component {
   }
 
   loadLastSolutionHandler = event => {
-    // TODO: query server
-    const url = `../examples/${Levels.levels[this.state.levelNumber].name}.sol`;
-    getFileFromServer(url, text => {
-      this.loadSubmission(text);
+    const promise = get_submission(this.state.levelNumber, this.state.knownLevels);
+    promise.then(response => {
+      if (response.data) {
+        this.setState(
+          (state, props) => this.getMergeState(response.data, state, props),
+          () => this.loadSubmission(response.data.submission));
+      } else {
+        console.log(response);
+      }
     });
   }
 
@@ -1781,7 +1780,7 @@ export class Game extends React.Component {
     });
   }
   modalHandlerClose = (event, startNext=false) => {
-    localStorage.setItem(`seen-modal-${Levels.levels[this.state.levelNumber+startNext].name}`, "");
+    localStorage.setItem(`seen-modal-${this.state.levels[this.state.levelNumber+startNext].name}`, "");
     this.setState({
         showModal: false,
         modalLevelEnd: false,
@@ -1802,26 +1801,29 @@ export class Game extends React.Component {
   onFinish = () => {
     // TODO: query server
     if (this.state.status === Module.Status.DONE) {
-      this.setState((state, props) => {
-        let newState = {
-          showModal: true,
-          modalLevelEnd: true,
-          modalPage: -1,
-          lastResults: {
-            cycles: state.cycle,
-            symbols: state.numSymbols,
-          },
-        };
-        if (!(state.levelsSolved & (1 << state.levelNumber))) {
-          newState.levelsSolved = state.levelsSolved | (1 << state.levelNumber);
-          newState.levelsUnlocked = numUnlockedLevels(newState.levelsSolved);
-          localStorage.setItem("levels-solved", newState.levelsSolved);
+      const promise = make_submission(this.state.levelNumber, this.state.submission, this.state.knownLevels);
+      promise.then(response => {
+        if (response.data) {
+          this.setState((state, props) => {
+            let newState = this.getMergeState(response.data, state, props);
+            Object.assign(newState, {
+              showModal: true,
+              modalLevelEnd: true,
+              modalPage: -1,
+              ownCurrentStats: {
+                cycles: state.cycle,
+                symbols: state.numSymbols,
+              },
+            });
+            newState.levelsUnlocked = numUnlockedLevels(newState.levels || state.levels, newState.levelsSolved);
+            return newState;
+          });
+        } else {
+          console.log(response);
         }
-        return newState;
       });
     }
   }
-
 }
 
 class Toggle extends React.PureComponent {
@@ -1901,7 +1903,6 @@ class OptionItem extends React.PureComponent {
   render() {
     const Svg = this.props.svg;
     const checked = this.props.selectedSymbolState && this.props.selectedSymbolState.value === this.props.value;
-    console.log(this.props.value, checked);
     return (
       <div className={`symbol-option ${checked ? "selected unclickable" : "clickable"}`} key={`radio-option-${this.props.option}`}>
         <input type="radio" id={`radio-${this.props.value}`} value={this.props.value} name={`radio-for-${this.props.subtype}`}
@@ -1917,6 +1918,7 @@ class OptionItem extends React.PureComponent {
 
 class ResultsChart extends React.PureComponent {
   render() {
+    if (!this.props.values) return null;
     const binnedData = this.props.values.counts.map((count, i) => ({
       id: `${i}`,
       bin0: this.props.values.bin0 + i * this.props.values.binWidth,
@@ -1963,24 +1965,8 @@ class ResultsChart extends React.PureComponent {
 
 class GameModal extends React.PureComponent {
   render() {
-    let cyclesBinnedData = null;
-    let symbolsBinnedData = null;
-    if (this.props.stats) {
-      cyclesBinnedData = this.props.stats.cycles.counts.map((count, i) => ({
-        id: `${i}`,
-        bin0: this.props.stats.cycles.bin0 + i * this.props.stats.cycles.binWidth,
-        bin1: this.props.stats.cycles.bin0 + (i + 1) * this.props.stats.cycles.binWidth,
-        count: count,
-      }));
-      symbolsBinnedData = this.props.stats.symbols.counts.map((count, i) => ({
-        id: `${i}`,
-        bin0: this.props.stats.symbols.bin0 + i * this.props.stats.symbols.binWidth,
-        bin1: this.props.stats.symbols.bin0 + (i + 1) * this.props.stats.symbols.binWidth,
-        count: count,
-      }));
-    }
     const levelNumberForInfo = this.props.levelNumber + this.props.modalLevelEnd;
-    const levelNameForInfo = Levels.levels[levelNumberForInfo].name;
+    const levelNameForInfo = this.props.levels[levelNumberForInfo].name;
     return (
       <Modal
         isOpen={this.props.isOpen}
@@ -1996,18 +1982,18 @@ class GameModal extends React.PureComponent {
                 Assignment Complete!
               </div>
               <div className="charts">
-                <ResultsChart name="cycles" values={this.props.stats.cycles} own={(this.props.results||{}).cycles} label="Elapsed Cycles"/>
-                <ResultsChart name="symbols" values={this.props.stats.symbols} own={(this.props.results||{}).symbols} label="Symbols Used"/>
+                <ResultsChart name="cycles" values={(this.props.levelStats||{}).cycles} own={(this.props.ownCurrentStats||{}).cycles} label="Elapsed Cycles"/>
+                <ResultsChart name="symbols" values={(this.props.levelStats||{}).symbols} own={(this.props.ownCurrentStats||{}).symbols} label="Symbols Used"/>
               </div>
             </div>
             : <div className="level-info information">
-              {Levels.levels[levelNumberForInfo].preface && <div className="level-preface">{DynamicComponent(Levels.levels[levelNumberForInfo].preface)}</div>}
+              {this.props.levels[levelNumberForInfo].preface && <div className="level-preface">{DynamicComponent(this.props.levels[levelNumberForInfo].preface)}</div>}
               <div className="modal-title">
-                Assignment {levelNumberForInfo+1}: {Levels.levels[levelNumberForInfo].title}
+                Assignment {levelNumberForInfo+1}: {this.props.levels[levelNumberForInfo].title}
               </div>
               <div className="modal-goal">
                 <span className="goal-title">Goal: </span>
-                <span className="goal-content">{DynamicComponent(Levels.levels[levelNumberForInfo].goal)}</span>
+                <span className="goal-content">{DynamicComponent(this.props.levels[levelNumberForInfo].goal)}</span>
               </div>
             </div>
           }
