@@ -5,14 +5,16 @@ import Modal from 'react-modal';
 import * as Charts from "@data-ui/histogram";
 
 import * as Svgs from "./svgs.jsx";
-// import {get_data, get_submission, make_submission} from "./server_api.jsx";
-import {get_data, get_submission, make_submission} from "./server_api_local.jsx";
 import Reference from "./reference.jsx";
 import SvgsStyle from "./svgs-style.jsx";
 import InfoStyle from "./info-style.jsx";
 import MainStyle from "./main-style.jsx"; // after svgs with its own css
 // import Embindings from "./embindings.js";
 import EmbindingsWASM from "./embindings.wasm";
+
+// switch between these api's to use local vs server
+// import {get_data, get_submission, make_submission} from "./server_api.jsx";
+import {get_data, get_submission, make_submission} from "./server_api_local.jsx";
 
 const MAX_HISTORY = 1000;
 const NUM_LEVELS_TO_INITIALIZE_INSTRUCTIONS = 2;
@@ -626,9 +628,17 @@ export class Game extends React.Component {
     });
   }
 
+  knownLevels() {
+    let knownLevels = 0;
+    for (const level of this.state.levels) {
+      knownLevels += 1 << level.levelNumber;
+    }
+    return knownLevels;
+  }
+
   getMergeState(data, state, props) {
     let newState = {};
-    if (data.levelsSolved) {
+    if (data.levelsSolved !== undefined) {
       newState.levelsSolved = data.levelsSolved;
     }
     if (data.levels) {
@@ -644,10 +654,12 @@ export class Game extends React.Component {
 
   componentDidMount() {
     loadModule(() => this.state.levels && this.finishInitialize());
-    const promise = get_data(0);
+    const promise = get_data(this.props.router, 0);
     promise.then(response => {
       if (response.data) {
-        this.setState((state, props) => this.getMergeState(response.data, state, props));
+        this.setState(
+          (state, props) => this.getMergeState(response.data, state, props),
+          () => Module && this.finishInitialize());
       } else {
         console.log(response);
       }
@@ -731,8 +743,7 @@ export class Game extends React.Component {
           </label>
           <div style={{paddingBottom: "40px"}}/>
           <input className="clickable level-button reset-button" type="button" value="Reset Grid" onClick={this.clearBoardHandler}/>
-          {/* TODO: replace with "Load Last Solution" */}
-          <input className={`clickable level-button load-solution ${this.state.levelsSolved & (1 << this.state.levelNumber) ? "visible" : "hidden"}`} type="button" value="Load Last Solution (example for now)" onClick={this.loadLastSolutionHandler}/>
+          <input className={`clickable level-button load-solution ${this.state.levelsSolved & (1 << this.state.levelNumber) ? "visible" : "hidden"}`} type="button" value="Load Last Solution" onClick={this.loadLastSolutionHandler}/>
         </div>
       </div>
     </>;
@@ -894,7 +905,7 @@ export class Game extends React.Component {
         onDragLeave={this.trashDragOver}
         onDrop={this.trashDragOver}
       >
-        <h1 className="game-title">SpaceCells</h1>
+        {/*<h1 className="game-title">SpaceCells</h1>*/}
         <div id="main-content" style={{display:"flex"}}>
           {this.renderLevelSidebar()}
           {this.renderCenter()}
@@ -1530,7 +1541,7 @@ export class Game extends React.Component {
   }
 
   loadLastSolutionHandler = event => {
-    const promise = get_submission(this.state.levelNumber, this.state.knownLevels);
+    const promise = get_submission(this.props.router, this.state.levelNumber, this.knownLevels());
     promise.then(response => {
       if (response.data) {
         this.setState(
@@ -1801,8 +1812,9 @@ export class Game extends React.Component {
   onFinish = () => {
     // TODO: query server
     if (this.state.status === Module.Status.DONE) {
-      const promise = make_submission(this.state.levelNumber, this.state.submission, this.state.knownLevels);
+      const promise = make_submission(this.props.router, this.state.levelNumber, this.state.submission, this.knownLevels());
       promise.then(response => {
+        console.log(response);
         if (response.data) {
           this.setState((state, props) => {
             let newState = this.getMergeState(response.data, state, props);
@@ -1966,7 +1978,7 @@ class ResultsChart extends React.PureComponent {
 class GameModal extends React.PureComponent {
   render() {
     const levelNumberForInfo = this.props.levelNumber + this.props.modalLevelEnd;
-    const levelNameForInfo = this.props.levels[levelNumberForInfo].name;
+    const levelNameForInfo = (this.props.levels[levelNumberForInfo]||{}).name;
     return (
       <Modal
         isOpen={this.props.isOpen}

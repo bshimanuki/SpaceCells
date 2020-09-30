@@ -66,7 +66,7 @@ export default <style>{`
 }
 .resolved-1 .cell-x .cell-border { fill: #ddf; }
 .resolved-0 .cell-x .cell-border { fill: #dfd; }
-.resolved-1 .cell-plus .cell-border { fill: #fdd; }
+.resolved-1 .cell-plus .cell-border { fill: #fcc; }
 .resolved-0 .cell-plus .cell-border { fill: #fed; }
 .resolved-1 .circle-0 { fill: white; }
 .resolved-0 .circle-1 { fill: white; }

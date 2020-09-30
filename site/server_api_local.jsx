@@ -64,7 +64,7 @@ const levels = levels_yaml.levels.map((yaml, i) => {
   return level;
 });
 
-export function get_data(knownLevels) {
+export function get_data(router, knownLevels) {
   const levelsSolved = Number(localStorage.getItem("levels-solved")) || 0;
   const result = {
     data: {
@@ -75,7 +75,7 @@ export function get_data(knownLevels) {
   return Promise.resolve(result);
 }
 
-export function get_submission(level, knownLevels) {
+export function get_submission(router, level, knownLevels) {
   const url = `../example_solutions/${levels[level].name}.sol`;
   let data_promise = get_data(knownLevels);
   let text_promise = getFileFromServer(url);
@@ -88,7 +88,7 @@ export function get_submission(level, knownLevels) {
   return promise;
 }
 
-export function make_submission(level, submission, knownLevels) {
+export function make_submission(router, level, submission, knownLevels) {
   let levelsSolved = Number(localStorage.getItem("levels-solved")) || 0;
   let newState = {};
   if (!(levelsSolved & (1 << level))) {

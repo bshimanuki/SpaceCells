@@ -1046,7 +1046,7 @@ std::string Board::get_resolved_board() const {
   return ss.str();
 }
 
-int Board::get_num_symbols() const {
+int Board::get_num_cells() const {
   int symbols = 0;
   for (const auto &row : cells) {
     for (const auto &cell : row) {
@@ -1057,6 +1057,13 @@ int Board::get_num_symbols() const {
       }
     }
   }
+  symbols -= inputs.size();
+  symbols -= outputs.size();
+  return symbols;
+}
+
+int Board::get_num_instructions() const {
+  int symbols = 0;
   for (const auto &grid : directions) {
     for (const auto &row : grid) {
       for (const auto &direction : row) {
@@ -1071,9 +1078,11 @@ int Board::get_num_symbols() const {
       }
     }
   }
-  symbols -= inputs.size();
-  symbols -= outputs.size();
   return symbols;
+}
+
+int Board::get_num_symbols() const {
+  return get_num_cells() + get_num_instructions();
 }
 
 static uint8_t segment(const Direction &moving, const Direction &to) {

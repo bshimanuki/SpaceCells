@@ -2,11 +2,11 @@ import React from "react";
 
 export default <style>{`
 
-* {
+.game * {
   font-family: Verdana;
   box-sizing: border-box;
 }
-textarea {
+.game textarea {
   font-family: monospace, sans-serif;
 }
 .spacer {
@@ -26,18 +26,18 @@ textarea {
 }
 
 /* layout */
-body {
+body.local {
   /* background-color: whitesmoke; */
   background-color: #999;
   color: #000;
 }
-#game {
+.game {
   text-align: center;
 }
-#game > * {
+.game > * {
   text-align: initial;
 }
-.game-all {
+.local .game .game-all {
   display: inline-flex;
   flex-direction: column;
 }
@@ -48,7 +48,7 @@ body {
 }
 #main-content {
   justify-content: center;
-  min-width: min-content;
+  /* min-width: min-content; */
 }
 .left-sidebar {
   /* padding: 0 1%; */
@@ -57,7 +57,7 @@ body {
 }
 .center-column{
   position: relative;
-  width: min-width;
+  width: min-column;
 }
 .center-content {
   min-width: min-content;
