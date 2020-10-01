@@ -916,7 +916,7 @@ export class Game extends React.Component {
         onDrop={this.trashDragOver}
       >
         {/*<h1 className="game-title">SpaceCells</h1>*/}
-        <div id="main-content" style={{display:"flex"}}>
+        <div id="main-content">
           {this.renderLevelSidebar()}
           {this.renderCenter()}
           {this.renderStatsSidebar()}
