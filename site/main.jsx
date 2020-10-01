@@ -1824,7 +1824,6 @@ export class Game extends React.Component {
     if (this.state.status === Module.Status.DONE) {
       const promise = make_submission(this.props.router, this.state.levelNumber, this.state.submission, this.knownLevels());
       promise.then(response => {
-        console.log(response);
         if (response.data) {
           this.setState((state, props) => {
             let newState = this.getMergeState(response.data, state, props);
@@ -1951,8 +1950,8 @@ class ResultsChart extends React.PureComponent {
     if (this.props.own) {
       ownBinnedData = [{
         id: `own`,
-        bin0: this.props.own,
-        bin1: this.props.own+1,
+        bin0: this.props.own+0.499999,
+        bin1: this.props.own+0.5,
         count: Math.max(...this.props.values.counts),
       }];
     }
@@ -1994,7 +1993,7 @@ class GameModal extends React.PureComponent {
         isOpen={this.props.isOpen}
         onRequestClose={this.props.modalHandlerClose}
         contentLabel="Result Statistics"
-        overlayClassName="modal-overlay"
+        overlayClassName="modal-overlay game-modal"
         className="modal-content"
       >
         <div className="modal-body">

@@ -34,6 +34,10 @@ LevelMedian: &LevelMedian
   tag: p
   content: "Given one sequential input, output the majority of the past 3 inputs. The first 3 inputs will be blue."
 
+LevelVending: &LevelVending
+  tag: p
+  content: "You are running the display for vending machine. The input is blue when a user tries to insert a coin and green when trying to remove one. The output should indicate the number of coins: green for 0, blue for 1, and orange for 2. If a user attempts to remove a coin when there are 0 or add one when there are already 2, the count does not change and you should output a red warning light."
+
 LevelAdder: &LevelAdder
   tag: p
   content: "Given two sequential inputs, let green represent a 0 bit and blue represent a 1 bit. The inputs are given from low bit to high bit. Output the corresponding color for the addition of these numbers in base 2."
@@ -214,12 +218,15 @@ levels: &levels
   - name: median
     title: "Median Filter"
     goal: *LevelMedian
+  - name: vending
+    title: "Vending Machine"
+    goal: *LevelVending
   - name: adder
     title: "Quick Maths"
     goal: *LevelAdder
-  - name: battle
-    title: Fight
-    goal: *LevelBattle
+  # - name: battle
+    # title: Fight
+    # goal: *LevelBattle
   - name: stack
     title: "Stacks on Stacks"
     goal: *LevelStack

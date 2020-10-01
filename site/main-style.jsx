@@ -3,7 +3,7 @@ import React from "react";
 
 export default <style>{`
 
-.game * {
+.game *, .game-modal * {
   font-family: Verdana;
   box-sizing: border-box;
 }
