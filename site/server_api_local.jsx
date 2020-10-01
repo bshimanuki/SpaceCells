@@ -20,10 +20,19 @@ function mockNormal(mu, maxV) {
 function makeMockData() {
   return {
     cycles: mockNormal(200, 500),
-    symbols: mockNormal(30, 80),
+    cells: mockNormal(20, 80),
+    instructions: mockNormal(30, 80),
+    symbols: mockNormal(50, 100),
   };
 }
 const mockData = makeMockData();
+
+const mockTeamLevelStats = {
+  cycles: 100,
+  cells: 20,
+  instructions: 30,
+  symbols: 50,
+};
 
 function getFileFromServer(url) {
   let promise = new Promise(resolve => {
@@ -98,6 +107,7 @@ export function make_submission(router, level, submission, knownLevels) {
   const data_promise = get_data(knownLevels);
   return data_promise.then(result => {
     result.data.level_stats = mockData;
+    result.data.team_level_stats = mockTeamLevelStats;
     return result;
   });
 }

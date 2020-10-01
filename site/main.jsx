@@ -620,6 +620,8 @@ export class Game extends React.Component {
       testCase: 0,
       step: 0,
       cycle: 0,
+      numCells: 0,
+      numInstructions: 0,
       numSymbols: 0,
       error: "", // if any errors
       errorReason: null,
@@ -822,7 +824,7 @@ export class Game extends React.Component {
             <div><span className="steps">Completed Test Cases</span><span className="steps-value">{this.state.testCase + (this.state.step === (this.state.outputColors[this.state.testCase] || {}).length)}</span></div>
             {/*<div><span className="steps">Steps</span><span className="steps-value">{this.state.step}</span></div>*/}
             <div><span className="cycles">Total Cycles</span><span className="cycles-value">{this.state.cycle}</span></div>
-            <div><span className="cycles">Total Symbols</span><span className="num-symbols-value">{this.state.numSymbols}</span></div>
+            <div><span className="num-symbols">Total Symbols</span><span className="num-symbols-value">{this.state.numSymbols}</span></div>
           </div>
           <br/>
           <div className="colon-list">
@@ -1390,6 +1392,8 @@ export class Game extends React.Component {
       newState.testCase = state.board.test_case;
       newState.step = state.board.step;
       newState.cycle = state.board.cycle;
+      newState.numCells = state.board.get_num_cells();
+      newState.numInstructions = state.board.get_num_instructions();
       newState.numSymbols = state.board.get_num_symbols();
       state.cells.forEach(row => row.forEach(cell => {
         if (cell) cell.delete();
@@ -1859,6 +1863,8 @@ export class Game extends React.Component {
               modalPage: -1,
               ownCurrentStats: {
                 cycles: state.cycle,
+                cells: state.numCells,
+                instructions: state.numInstructions,
                 symbols: state.numSymbols,
               },
             });
@@ -1975,17 +1981,26 @@ class ResultsChart extends React.PureComponent {
     let ownBinnedData = null;
     if (this.props.own) {
       ownBinnedData = [{
-        id: `own`,
+        id: "own",
         bin0: this.props.own+0.499999,
         bin1: this.props.own+0.5,
+        count: Math.max(...this.props.values.counts),
+      }];
+    }
+    let bestBinnedData = null;
+    if (this.props.best) {
+      bestBinnedData = [{
+        id: "best",
+        bin0: this.props.best+0.499999,
+        bin1: this.props.best+0.5,
         count: Math.max(...this.props.values.counts),
       }];
     }
     return (
       <Charts.Histogram
         ariaLabel="Statistics"
-        height={400}
-        width={400}
+        height={380}
+        width={380}
       >
         <Charts.PatternLines
           id={`pattern-${this.props.name}`}
@@ -1997,7 +2012,8 @@ class ResultsChart extends React.PureComponent {
           orientation={[ "diagonal" ]}
         />
         <Charts.BarSeries animated binnedData={binnedData} stroke="#22b8cf" fill={`url(#pattern-${this.props.name})`}/>
-        {ownBinnedData && <Charts.BarSeries animated binnedData={ownBinnedData} stroke="#00f"/>}
+        {ownBinnedData && <Charts.BarSeries animated binnedData={ownBinnedData} stroke="#00f" fill="dashed"/>}
+        {bestBinnedData && <Charts.BarSeries animated binnedData={bestBinnedData} stroke="#00f"/>}
         <Charts.XAxis
           label={this.props.label}
         />
@@ -2029,8 +2045,9 @@ class GameModal extends React.PureComponent {
                 Assignment Complete!
               </div>
               <div className="charts">
-                <ResultsChart name="cycles" values={(this.props.levelStats||{}).cycles} own={(this.props.ownCurrentStats||{}).cycles} label="Elapsed Cycles"/>
-                <ResultsChart name="symbols" values={(this.props.levelStats||{}).symbols} own={(this.props.ownCurrentStats||{}).symbols} label="Symbols Used"/>
+                <ResultsChart name="cycles" values={(this.props.levelStats||{}).cycles} best={(this.props.ownBestStats||{}).cycles} own={(this.props.ownCurrentStats||{}).cycles} label="Elapsed Cycles"/>
+                <ResultsChart name="symbols" values={(this.props.levelStats||{}).symbols} best={(this.props.ownBestStats||{}).symbols} own={(this.props.ownCurrentStats||{}).symbols} label="Symbols Used"/>
+                <ResultsChart name="instructions" values={(this.props.levelStats||{}).instructions} best={(this.props.ownBestStats||{}).instructions} own={(this.props.ownCurrentStats||{}).instructions} label="Instructions Used"/>
               </div>
             </div>
             : <div className="level-info information">

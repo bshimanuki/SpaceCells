@@ -577,7 +577,7 @@ body.local {
 /* results modal */
 .modal-title {
   text-align: center;
-  font-size: 40;
+  font-size: 40px;
   margin: 10px;
   margin-bottom: 30px;
 }
@@ -638,14 +638,21 @@ body.local {
   padding: 5px 10px;
 }
 .charts {
-  display: flex;
-  justify-content: center;
+  position: relative;
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  justify-content: space-between;
 }
-.charts > * {
-  margin: 20px;
+.charts svg {
+  overflow: visible;
+  margin-left: -40px;
+}
+.charts rect[fill=dashed] {
+  stroke-dasharray: 5 10;
 }
 .vx-axis-label {
-  font-size: 20;
+  font-size: 16px;
   transform: translate(0, 20px);
 }
 .vx-axis-tick {
