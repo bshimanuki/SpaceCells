@@ -1,5 +1,14 @@
 import React from "react";
 
+function shallowEqual(x, y) {
+  // don't care about undefined
+  if (x === y) return true;
+  if (!x || !y) return false;
+  for (const key in x) if (x[key] !== y[key]) return false;
+  for (const key in y) if (x[key] !== y[key]) return false;
+  return true;
+}
+
 // Cells are overlaid over grid squares without padding and we take care of padding here.
 // This is necessary for sizing to be correct on cells spanning multiple squares.
 const PADDING = 0.06;
@@ -106,26 +115,26 @@ PlusCellFill.defaultProps = {
   padding: PADDING,
 };
 
-export function XCell({w, h, _className, className, ...props}) {
-  return <Svg w={w} h={h} className={`${_className} ${className}`} {...props}>
+export const XCell = React.memo(props => {
+  const {w, h, _className, className, ..._props} = Object.assign({w:1, h:1, _className:"cell-x", className:""}, props);
+  return <Svg w={w} h={h} className={`${_className} ${className}`} {..._props}>
     <CellBorder w={w} h={h}/>
     <XCellFill/>
   </Svg>;
-}
-XCell.defaultProps = {w:1, h:1, _className:"cell-x", className:""};
-export function PlusCell({w, h, _className, className, ...props}) {
-  return <Svg w={w} h={h} className={`${_className} ${className}`} {...props}>
+});
+export const PlusCell = React.memo(props => {
+  const {w, h, _className, className, ..._props} = Object.assign({w:1, h:1, _className:"cell-plus", className:""}, props);
+  return <Svg w={w} h={h} className={`${_className} ${className}`} {..._props}>
     <CellBorder w={w} h={h}/>
     <PlusCellFill/>
   </Svg>;
-}
-PlusCell.defaultProps = {w:1, h:1, _className:"cell-plus", className:""};
-export function HorizontalCell(props) {
+});
+export const HorizontalCell = React.memo(props => {
   return <XCell _className="cell-x horizontal cell-horizontal" w={2} {...props}/>;
-}
-export function VerticalCell(props) {
+});
+export const VerticalCell = React.memo(props => {
   return <XCell _className="cell-x vertical cell-vertical" h={2} {...props}/>;
-}
+});
 
 function Diode({dx, dy, headDistance, headLength, headAngle, className, ...props}) {
   let x = dx * headDistance;
@@ -145,18 +154,18 @@ Diode.defaultProps = {
   headAngle: Math.PI / 4,
 };
 
-export function DiodeUp(props) {
+export const DiodeUp = React.memo(props => {
   return <Diode dx={0} dy={-1} className="vertical diode-up" {...props}/>;
-}
-export function DiodeDown(props) {
+});
+export const DiodeDown = React.memo(props => {
   return <Diode dx={0} dy={1} className="vertical diode-down" {...props}/>;
-}
-export function DiodeLeft(props) {
+});
+export const DiodeLeft = React.memo(props => {
   return <Diode dx={-1} dy={0} className="horizontal diode-left" {...props}/>;
-}
-export function DiodeRight(props) {
+});
+export const DiodeRight = React.memo(props => {
   return <Diode dx={1} dy={0} className="horizontal diode-right" {...props}/>;
-}
+});
 
 function DirectionArrow({dx, dy, headDistance, drawGhost, className, ...props}) {
   let x = dx * headDistance;
@@ -184,18 +193,18 @@ Direction.defaultProps = {
   className: "",
 };
 
-export function DirectionUp(props) {
+export const DirectionUp = React.memo(props => {
   return <Direction dx={0} dy={-1} _className="direction-up" {...props}/>;
-}
-export function DirectionDown(props) {
+});
+export const DirectionDown = React.memo(props => {
   return <Direction dx={0} dy={1} _className="direction-down" {...props}/>;
-}
-export function DirectionLeft(props) {
+});
+export const DirectionLeft = React.memo(props => {
   return <Direction dx={-1} dy={0} _className="direction-left" {...props}/>;
-}
-export function DirectionRight(props) {
+});
+export const DirectionRight = React.memo(props => {
   return <Direction dx={1} dy={0} _className="direction-right" {...props}/>;
-}
+});
 
 function Operation({texts, _className, className, r, textAttrs, fontSize, textHeight, unicodeFontSize, unicodeTextHeight, underlay, overlay, ...props}) {
   if (!Array.isArray(texts)) texts = [texts];
@@ -237,50 +246,50 @@ function UnicodeOperation(props) {
   return <Operation unicodeFontSize={0.8} {...props}/>;
 }
 
-export function Start(props) {
+export const Start = React.memo(props => {
   return <Operation texts="START" _className="start" {...props}/>
-}
-export function Next(props) {
+});
+export const Next = React.memo(props => {
   return <Operation texts="NEXT" _className="next" {...props}/>
-}
-export function Grab(props) {
+});
+export const Grab = React.memo(props => {
   return <Operation texts="GRAB" _className="grab" {...props}/>
-}
-export function Drop(props) {
+});
+export const Drop = React.memo(props => {
   return <Operation texts="DROP" _className="drop" {...props}/>
-}
-export function Swap(props) {
+});
+export const Swap = React.memo(props => {
   return <Operation texts={["GRAB", "DROP"]} _className="swap" {...props}/>
-}
-export function Latch(props) {
+});
+export const Latch = React.memo(props => {
   return <Operation texts="LOCK" _className="latch" {...props}/>
-}
-export function Unlatch(props) {
+});
+export const Unlatch = React.memo(props => {
   return <Operation texts="FREE" _className="latch" {...props}/>
-}
-export function ToggleLatch(props) {
+});
+export const ToggleLatch = React.memo(props => {
   return <Operation texts={["LOCK", "FREE"]} _className="togglelatch" {...props}/>
-}
-export function Relatch(props) {
+});
+export const Relatch = React.memo(props => {
   return <Operation texts="RESET" _className="relatch" {...props}/>
-}
-// export function Relatch(props) {
+});
+// export const Relatch = React.memo(props => {
   // return <UnicodeOperation texts="💥" _className="relatch" {...props}/>
-// }
-export function Sync(props) {
+// });
+export const Sync = React.memo(props => {
   // return <UnicodeOperation texts="🗘" _className="sync" {...props}/>
   return <Operation texts="SYNC" _className="sync" {...props}/>
-}
-export function Rotate(props) {
+});
+export const Rotate = React.memo(props => {
   // return <UnicodeOperation texts="⭮" _className="rotate" {...props}/>
   return <Operation texts="ROT" _className="rotate" {...props}/>
-}
-export function Power0(props) {
+});
+export const Power0 = React.memo(props => {
   return <Operation texts={["PWR", "ℵ"]} _className="power0" {...props}/>
-}
-export function Power1(props) {
+});
+export const Power1 = React.memo(props => {
   return <Operation texts={["PWR", "ב"]} _className="power1" {...props}/>
-}
+});
 
 function Branch({dx, dy, children, className, arrowProps, branchRadius, ...props}) {
   return <Operation className={className}
@@ -326,65 +335,73 @@ function Branch0(props) {
   </Branch>
 }
 
-export function Branch1Up(props) {
+export const Branch1Up = React.memo(props => {
   return <Branch1 className="branch1up" dx={0} dy={-1} {...props}/>;
-}
-export function Branch1Down(props) {
+});
+export const Branch1Down = React.memo(props => {
   return <Branch1 className="branch1down" dx={0} dy={1} {...props}/>;
-}
-export function Branch1Left(props) {
+});
+export const Branch1Left = React.memo(props => {
   return <Branch1 className="branch1left" dx={-1} dy={0} {...props}/>;
-}
-export function Branch1Right(props) {
+});
+export const Branch1Right = React.memo(props => {
   return <Branch1 className="branch1right" dx={1} dy={0} {...props}/>;
-}
-export function Branch0Up(props) {
+});
+export const Branch0Up = React.memo(props => {
   return <Branch0 className="branch0up" dx={0} dy={-1} {...props}/>;
-}
-export function Branch0Down(props) {
+});
+export const Branch0Down = React.memo(props => {
   return <Branch0 className="branch0down" dx={0} dy={1} {...props}/>;
-}
-export function Branch0Left(props) {
+});
+export const Branch0Left = React.memo(props => {
   return <Branch0 className="branch0left" dx={-1} dy={0} {...props}/>;
-}
-export function Branch0Right(props) {
+});
+export const Branch0Right = React.memo(props => {
   return <Branch0 className="branch0right" dx={1} dy={0} {...props}/>;
-}
+});
 
-export function RightArrow(props) {
+export const RightArrow = React.memo(props => {
   return (
     <Svg {...props}>
       <Arrow className="rightarrow" x1={-0.5} y1={0} x2={0.5} y2={0} headAngle={Math.PI/4} headLength={0.5} drawTail/>
     </Svg>
   );
-}
+});
 
-export function Path({path, radius, terminalRadius, className, props}) {
-  const r = radius;
-  const terminal = (path.up ^ path.down) || (path.left ^ path.right);
-  const c = terminal ? terminalRadius : 0;
-  return (
-    <Svg className={`path ${className}`} {...props}>
-      <g className="bot-stroke">
-        {path.up && <line x1={0} y1={-c} x2={0} y2={-1}/>}
-        {path.down && <line x1={0} y1={c} x2={0} y2={1}/>}
-        {path.left && <line x1={-c} y1={0} x2={-1} y2={0}/>}
-        {path.right && <line x1={c} y1={0} x2={1} y2={0}/>}
-        {path.upleft && <path d={`M 0 -1 L 0 ${-r} A ${r} ${r} 0 0 1 ${-r} 0 L -1 0`}/>}
-        {path.upright && <path d={`M 0 -1 L 0 ${-r} A ${r} ${r} 0 0 0 ${r} 0 L 1 0`}/>}
-        {path.downleft && <path d={`M 0 1 L 0 ${r} A ${r} ${r} 0 0 0 ${-r} 0 L -1 0`}/>}
-        {path.downright && <path d={`M 0 1 L 0 ${r} A ${r} ${r} 0 0 1 ${r} 0 L 1 0`}/>}
-        {terminal && <circle cx={0} cy={0} r={c}/>}
-      </g>
-    </Svg>
-  );
-}
-Path.defaultProps = {
-  path: {},
-  className: "",
-  radius: 0.2,
-  terminalRadius: 0.05,
-};
+export const Path = React.memo(
+  props => {
+    const {path, radius, terminalRadius, className, _props} = Object.assign({
+      path: {},
+      className: "",
+      radius: 0.2,
+      terminalRadius: 0.05,
+    }, props);
+    const r = radius;
+    const terminal = (path.up ^ path.down) || (path.left ^ path.right);
+    const c = terminal ? terminalRadius : 0;
+    return (
+      <Svg className={`path ${className}`} {..._props}>
+        <g className="bot-stroke">
+          {path.up && <line x1={0} y1={-c} x2={0} y2={-1}/>}
+          {path.down && <line x1={0} y1={c} x2={0} y2={1}/>}
+          {path.left && <line x1={-c} y1={0} x2={-1} y2={0}/>}
+          {path.right && <line x1={c} y1={0} x2={1} y2={0}/>}
+          {path.upleft && <path d={`M 0 -1 L 0 ${-r} A ${r} ${r} 0 0 1 ${-r} 0 L -1 0`}/>}
+          {path.upright && <path d={`M 0 -1 L 0 ${-r} A ${r} ${r} 0 0 0 ${r} 0 L 1 0`}/>}
+          {path.downleft && <path d={`M 0 1 L 0 ${r} A ${r} ${r} 0 0 0 ${-r} 0 L -1 0`}/>}
+          {path.downright && <path d={`M 0 1 L 0 ${r} A ${r} ${r} 0 0 1 ${r} 0 L 1 0`}/>}
+          {terminal && <circle cx={0} cy={0} r={c}/>}
+        </g>
+      </Svg>
+    );
+  },
+  ({path: prevPath, ...prevRest}, {path: nextPath, ...nextRest}) => {
+    if (!shallowEqual(prevPath, nextPath)) return false;
+    if (!shallowEqual(prevRest, nextRest)) return false;
+    return true;
+  },
+);
+
 
 function Star(props) {
   const dx = props.dx;
@@ -448,7 +465,7 @@ function Cloud(props) {
   </>;
 }
 
-export function LightTile(props) {
+export const LightTile = React.memo(props => {
   const s = 0.0;
   return (
     <svg viewBox="0 0 1 1">
@@ -458,9 +475,9 @@ export function LightTile(props) {
       {props.children}
     </svg>
   );
-}
+});
 
-export function DarkTile(props) {
+export const DarkTile = React.memo(props => {
   const s = 0.0;
   return (
     <svg viewBox="0 0 1 1">
@@ -470,9 +487,9 @@ export function DarkTile(props) {
       {props.children}
     </svg>
   );
-}
+});
 
-export function CrystalTile(props) {
+export const CrystalTile = React.memo(props => {
   const s = 0.0;
   const crystalOpacity = 0.5;
   return (
@@ -480,9 +497,9 @@ export function CrystalTile(props) {
       <rect x={s} y={s} width={1-2*s} height={1-2*s} opacity={crystalOpacity} fill="url(#crystal-pattern)"/>
     </DarkTile>
   )
-}
+});
 
-export function CleanCrystalTile(props) {
+export const CleanCrystalTile = React.memo(props => {
   const s = 0.0;
   const crystalOpacity = 1;
   return (
@@ -490,9 +507,9 @@ export function CleanCrystalTile(props) {
       <rect x={s} y={s} width={1-2*s} height={1-2*s} opacity={crystalOpacity} fill="url(#clean-crystal-pattern)"/>
     </svg>
   );
-}
+});
 
-export function SvgDefs() {
+export const SvgDefs = React.memo(() => {
   const pattern = <Hatch fill="#abc"/>;
   const crystalPattern = <Star dx={0.25} fill="#cba"/>;
   const cleanCrystalPattern = <Star dx={0.25} fill="#dba"/>;
@@ -510,4 +527,4 @@ export function SvgDefs() {
       <Cloud/>
     </svg>
   );
-}
+});

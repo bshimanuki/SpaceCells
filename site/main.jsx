@@ -22,6 +22,15 @@ const MAX_HISTORY = 1000;
 const NUM_LEVELS_TO_INITIALIZE_INSTRUCTIONS = 2;
 const NUM_TUTORIAL_LEVELS = 4;
 
+function shallowEqual(x, y) {
+  // don't care about undefined
+  if (x === y) return true;
+  if (!x || !y) return false;
+  for (const key in x) if (x[key] !== y[key]) return false;
+  for (const key in y) if (x[key] !== y[key]) return false;
+  return true;
+}
+
 function nest(seq, value, obj={}, overwrite=true, start=0) {
   if (start === seq.length) {
     if (overwrite || JSON.stringify(obj) === JSON.stringify({})) return value;
@@ -346,7 +355,7 @@ class SquareQuarter extends React.PureComponent {
   }
 }
 
-class Square extends React.PureComponent {
+class Square extends React.Component {
   renderSymbol(props) {
     const selected = props.symbolState.selected;
     return (
@@ -456,6 +465,16 @@ class Square extends React.PureComponent {
       </div>
     );
   }
+
+  shouldComponentUpdate(nextProps, nextState) {
+    // direct cell props are ignored
+    const {cell, paths, ...rest} = this.props;
+    const {cell: nextCell, paths: nextPaths, ...nextRest} = nextProps;
+    if (!shallowEqual(this.state, nextState)) return true;
+    if (!shallowEqual(paths, nextPaths)) return true;
+    if (!shallowEqual(rest, nextRest)) return true;
+    return false;
+  }
 }
 
 class Board extends React.PureComponent {
@@ -484,22 +503,29 @@ class Board extends React.PureComponent {
       <div className="board">
         {this.props.squares.slice(0, this.props.m).map((row, y) =>
         <div key={y} className="board-row">
-          {row.slice(0, this.props.n).map((square, x) => this.renderSquare(Object.assign(
-            {
-              y: y,
-              x: x,
-              cell: ((this.props.cells || {})[y] || {})[x],
-              paths: ((this.props.paths || {})[y] || {})[x],
-              background: ((this.props.background || {})[y] || {})[x],
-              trespassable: ((this.props.trespassable || {})[y] || {})[x],
-              bot0: matchLocation(this.props.bots[0], y, x),
-              bot1: matchLocation(this.props.bots[1], y, x),
-              input: this.props.inputs.some(input => matchLocation(input, y, x)),
-              output: this.props.outputs.some(output => matchLocation(output, y, x)),
-              powered: this.props.outputs.filter(output => output.power).some(output => matchLocation(output, y, x)),
-              levelChar: ((this.props.levelGrid || {})[y] || {})[x],
-            },
-            square)))}
+          {row.slice(0, this.props.n).map((square, x) => {
+            const cell = ((this.props.cells || {})[y] || {})[x];
+            return this.renderSquare(Object.assign(
+              {
+                y: y,
+                x: x,
+                cell: cell,
+                cellResolved: cell && cell.resolved(),
+                cellUnresolved: cell && cell.unresolved(),
+                cellDirection: cell && cell.direction,
+                paths: ((this.props.paths || {})[y] || {})[x],
+                background: ((this.props.background || {})[y] || {})[x],
+                trespassable: ((this.props.trespassable || {})[y] || {})[x],
+                bot0: matchLocation(this.props.bots[0], y, x),
+                bot1: matchLocation(this.props.bots[1], y, x),
+                input: this.props.inputs.some(input => matchLocation(input, y, x)),
+                output: this.props.outputs.some(output => matchLocation(output, y, x)),
+                powered: this.props.outputs.filter(output => output.power).some(output => matchLocation(output, y, x)),
+                levelChar: ((this.props.levelGrid || {})[y] || {})[x],
+              },
+              square,
+            ));
+          })}
         </div>
         )}
       </div>
