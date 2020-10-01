@@ -1,8 +1,10 @@
 import React from "react";
 import ReactDOM from "react-dom";
-import update from "immutability-helper";
-import Modal from 'react-modal';
+
 import * as Charts from "@data-ui/histogram";
+import update from "immutability-helper";
+import {Square as Stop, Pause, Play, SkipForward as Skip, FastForward, ChevronRight, ChevronsRight} from "react-feather";
+import Modal from 'react-modal';
 
 import * as Svgs from "./svgs.jsx";
 import Reference from "./reference.jsx";
@@ -864,7 +866,15 @@ export class Game extends React.Component {
               {/*<Toggle handler={this.symbolTypeHandler} selected={this.state.symbolType} name="symbol-type" options={{cellSymbol:"Cells", instruction:"Instructions"}}/>*/}
               {/*<Toggle handler={this.botHandler} selected={this.state.bot} name="bot" options={["Red", "Blue"]} colors={botColors}/>*/}
               <Toggle handler={this.jointSymbolTypeHandler} selected={this.state.symbolType === "cellSymbol" ? "cellSymbol" : botColors[this.state.bot]} name="symbol-type" options={{cellSymbol:"Cells", red:"Red Instr.", blue:"Blue Instr."}} colors={{cellSymbol:"green", red:"red", blue:"blue"}}/>
-              <Toggle handler={this.simHandler} selected={this.state.simState} name="sim" options={{stop:"⏹", pause:"⏸", step:"⧐", play:"▶", fast:"⏩", nonstop:"⏩", batch:"⏭"}}/>
+              <Toggle handler={this.simHandler} selected={this.state.simState} name="sim" options={{
+                stop: <Stop/>,
+                pause: <Pause/>,
+                step: <Skip/>,
+                play: <Play/>,
+                fast: <FastForward/>,
+                nonstop: <><FastForward/><FastForward/></>,
+                batch: <><FastForward/><FastForward/></>,
+              }}/>
               <div style={{flex:1}}></div>
               <div className={`trash ${trashActive ? "active" : "inactive"} ${this.state.dragOverPosition === "trash" && "dragover"}`} onClick={this.trash} onDragEnter={this.trashDragOver} onDragOver={this.trashDragOver} onDragLeave={this.trashDragOver} onDrop={this.trashDragOver}>🗑</div>
             </div>

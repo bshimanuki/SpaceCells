@@ -1,3 +1,4 @@
+// vim: ft=css
 import React from "react";
 
 export default <style>{`
@@ -356,12 +357,25 @@ body.local {
 .toggle > label {
   background-color: #ccc;
   color: #444;
+  white-space: nowrap;
   text-align: center;
-  line-height: 1;
-  padding: 8px 16px;
+  padding: 0 16px;
+  height: 32px;
+  line-height: 32px;
   border: 1px solid rgba(0, 0, 0, 0.2);
   box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px rgba(255, 255, 255, 0.1);
   transition: all 0.1s ease-in-out;
+}
+.toggle > label svg {
+  fill: currentColor;
+  width: 16px;
+  height: 16px;
+}
+.toggle > label svg:not(:first-child) {
+  margin-left: -2px;
+}
+.toggle > input[value=nonstop] + label svg:not(:first-child) {
+  margin-left: -9px;
 }
 .toggle.symbol-type-toggle > label {
   width: 125px;

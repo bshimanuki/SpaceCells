@@ -1,3 +1,4 @@
+// vim: ft=css
 import React from "react";
 
 export default <style>{`
