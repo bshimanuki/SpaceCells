@@ -94,8 +94,7 @@ IntroNot: &IntroNot
     children:
       - tag: span
         content: "You can check out the "
-      - tag: em
-        content: Manual
+      - tag: Manual
       - tag: span
         content: " for a complete description of cells and instructions."
 

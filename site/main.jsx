@@ -722,7 +722,9 @@ export class Game extends React.Component {
     var makeNewState = (state, props) => {
       var [error, squares] = parseSubmission(submission, state.board.m, state.board.n);
       if (error) return {error: error};
-      return {squares: squares};
+      let newState = {squares: squares};
+      if (this.selectedOnBoard(state, props)) newState.selectedSymbolStates = new Set();
+      return newState;
     };
     this.resetBoard({makeNewState, undoredo});
   }
@@ -764,14 +766,16 @@ export class Game extends React.Component {
           )}
         </div>
         <div className={`level-buttons ${mainHidden}`}>
+          <Manual/>
+          <div style={{paddingBottom: "30px"}}/>
           <input className="clickable level-button level-information-button" type="button" value="Level Information" onClick={this.openModalHandler}/>
-          <div style={{paddingBottom: "40px"}}/>
+          <div style={{paddingBottom: "30px"}}/>
           <input className="clickable level-button export-button" type="button" value="Export Grid" onClick={this.exportHandler}/>
           <label className="clickable level-button import-button">
             <input hidden type="file" accept=".sol" onChange={this.importHandler}/>
             <span>Import Grid</span>
           </label>
-          <div style={{paddingBottom: "40px"}}/>
+          <div style={{paddingBottom: "30px"}}/>
           <input className="clickable level-button reset-button" type="button" value="Reset Grid" onClick={this.clearBoardHandler}/>
           <input className={`clickable level-button load-solution ${this.state.levelsSolved & (1 << this.state.levelNumber) ? "visible" : "hidden"}`} type="button" value="Load Last Solution" onClick={this.loadLastSolutionHandler}/>
         </div>
@@ -916,7 +920,7 @@ export class Game extends React.Component {
               </div>
             </div>
           </div>
-          {this.state.levelName !== "epilogue" && <Reference/>}
+          {this.props.showReference && this.state.levelName !== "epilogue" && <Reference useStyles={false}/>}
         </div>
       </div>
     </>;
@@ -1520,7 +1524,10 @@ export class Game extends React.Component {
       }
     }
     let squares = this.state.squares;
-    if (clearBoard) squares = squares.map(row => row.map(makeEmptySquare));
+    if (clearBoard) {
+      squares = squares.map(row => row.map(makeEmptySquare));
+      if (this.selectedOnBoard()) newState.selectedSymbolStates = new Set();
+    }
     submission = makeSubmission(squares, this.props.m, this.props.n);
     board = Module.LoadBoard(level.data, submission);
     var inputs = board.get_inputs();
@@ -2086,6 +2093,16 @@ class GameModal extends React.PureComponent {
   }
 }
 
+function Manual() {
+  return (
+    <a
+      href={`${window.location.pathname.replace(/\/$/, "")}/reference`}
+      style={{margin:"auto"}}
+      target="_blank"
+    ><em>Manual</em></a>
+  );
+}
+
 function Svg({value, ...props}) {
   const Component = Svgs[value];
   return <Component {...props}/>;
@@ -2093,6 +2110,7 @@ function Svg({value, ...props}) {
 
 const DynamicComponents = {
   Svg: Svg,
+  Manual: Manual,
 };
 
 function DynamicComponent(json, key=0) {

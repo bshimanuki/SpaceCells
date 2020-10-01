@@ -1,10 +1,17 @@
 var HTMLWebpackPlugin = require('html-webpack-plugin');
 
-var HTMLWebpackPluginConfig = new HTMLWebpackPlugin({
-  template: __dirname + '/site/index.html',
-  filename: 'index.html',
-  inject: 'body',
-});
+var HTMLWebpackPluginConfigs = [
+  new HTMLWebpackPlugin({
+    template: __dirname + '/site/index.html',
+    filename: 'index.html',
+    inject: 'body',
+  }),
+  new HTMLWebpackPlugin({
+    template: __dirname + '/site/reference.html',
+    filename: 'reference',
+    inject: 'body',
+  }),
+];
 
 module.exports = {
   entry: __dirname + '/site/inject.jsx',
@@ -44,5 +51,5 @@ module.exports = {
       },
     ],
   },
-  plugins: [HTMLWebpackPluginConfig],
+  plugins: HTMLWebpackPluginConfigs,
 };

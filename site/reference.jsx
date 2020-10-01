@@ -1,6 +1,8 @@
 import React, {memo} from "react";
 
 import * as Svgs from "./svgs.jsx";
+import SvgsStyle from "./svgs-style.jsx";
+import InfoStyle from "./info-style.jsx";
 
 function Empty() {
   return <div><Svgs.XCell className="hidden"/></div>;
@@ -20,7 +22,8 @@ const GL = (props={}) => <Svgs.XCell className={`latched resolved-0 ${props.clas
 const RL = (props={}) => <Svgs.PlusCell className={`latched resolved-1 ${props.classname || ""}`} {...props}/>;
 const OL = (props={}) => <Svgs.PlusCell className={`latched resolved-0 ${props.classname || ""}`} {...props}/>;
 
-function Reference() {
+function Reference(props) {
+  const {useStyles, ..._props} = Object.assign({useStyles: true}, props);
   return <div className="reference information">
     <h1>Manual</h1>
     <p>In this world, you are building systems of cells manipulated by bots. Bots move and follow instructions every cycle, with the eventual goal of using the input cells to construct a correct polarities at the output cells.</p>
@@ -194,6 +197,10 @@ function Reference() {
       <Svgs.Branch1Right className="bot1"/>
     </div>
     <p>If the current cell matches one of the specified polarities, change directions (ignoring any regular arrows). It is an error if the cell does not have a stable polarity at the current cycle. This is valid for 1x1 cells and diode cells.</p>
+    {useStyles && <>
+      {SvgsStyle}
+      {InfoStyle}
+    </>}
   </div>;
 }
 export default memo(Reference);
