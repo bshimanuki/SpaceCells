@@ -1603,6 +1603,7 @@ export class Game extends React.Component {
           () => this.loadSubmission(response.data.submission));
       } else {
         console.log(response);
+        this.setState({error: JSON.stringify(response)});
       }
     });
   }
@@ -1887,6 +1888,7 @@ export class Game extends React.Component {
           });
         } else {
           console.log(response);
+          this.setState({error: JSON.stringify(response)});
         }
       });
     } else if (this.state.cycle >= MAX_CYCLES) {
