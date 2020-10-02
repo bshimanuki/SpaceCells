@@ -1,7 +1,8 @@
 // vim: ft=css
 import React from "react";
+import css from "styled-jsx/css";
 
-export default <style>{`
+export default css.global`
 
 .information .hidden {
   visibility: hidden;
@@ -61,4 +62,4 @@ export default <style>{`
   padding: 30px;
 }
 
-`}</style>
+`

@@ -1,7 +1,8 @@
 // vim: ft=css
 import React from "react";
+import css from "styled-jsx/css";
 
-export default <style>{`
+export default css.global`
 
 .symbol svg, .symbolgroup svg {
   position: absolute;
@@ -140,4 +141,4 @@ export default <style>{`
   opacity: 75%;
 }
 
-`}</style>
+`

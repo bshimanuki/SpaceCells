@@ -15,12 +15,13 @@ import MainStyle from "./main-style.jsx"; // after svgs with its own css
 import EmbindingsWASM from "./embindings.wasm";
 
 // switch between these api's to use local vs server
-// import {get_data, get_submission, make_submission} from "./server_api.jsx";
-import {get_data, get_submission, make_submission} from "./server_api_local.jsx";
+// import {get_data, get_submission, make_submission} from "./server-api.jsx";
+import {get_data, get_submission, make_submission} from "./server-api-local.jsx";
 
 const MAX_HISTORY = 1000;
 const NUM_LEVELS_TO_INITIALIZE_INSTRUCTIONS = 2;
 const NUM_TUTORIAL_LEVELS = 4;
+const MAX_CYCLES = 5000; // should be kept in sync with the server MAX_CYCLES
 
 function shallowEqual(x, y) {
   // don't care about undefined
@@ -927,7 +928,14 @@ export class Game extends React.Component {
   }
 
   render() {
-    if (!this.state.doneLoading) return null;
+    if (!this.state.doneLoading) return <>
+      <div>
+        <div className="spinner-container">
+          <div className="spinner"/>
+        </div>
+      </div>
+      <Styles/>
+    </>;
     let classNames = [];
     classNames.push("game-all");
     if (this.state.draggedSymbolState.value && this.state.draggedSymbolState.value !== "rectangleSelected") classNames.push("dragging");
@@ -952,12 +960,9 @@ export class Game extends React.Component {
           {this.renderLevelSidebar()}
           {this.renderCenter()}
           {this.renderStatsSidebar()}
-          <Svgs.SvgDefs/>
         </div>
-        {MainStyle}
-        {SvgsStyle}
-        {InfoStyle}
       </div>
+      <Styles/>
     </>;
   }
 
@@ -1433,7 +1438,9 @@ export class Game extends React.Component {
 
   move = (steps=1) => {
     for (let i=0; i<steps; ++i) {
-      this.state.board.move();
+      if (this.state.board.cycle < MAX_CYCLES) {
+        this.state.board.move();
+      }
     }
     this.resetCells();
   }
@@ -1859,7 +1866,7 @@ export class Game extends React.Component {
   onFinish = () => {
     // TODO: query server
     if (this.state.status === Module.Status.DONE) {
-      const promise = make_submission(this.props.router, this.state.levelNumber, this.state.submission, this.knownLevels());
+      const promise = make_submission(this.props.router, this.state.levelNumber, this.state.submission, this.state.cycle, this.knownLevels());
       promise.then(response => {
         if (response.data) {
           this.setState((state, props) => {
@@ -1882,6 +1889,9 @@ export class Game extends React.Component {
           console.log(response);
         }
       });
+    } else if (this.state.cycle >= MAX_CYCLES) {
+      this.setState({error: `Error: Did not complete within ${MAX_CYCLES} cycles.`});
+      this.simHandler("pause");
     }
   }
 }
@@ -2093,10 +2103,22 @@ class GameModal extends React.PureComponent {
   }
 }
 
+class Styles extends React.PureComponent {
+  render() {
+    return <>
+      <Svgs.SvgDefs/>
+      <style jsx>{MainStyle}</style>
+      <style jsx>{SvgsStyle}</style>
+      <style jsx>{InfoStyle}</style>
+    </>
+  }
+}
+
 function Manual() {
   return (
     <a
       href={`${window.location.pathname.replace(/\/$/, "")}/reference`}
+      className="manual-link"
       style={{margin:"auto"}}
       target="_blank"
     ><em>Manual</em></a>

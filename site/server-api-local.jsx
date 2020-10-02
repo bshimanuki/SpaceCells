@@ -97,7 +97,7 @@ export function get_submission(router, level, knownLevels) {
   return promise;
 }
 
-export function make_submission(router, level, submission, knownLevels) {
+export function make_submission(router, level, submission, cycles, knownLevels) {
   let levelsSolved = Number(localStorage.getItem("levels-solved")) || 0;
   let newState = {};
   if (!(levelsSolved & (1 << level))) {

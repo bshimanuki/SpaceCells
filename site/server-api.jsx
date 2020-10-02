@@ -29,10 +29,11 @@ export const get_submission = (router, level, knownLevels) => {
   return response;
 }
 
-export const make_submission = (router, level, submission, knownLevels) => {
+export const make_submission = (router, level, submission, cycles, knownLevels) => {
   const data = {
     level,
     submission,
+    cycles,
     knownLevels,
   };
   let formdata = new FormData();

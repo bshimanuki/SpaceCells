@@ -198,8 +198,8 @@ function Reference(props) {
     </div>
     <p>If the current cell matches one of the specified polarities, change directions (ignoring any regular arrows). It is an error if the cell does not have a stable polarity at the current cycle. This is valid for 1x1 cells and diode cells.</p>
     {useStyles && <>
-      {SvgsStyle}
-      {InfoStyle}
+      <style jsx>{SvgsStyle}</style>
+      <style jsx>{InfoStyle}</style>
     </>}
   </div>;
 }

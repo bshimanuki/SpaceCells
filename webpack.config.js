@@ -1,6 +1,6 @@
 var HTMLWebpackPlugin = require('html-webpack-plugin');
 
-var HTMLWebpackPluginConfigs = [
+var plugins = [
   new HTMLWebpackPlugin({
     template: __dirname + '/site/index.html',
     filename: 'index.html',
@@ -51,5 +51,5 @@ module.exports = {
       },
     ],
   },
-  plugins: HTMLWebpackPluginConfigs,
+  plugins: plugins,
 };

@@ -1,7 +1,8 @@
 // vim: ft=css
 import React from "react";
+import css from "styled-jsx/css";
 
-export default <style>{`
+export default css.global`
 
 .game *, .game-modal * {
   font-family: Verdana;
@@ -56,8 +57,7 @@ body.local {
 }
 .left-sidebar {
   /* padding: 0 1%; */
-  width: 30%;
-  padding-left: 5%;
+  width: 300px;
 }
 .center-column{
   position: relative;
@@ -72,7 +72,7 @@ body.local {
 }
 .stats-sidebar {
   padding: 0 1%;
-  width: 30%;
+  width: 300px;
 }
 
 /* board */
@@ -566,6 +566,9 @@ body.local {
   user-select: none;
   padding: 1px;
 }
+.level-buttons .manual-link {
+  font-weight: bold;
+}
 .assignment-title::before {
   content: "★ ";
   color: yellow;
@@ -689,4 +692,35 @@ body.local {
   height: 20em;
 }
 
-`}</style>
+/* loading spinner */
+.spinner-container {
+  position: relative;
+  width: 400px;
+  height: 400px;
+  margin: 100px auto;
+}
+.spinner {
+  display: inline-block;
+  width: 100%;
+  height: 100%;
+}
+.spinner:after {
+  content: " ";
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 50px solid #fff;
+  border-color: gray transparent gray transparent;
+  animation: spinner 1.2s linear infinite;
+}
+@keyframes spinner {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+`
