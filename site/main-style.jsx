@@ -204,12 +204,6 @@ body.local {
   flex-direction: column;
   align-items: center;
 }
-.symbol-options-grid > * {
-  width: min-content;
-}
-.symbol-options-grid > .svg-container {
-  width: min-content;
-}
 .symbol-options-grid {
   height: 100%;
   width: 100%;
@@ -224,10 +218,9 @@ body.local {
   clip: rect(0, 0, 0, 0);
   overflow: hidden;
 }
-.symbol-options-grid label {
-}
-.symbol-options-grid svg {
+.symbol-options-grid .symbol-option {
   height: 100%;
+  width: 100%;
 }
 .symbol-options-grid input:checked + label svg {
   /* filter: drop-shadow(0 0 1vmin black); */
