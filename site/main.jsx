@@ -1755,13 +1755,17 @@ export class Game extends React.Component {
         if (fits) event.preventDefault(); // allow drop
         this.setState((state, props) => {
           const draggedSymbolStates = state.draggedSymbolState.onBoard ? state.selectedSymbolStates : new Set([state.draggedSymbolState]);
-          const semaphore = JSON.stringify(state.dragOverPosition) === JSON.stringify([y, x]) ? state.dragOverPositionSemaphore + 1 : 1;
-          return {
-            dragOverPosition: [y, x],
+          const newPosition = JSON.stringify(state.dragOverPosition) !== JSON.stringify([y, x]);
+          const semaphore = newPosition ? 1: state.dragOverPositionSemaphore + 1;
+          let newState = {
             dragOverPositionSemaphore: semaphore,
-            dragOverSet: this.getCopySymbolsUpdater(state, props, state.draggedSymbolState, [y, x], draggedSymbolStates, true)[0],
-            dragOverFits: fits,
           };
+          if (newPosition) {
+            newState.dragOverPosition = [y, x];
+            newState.dragOverSet = this.getCopySymbolsUpdater(state, props, state.draggedSymbolState, [y, x], draggedSymbolStates, true)[0];
+            newState.dragOverFits = fits;
+          }
+          return newState;
         });
         break;
       case "dragover":
