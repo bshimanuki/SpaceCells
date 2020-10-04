@@ -686,15 +686,21 @@ export class Game extends React.Component {
   componentDidMount() {
     loadModule(() => this.state.levels && this.finishInitialize());
     const promise = get_data(this.props.router, 0);
-    promise.then(response => {
-      if (response.data) {
-        this.setState(
-          (state, props) => this.getMergeState(response.data, state, props),
-          () => Module && this.finishInitialize());
-      } else {
-        console.log(response);
-      }
-    });
+    promise.then(
+      response => {
+        if (response.data) {
+          this.setState(
+            (state, props) => this.getMergeState(response.data, state, props),
+            () => Module && this.finishInitialize());
+        } else {
+          console.log(response);
+        }
+      },
+      () => {
+        const error = "Could not connect to server";
+        console.log(error);
+      },
+    );
   }
 
   componentWillUnmount() {
@@ -1596,16 +1602,23 @@ export class Game extends React.Component {
 
   loadLastSolutionHandler = event => {
     const promise = get_submission(this.props.router, this.state.levelNumber, this.knownLevels());
-    promise.then(response => {
-      if (response.data) {
-        this.setState(
-          (state, props) => this.getMergeState(response.data, state, props),
-          () => this.loadSubmission(response.data.submission));
-      } else {
-        console.log(response);
-        this.setState({error: JSON.stringify(response)});
-      }
-    });
+    promise.then(
+      response => {
+        if (response.data) {
+          this.setState(
+            (state, props) => this.getMergeState(response.data, state, props),
+            () => this.loadSubmission(response.data.submission));
+        } else {
+          console.log(response);
+          this.setState({error: JSON.stringify(response)});
+        }
+      },
+      () => {
+        const error = "Could not connect to server";
+        console.log(error);
+        this.setState({error});
+      },
+    );
   }
 
   symbolClickHandler = symbolState => {
@@ -1872,29 +1885,36 @@ export class Game extends React.Component {
     // TODO: query server
     if (this.state.status === Module.Status.DONE) {
       const promise = make_submission(this.props.router, this.state.levelNumber, this.state.submission, this.state.cycle, this.knownLevels());
-      promise.then(response => {
-        if (response.data) {
-          this.setState((state, props) => {
-            let newState = this.getMergeState(response.data, state, props);
-            Object.assign(newState, {
-              showModal: true,
-              modalLevelEnd: true,
-              modalPage: -1,
-              ownCurrentStats: {
-                cycles: state.cycle,
-                cells: state.numCells,
-                instructions: state.numInstructions,
-                symbols: state.numSymbols,
-              },
+      promise.then(
+        response => {
+          if (response.data) {
+            this.setState((state, props) => {
+              let newState = this.getMergeState(response.data, state, props);
+              Object.assign(newState, {
+                showModal: true,
+                modalLevelEnd: true,
+                modalPage: -1,
+                ownCurrentStats: {
+                  cycles: state.cycle,
+                  cells: state.numCells,
+                  instructions: state.numInstructions,
+                  symbols: state.numSymbols,
+                },
+              });
+              newState.levelsUnlocked = numUnlockedLevels(newState.levels || state.levels, newState.levelsSolved);
+              return newState;
             });
-            newState.levelsUnlocked = numUnlockedLevels(newState.levels || state.levels, newState.levelsSolved);
-            return newState;
-          });
-        } else {
-          console.log(response);
-          this.setState({error: JSON.stringify(response)});
-        }
-      });
+          } else {
+            console.log(response);
+            this.setState({error: JSON.stringify(response)});
+          }
+        },
+        () => {
+          const error = "Could not connect to server";
+          console.log(error);
+          this.setState({error});
+        },
+      );
     } else if (this.state.cycle >= MAX_CYCLES) {
       this.setState({error: `Error: Did not complete within ${MAX_CYCLES} cycles.`});
       this.simHandler("pause");

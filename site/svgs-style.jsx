@@ -77,6 +77,17 @@ export default css.global`
 .resolved-1 .cell-plus .circle-1 { fill: red; }
 .resolved-0 .cell-plus .circle-0 { fill: orange; }
 
+.resolved-1.cell-x .cell-border { fill: #ddf; }
+.resolved-0.cell-x .cell-border { fill: #dfd; }
+.resolved-1.cell-plus .cell-border { fill: #fcc; }
+.resolved-0.cell-plus .cell-border { fill: #fed; }
+.resolved-1.circle-0 { fill: white; }
+.resolved-0.circle-1 { fill: white; }
+.resolved-1.cell-x .circle-1 { fill: blue; }
+.resolved-0.cell-x .circle-0 { fill: green; }
+.resolved-1.cell-plus .circle-1 { fill: red; }
+.resolved-0.cell-plus .circle-0 { fill: orange; }
+
 .diode .arrow {
   stroke: black;
   stroke-width: 0.1;
@@ -140,5 +151,17 @@ export default css.global`
   fill: none;
   opacity: 75%;
 }
+
+/* boundary cells */
+.untrespassable:not(.input):not(.output) {
+  background-image: linear-gradient(to right, lightgray,#000,#333,#777,#aaa,#ccc,#ddd,#ccc,#aaa,#777,#333,#000,lightgray);
+}
+.output.unpowered svg { opacity: 0.5 }
+.output.powered .square-underlay {
+  border-style: dashed;
+  border-width: 1%;
+  border-color: gold;
+}
+
 
 `

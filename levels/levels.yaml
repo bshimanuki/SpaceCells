@@ -1,6 +1,6 @@
 LevelNot: &LevelNot
   tag: p
-  content: "Turn the output green when the input is blue and blue when the input is green."
+  content: "Turn the output (on the right) green when the input (on the left) is blue and blue when the input is green."
 
 LevelCrossing: &LevelCrossing
   tag: p
@@ -55,20 +55,119 @@ IntroNot: &IntroNot
   - tag: p
     content: "Welcome to SpaceCells, the satellite planet where engineers design systems that control colors at the level of electrons. The basic building block is the cell, a component with four cavities which holds two electrons."
   - tag: div
-    className: "row-line"
+    className: row-line
     children:
       - tag: Svg
         value: XCell
   - tag: p
     content: "By placing them in different configurations, we can make them do anything we set our minds to!"
-    # <div className="gridlines" style={{display:grid gridTemplateColumns:"repeat(6, min-content)"}}>
-      # <Svgs.XCell className="latched resolved-1"/><Svgs.XCell className="resolved-1"/><Svgs.XCell className="resolved-1"/><Svgs.XCell className="resolved-1"/><Svgs.XCell className="resolved-1"/><Svgs.XCell className="resolved-1"/>
-      # <div/><div/><Svgs.XCell className="resolved-1"/><div/><div/><div/>
-      # <Svgs.XCell className="resolved-1"/><div/><div/><Svgs.XCell className="resolved-0"/><Svgs.XCell className="resolved-0"/><Svgs.XCell className="resolved-0"/>
-    # </div>
-    # <p><Svgs.XCell className="inline latched resolved-1"/> is a locked cell, meaning it is fixed. Other <Svgs.XCell className="inline"/> cells are free to change.</p>
+  - tag: div
+    className: gridlines
+    style:
+      display: grid
+      gridTemplateColumns: repeat(6, min-content)
+    children:
+      # row 1
+      - tag: Svg
+        value: XCell
+        className: latched resolved-1
+      - tag: Svg
+        value: XCell
+        className: resolved-1
+      - tag: Svg
+        value: XCell
+        className: resolved-1
+      - tag: Svg
+        value: XCell
+        className: resolved-1
+      - tag: Svg
+        value: XCell
+        className: resolved-1
+      - tag: Svg
+        value: XCell
+        className: resolved-1
+        # row 2
+      - tag: div
+        className: untrespassable
+      - tag: div
+      - tag: div
+      - tag: Svg
+        value: XCell
+        className: resolved-1
+      - tag: div
+      - tag: div
+        # row 3
+      - tag: div
+        className: untrespassable
+      - tag: Svg
+        value: XCell
+        className: resolved-1
+      - tag: div
+      - tag: div
+      - tag: Svg
+        value: XCell
+        className: resolved-0
+      - tag: Svg
+        value: XCell
+        className: resolved-0
   - tag: p
-    content: "Cells are too small for human hands, so we manipulate them using bots. Bots move and perform all sorts of operations based on instructions we assign. The only ones you need as we start off are the direction instructions, the START instruction, and the NEXT instruction. There is a single START instruction and it is where the bot starts its operation. The NEXT instruction will cause your output to be verified and will advance the input(s) and output(s)."
+    children:
+      - tag: Svg
+        value: XCell
+        className: inline latched resolved-1
+      - tag: span
+        content: " is a locked cell, meaning it is fixed. Other "
+      - tag: Svg
+        value: XCell
+        className: inline resolved-1
+      - tag: Svg
+        value: XCell
+        className: inline resolved-0
+      - tag: span
+        content: " cells are free to change."
+  - tag: p
+    content: "Cells are too small for human hands, so we manipulate them using bots. In later assignments you will need to give bots instructions."
+  - tag: div
+    className: "row-line"
+    children:
+      - tag: Svg
+        value: CellBot
+        className: bot0
+      - tag: Svg
+        value: Start
+        className: bot0
+      - tag: Svg
+        value: DirectionRight
+        className: bot0
+      - tag: Svg
+        value: Next
+        className: bot0
+      - tag: Svg
+        value: DirectionLeft
+        className: bot0
+
+IntroCrossing: &IntroCrossing
+  - tag: div
+    className: note
+    children:
+      - tag: p
+        content: "Criss cross applesauce. This brings me back to my childhood."
+      - tag: p
+        style:
+          textAlign: right
+        content: "~Zach"
+
+IntroAnd: &IntroAnd
+  - tag: p
+    children:
+      - tag: span
+        content: "You will be placing your own instructions from now on. Check the "
+      - tag: em
+        content: Instructions
+      - tag: span
+        content: " tabs."
+  # - tag: p
+    # content: "Cells are too small for human hands, so we manipulate them using bots. Bots move and perform all sorts of operations based on instructions we assign. The only ones you need as we start off are the direction instructions, the START instruction, and the NEXT instruction. There is a single START instruction and it is where the bot starts its operation. The NEXT instruction will cause your output to be verified and will advance the input(s) and output(s)."
   - tag: div
     className: "row-line"
     children:
@@ -90,30 +189,13 @@ IntroNot: &IntroNot
       - tag: Svg
         value: DirectionRight
         className: bot0
-  - tag: p
-    children:
-      - tag: span
-        content: "You can check out the "
-      - tag: Manual
-      - tag: span
-        content: " for a complete description of cells and instructions."
-
-IntroCrossing: &IntroCrossing
-  - tag: div
-    className: note
-    children:
-      - tag: p
-        content: "There's no excitement like a little switcheroo."
-
-IntroAnd: &IntroAnd
-  - tag: p
-    children:
-      - tag: span
-        content: "You will be placing your own instructions from now on. Check the "
-      - tag: em
-        content: Instructions
-      - tag: span
-        content: " tabs."
+  # - tag: p
+    # children:
+      # - tag: span
+        # content: "You can check out the "
+      # - tag: Manual
+      # - tag: span
+        # content: " for a complete description of cells and instructions."
   - tag: div
     className: note
     children:
@@ -137,15 +219,28 @@ IntroDelay: &IntroDelay
     children:
       - tag: span
         content: "Most instructions are now available. Check the "
-      - tag: em
-        content: Manual
+      - tag: Manual
       - tag: span
         content: " for descriptions."
   - tag: div
     className: note
     children:
       - tag: p
-        content: "Cells innately have no memories, but you know bots, they never forget a thing."
+        content: "Cells innately have no memories, but bots never forget a thing."
+      - tag: p
+        content: "You may find some or all of the GRAB/DROP, LOCK/FREE, and RESET instructions varieties useful."
+      - tag: div
+        className: "row-line"
+        children:
+          - tag: Svg
+            value: Swap
+            className: bot0
+          - tag: Svg
+            value: ToggleLatch
+            className: bot0
+          - tag: Svg
+            value: Relatch
+            className: bot0
 
 IntroSwitch: &IntroSwitch
   - tag: p
@@ -172,6 +267,20 @@ IntroSwitch: &IntroSwitch
             className: bot1
       - tag: p
         content: "Only powered outputs emit light. Both outputs start powered."
+
+IntroXor: &IntroXor
+  - tag: div
+    className: note
+    children:
+      - tag: p
+        content: "Blue and green, bleen and grue. What is what and why and how?"
+
+IntroRam: &IntroRam
+  - tag: div
+    className: note
+    children:
+      - tag: p
+        content: "Remember, forget, rinse, repeat. The mind is limited but the possibilities are endless."
 
 Epilogue: &Epilogue
   - tag: h2
@@ -208,9 +317,11 @@ levels: &levels
   - name: xor
     title: Differences
     goal: *LevelXor
+    preface: *IntroXor
   - name: ram
     title: "Storage Unit"
     goal: *LevelRam
+    preface: *IntroRam
   - name: rainbow
     title: "Colors of the Rainbow"
     goal: *LevelRainbow

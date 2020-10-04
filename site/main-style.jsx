@@ -311,17 +311,6 @@ body.local {
   /* border-color: #8e3e8e; */
 /* } */
 
-/* boundary cells */
-.untrespassable:not(.input):not(.output) {
-  background-image: linear-gradient(to right, lightgray,#000,#333,#777,#aaa,#ccc,#ddd,#ccc,#aaa,#777,#333,#000,lightgray);
-}
-.output.unpowered svg { opacity: 0.5 }
-.output.powered .square-underlay {
-  border-style: dashed;
-  border-width: 1%;
-  border-color: gold;
-}
-
 /* trash */
 .trash {
   font-size: 30px;

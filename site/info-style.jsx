@@ -20,6 +20,10 @@ export default css.global`
 .information .inline svg {
   height: 30px;
   width: 30px;
+  vertical-align: middle;
+}
+.information .gridlines {
+  border: 1px solid black;
 }
 .information .gridlines > * {
   border: 1px solid black;
@@ -46,14 +50,17 @@ export default css.global`
 }
 
 .information .note {
-  margin: 0 10%;
+  margin: 3em 10%;
   padding: 1em 10%;
   background-color: #fe6;
   filter: drop-shadow(4px 4px 4px black);
 }
 
 .level-info .row-line, .level-info .gridlines {
-  justify-content: center;
+  margin: auto;
+}
+.row-line, .gridlines {
+  width: min-content;
 }
 
 .epilogue {
