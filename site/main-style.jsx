@@ -29,8 +29,8 @@ export default css.global`
 
 /* layout */
 body.local {
-  /* background-color: whitesmoke; */
-  background-color: #999;
+  background-color: whitesmoke;
+  /* background-color: #999; */
   color: #000;
 }
 .game {
@@ -114,7 +114,7 @@ body.local {
   overflow: hidden;
   z-index: 20;
 }
-.output-symbol {
+.input-symbol, .output-symbol {
   position: absolute;
   margin-top: 100%;
   width: 100%;
@@ -522,13 +522,18 @@ body.local {
   padding-left: 7ex;
   text-indent: -6ex;
   border-radius: 10px 0 0 10px;
-  border: 2px solid #444;
   border-right-style: none;
+  transition: all 0.1s ease-in-out;
+  border: 2px solid #aaa;
+  background-color: #ccc;
+  color: #aaa;
+}
+.level-selection > label.unlocked {
+  border-color: #444;
   background-color: #89c;
   color: #000;
-  transition: all 0.1s ease-in-out;
 }
-.level-selection > input:checked + label {
+.level-selection > label.selected {
   border-color: #ccc;
   color: #eee;
   background: #025;

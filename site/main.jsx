@@ -450,6 +450,7 @@ class Square extends React.Component {
           })}
         </div>
         <div className={`square-overlay ${cellBotClassNames}`}>
+          {this.props.input && <div className="input-symbol">IN</div>}
           {outputSymbol && <div className="output-symbol">{outputSymbol}</div>}
           <Svgs.CellBot/>
         </div>
@@ -582,6 +583,11 @@ export class Game extends React.Component {
     super(props);
     this.state = {
       doneLoading: false,
+      levels: null,
+      levelsSolved: null,
+      totalLevels: null,
+      levelStats: null,
+      ownBestStats: null,
     };
   }
 
@@ -672,6 +678,9 @@ export class Game extends React.Component {
     if (data.levelsSolved !== undefined) {
       newState.levelsSolved = data.levelsSolved;
     }
+    if (data.totalLevels !== undefined) {
+      newState.totalLevels = data.totalLevels;
+    }
     if (data.levels) {
       let levels = [...(state.levels || [])];
       data.levels.forEach(level => levels[level.levelNumber] = level);
@@ -755,19 +764,20 @@ export class Game extends React.Component {
 
   renderLevelSidebar() {
     const mainHidden = this.state.levelName === "epilogue" ? "hidden" : "";
+    const totalLevels = this.state.totalLevels || this.state.levelsUnlocked;
     return <>
       <div className="left-sidebar" style={{display:"flex", flexDirection:"column"}}>
         <div className="level-selection">
-          {Array.from({length: this.state.levelsUnlocked}).map((_, i) =>
+          {Array.from({length: totalLevels}).map((_, i) =>
           <React.Fragment key={i}>
-            <input type="radio" id={`radio-level-${this.state.levels[i].name}`}
+            <input type="radio" id={`radio-level-${i}`}
               value={i} name="level-selection"
               checked={this.state.levelNumber === i}
-              onClick={this.setLevelHandler}
+              onClick={i < this.state.levelsUnlocked && this.setLevelHandler}
               readOnly
             />
-            <label htmlFor={`radio-level-${this.state.levels[i].name}`} className={this.state.levelNumber === i ? "unclickable" : "clickable"}>
-              <span className={`assignment-title ${this.state.levelsSolved & (1 << i) ? "solved" : "unsolved"}`}>{this.state.levels[i].name === "epilogue" ? this.state.levels[i].title : `Assignment ${i+1}: ${this.state.levels[i].title}`}</span>
+            <label htmlFor={`radio-level-${i}`} className={this.state.levelNumber === i ? "selected unlocked unclickable" : i < this.state.levelsUnlocked ? "unlocked clickable" : "locked unclickable"}>
+              <span className={`assignment-title ${this.state.levelsSolved & (1 << i) ? "solved" : "unsolved"}`}>{i === this.state.totalLevels - 1 ? "Epilogue" : `Assignment ${i+1}` + (i < this.state.levelsUnlocked ? `: ${this.state.levels[i].title}` : "")}</span>
             </label>
           </React.Fragment>
           )}

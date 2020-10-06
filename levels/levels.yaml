@@ -151,7 +151,7 @@ IntroCrossing: &IntroCrossing
     className: note
     children:
       - tag: p
-        content: "Criss cross applesauce. This brings me back to my childhood."
+        content: "Criss cross applesauce... Oh those childhood days."
       - tag: p
         style:
           textAlign: right
@@ -244,7 +244,7 @@ IntroDelay: &IntroDelay
 
 IntroSwitch: &IntroSwitch
   - tag: p
-    content: "From here on, you will have multiple assignments available at a time."
+    content: "From here on, you will have multiple assignments available at a time. All cell types and instructions are available for use."
   - tag: div
     className: note
     children:
@@ -273,7 +273,7 @@ IntroXor: &IntroXor
     className: note
     children:
       - tag: p
-        content: "Blue and green, bleen and grue. What is what and why and how?"
+        content: "Is it blue or green or grue or bleen?"
 
 IntroRam: &IntroRam
   - tag: div

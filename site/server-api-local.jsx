@@ -1,5 +1,7 @@
 import levels_yaml from "../levels/levels.yaml"
 
+const NUM_TUTORIAL_LEVELS = 4;
+
 function mockNormal(mu, maxV) {
   const n = 200;
   const normalFidelity = 6;
@@ -75,11 +77,13 @@ const levels = levels_yaml.levels.map((yaml, i) => {
 
 export function get_data(router, knownLevels) {
   const levelsSolved = Number(localStorage.getItem("levels-solved")) || 0;
+  let data = {
+    levelsSolved: levelsSolved,
+    levels: levels,
+  };
+  if (levelsSolved & (1 << (NUM_TUTORIAL_LEVELS - 1))) data.totalLevels = levels.length;
   const result = {
-    data: {
-      levelsSolved: levelsSolved,
-      levels: levels,
-    },
+    data: data,
   };
   return Promise.resolve(result);
 }

@@ -16,6 +16,7 @@
 
 namespace puzzle {
 
+constexpr bool ROTATE_TAKES_TURN = false;
 
 const Error Error::BoardSizeMismatch("Board size mismatch", ErrorReason::INVALID_INPUT);
 const Error Error::InvalidInput("Invalid input", ErrorReason::INVALID_INPUT);
@@ -792,9 +793,11 @@ bool Board::move() {
     case Operation::Type::START:
       break;
     case Operation::Type::ROTATE:
-      bot.rotating ^= true;
-      if (bot.rotating && cell.is_rotateable()) {
-        cell.rotating = true;
+      if (ROTATE_TAKES_TURN) {
+        bot.rotating ^= true;
+        if (bot.rotating && cell.is_rotateable()) {
+          cell.rotating = true;
+        }
       }
       break;
     case Operation::Type::LATCH:
@@ -913,6 +916,13 @@ bool Board::move() {
     const Operation &operation = operations[k].at(bot.location);
     Cell &cell = cells.at(bot.location);
     switch (operation.type) {
+    case Operation::Type::ROTATE:
+      if (!ROTATE_TAKES_TURN) {
+        if (cell.is_rotateable()) {
+          cell.value = -cell.value;
+        }
+      }
+      break;
     case Operation::Type::LATCH:
       if (cell.is_latchable()) {
         if (cell.latched) {

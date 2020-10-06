@@ -282,7 +282,7 @@ export const Sync = React.memo(props => {
 });
 export const Rotate = React.memo(props => {
   // return <UnicodeOperation texts="⭮" _className="rotate" {...props}/>
-  return <Operation texts="ROT" _className="rotate" {...props}/>
+  return <Operation texts="FLIP" _className="rotate" {...props}/>
 });
 export const Power0 = React.memo(props => {
   return <Operation texts={["PWR", "ℵ"]} _className="power0" {...props}/>

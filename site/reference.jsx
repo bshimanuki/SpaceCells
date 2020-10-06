@@ -152,12 +152,12 @@ function Reference(props) {
     </div>
     <p>Reset the value of a locked cell to the value it would settle to if unlocked. You could think of this as unlocking and relocking it in the same cycle. This only affects locked cells.</p>
 
-    <h3>ROTATE Instruction</h3>
+    <h3>FLIP Instruction</h3>
     <div className="row-line">
       <Svgs.Rotate className="bot0"/>
       <Svgs.Rotate className="bot1"/>
     </div>
-    <p>The bot will rotate the cell 90 degrees, thus inverting the polarity if it is locked. This is only valid for 1x1 cells. The bot will not move during the cycle it is rotating (which results in a pause whether or not there is a cell to rotate).</p>
+    <p>The bot will invert the polarity of a locked cell.</p>
 
     <h3>SYNC Instruction</h3>
     <div className="row-line">
