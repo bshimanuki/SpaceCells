@@ -845,7 +845,9 @@ export class Game extends React.Component {
             <div><span className="steps">Completed Test Cases</span><span className="steps-value">{this.state.testCase + (this.state.step === (this.state.outputColors[this.state.testCase] || {}).length)}</span></div>
             {/*<div><span className="steps">Steps</span><span className="steps-value">{this.state.step}</span></div>*/}
             <div><span className="cycles">Total Cycles</span><span className="cycles-value">{this.state.cycle}</span></div>
-            <div><span className="num-symbols">Total Symbols</span><span className="num-symbols-value">{this.state.numSymbols}</span></div>
+            <div><span className="num-cells">Total Cells</span><span className="num-cells-value">{this.state.numCells}</span></div>
+            <div><span className="num-instructions">Total Instructions</span><span className="num-instructions-value">{this.state.numInstructions}</span></div>
+            {/*<div><span className="num-symbols">Total Symbols</span><span className="num-symbols-value">{this.state.numSymbols}</span></div>*/}
           </div>
           <br/>
           <div className="colon-list">
@@ -2099,8 +2101,9 @@ class GameModal extends React.PureComponent {
               </div>
               <div className="charts">
                 <ResultsChart name="cycles" values={(this.props.levelStats||{}).cycles} best={(this.props.ownBestStats||{}).cycles} own={(this.props.ownCurrentStats||{}).cycles} label="Elapsed Cycles"/>
-                <ResultsChart name="symbols" values={(this.props.levelStats||{}).symbols} best={(this.props.ownBestStats||{}).symbols} own={(this.props.ownCurrentStats||{}).symbols} label="Symbols Used"/>
+                <ResultsChart name="cells" values={(this.props.levelStats||{}).cells} best={(this.props.ownBestStats||{}).cells} own={(this.props.ownCurrentStats||{}).cells} label="Cells Used"/>
                 <ResultsChart name="instructions" values={(this.props.levelStats||{}).instructions} best={(this.props.ownBestStats||{}).instructions} own={(this.props.ownCurrentStats||{}).instructions} label="Instructions Used"/>
+                {/*<ResultsChart name="symbols" values={(this.props.levelStats||{}).symbols} best={(this.props.ownBestStats||{}).symbols} own={(this.props.ownCurrentStats||{}).symbols} label="Symbols Used"/>*/}
               </div>
             </div>
             : <div className="level-info information">

@@ -466,7 +466,7 @@ body.local {
 .output-color-W .game-board { filter: drop-shadow(0 0 20px white); }
 .output-color-C .game-board { filter: drop-shadow(0 0 20px cyan); }
 .output-color-E .game-board { filter: drop-shadow(0 0 20px orangered); }
-.cycles-value,.steps-value,.num-symbols-value {
+.cycles-value,.steps-value,.num-cells-value,.num-instructions-value,.num-symbols-value {
   font-weight: bold;
 }
 .error-value {
