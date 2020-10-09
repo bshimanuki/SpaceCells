@@ -15,9 +15,9 @@ const PADDING = 0.06;
 const BOT_PADDING = 0.02;
 
 function Svg({w, h, className, children, ...props}) {
-  return <div className={`svg-container ${className}`}{...props}>
+  return <span className={`svg-container ${className}`}{...props}>
     <svg viewBox={`${-w} ${-h} ${2*w} ${2*h}`}>{children}</svg>
-  </div>;
+  </span>;
 }
 Svg.defaultProps = {w:1, h:1, className:""};
 

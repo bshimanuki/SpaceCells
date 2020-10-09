@@ -244,7 +244,7 @@ IntroDelay: &IntroDelay
 
 IntroSwitch: &IntroSwitch
   - tag: p
-    content: "From here on, you will have multiple assignments available at a time. All cell types and instructions are available for use."
+    content: "Congrats on completing the beginning assignments! From here on, completed assignmetns will unlock new ones. All cell types and instructions are available for use."
   - tag: div
     className: note
     children:
@@ -273,7 +273,7 @@ IntroXor: &IntroXor
     className: note
     children:
       - tag: p
-        content: "Is it blue or green or grue or bleen?"
+        content: "Green and blue, grue and bleen..."
 
 IntroRam: &IntroRam
   - tag: div

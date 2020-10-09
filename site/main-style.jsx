@@ -5,7 +5,7 @@ import css from "styled-jsx/css";
 export default css.global`
 
 .game *, .game-modal * {
-  font-family: Verdana;
+  font-family: Verdana, Roboto, sans-serif;
   box-sizing: border-box;
 }
 .game textarea {

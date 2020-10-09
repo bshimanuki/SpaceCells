@@ -57,7 +57,7 @@ function countOnes(x) {
 
 function numUnlockedLevels(levels, levelsSolved) {
   const numSolved = countOnes(levelsSolved);
-  if (numSolved < NUM_TUTORIAL_LEVELS) return numSolved + 1;
+  if (numSolved < NUM_TUTORIAL_LEVELS) return NUM_TUTORIAL_LEVELS;
   return Math.min(Object.keys(levels).length, numSolved + 2)
 }
 
@@ -730,6 +730,7 @@ export class Game extends React.Component {
         symbolState={symbolState}
         keyHeld={symbolType.keyboard.includes(this.state.heldKey)}
         levelsUnlocked={this.state.levelsUnlocked}
+        levelNumber={this.state.levelNumber}
       />
     );
   }
@@ -1968,7 +1969,8 @@ class SymbolGroup extends React.PureComponent {
     const symbolState = this.props.symbolState;
     const symbolType = symbolTypeByState(symbolState);
     const Component = symbolType.svg || symbolType.options[symbolState.value][1];
-    const available = symbolType.availableFrom < this.props.levelsUnlocked && this.props.stopped;
+    const inTutorial = this.props.levelsUnlocked <= NUM_TUTORIAL_LEVELS;
+    const available = (!inTutorial || symbolType.availableFrom <= this.props.levelNumber) && this.props.stopped;
     let classNames = [];
     classNames.push("image-container");
     classNames.push("symbolgroup");
