@@ -47,6 +47,19 @@ export default css.global`
   fill: purple;
 }
 
+.symbol-options-bar.bot0 .bot-stroke {
+  stroke: red;
+}
+.symbol-options-bar.bot1 .bot-stroke {
+  stroke: blue;
+}
+.symbol-options-bar.bot0 .bot-fill {
+  fill: red;
+}
+.symbol-options-bar.bot1 .bot-fill {
+  fill: blue;
+}
+
 .arrow {
   stroke-linecap: round;
 }

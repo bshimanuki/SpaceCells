@@ -1650,7 +1650,7 @@ export class Game extends React.Component {
         newState.selectedSymbolStates = new Set([getNested(newState, selectedSymbolState.trace)]);
         newState.flipflop = -state.flipflop;
         return newState;
-      });
+      }, this.resetBoard);
     }
   }
 
@@ -1996,8 +1996,9 @@ class SymbolGroup extends React.PureComponent {
 class SymbolOptions extends React.PureComponent {
   render() {
     const symbolType = this.props.selectedSymbolState ? symbolTypeByState(this.props.selectedSymbolState) : {};
+    const bot = (this.props.selectedSymbolState || {}).bot;
     return (
-      <div className="symbol-options-bar">
+      <div className={`symbol-options-bar ${bot === null ? "" : `bot${bot}`}`}>
         <div className="symbol-options-title">{symbolType.options && "Varieties"}</div>
         <div className="symbol-options-grid">
           {Object.entries(symbolType.options || []).map(([value, [option, svg]]) =>
