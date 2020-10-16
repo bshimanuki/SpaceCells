@@ -774,7 +774,7 @@ export class Game extends React.Component {
             <input type="radio" id={`radio-level-${i}`}
               value={i} name="level-selection"
               checked={this.state.levelNumber === i}
-              onClick={i < this.state.levelsUnlocked && this.setLevelHandler}
+              onClick={i < this.state.levelsUnlocked ? null : this.setLevelHandler}
               readOnly
             />
             <label htmlFor={`radio-level-${i}`} className={this.state.levelNumber === i ? "selected unlocked unclickable" : i < this.state.levelsUnlocked ? "unlocked clickable" : "locked unclickable"}>
@@ -1650,7 +1650,7 @@ export class Game extends React.Component {
         newState.selectedSymbolStates = new Set([getNested(newState, selectedSymbolState.trace)]);
         newState.flipflop = -state.flipflop;
         return newState;
-      }, this.resetBoard);
+      }, this.selectedOnBoard() ? this.resetBoard : null);
     }
   }
 
