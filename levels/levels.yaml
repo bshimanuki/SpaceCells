@@ -26,6 +26,15 @@ LevelRam: &LevelRam
   tag: p
   content: "You have a blue/green input and a red/orange input. You should output the color of the top input the previous time the bottom input was that color. The first time red is input and the first time orange is input, you should output blue."
 
+LevelMod: &LevelMod
+  - tag: p
+    content: "The wheel starts with the blue circle activated. The wheel turns clockwise on a blue input and counterclockwise on a green input. Output the new active color."
+  - tag: div
+    className: center
+    children:
+      - tag: Svg
+        value: Wheel
+
 LevelRainbow: &LevelRainbow
   tag: p
   content: "No inputs. Output red, orange, yellow, green, blue, and purple in order and repeat."
@@ -244,7 +253,7 @@ IntroDelay: &IntroDelay
 
 IntroSwitch: &IntroSwitch
   - tag: p
-    content: "Congrats on completing the beginning assignments! From here on, completed assignmetns will unlock new ones. All cell types and instructions are available for use."
+    content: "Congrats on completing the beginning assignments! From here on, completed assignments will unlock new ones. All cell types and instructions are available for use."
   - tag: div
     className: note
     children:
@@ -322,6 +331,9 @@ levels: &levels
     title: "Storage Unit"
     goal: *LevelRam
     preface: *IntroRam
+  - name: mod
+    title: "Wheel of Fortune"
+    goal: *LevelMod
   - name: rainbow
     title: "Colors of the Rainbow"
     goal: *LevelRainbow
@@ -337,9 +349,9 @@ levels: &levels
   # - name: battle
     # title: Fight
     # goal: *LevelBattle
-  - name: stack
-    title: "Stacks on Stacks"
-    goal: *LevelStack
+  # - name: stack
+    # title: "Stacks on Stacks"
+    # goal: *LevelStack
   - name: epilogue
     title: Epilogue
     preface: *Epilogue

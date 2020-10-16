@@ -774,7 +774,7 @@ export class Game extends React.Component {
             <input type="radio" id={`radio-level-${i}`}
               value={i} name="level-selection"
               checked={this.state.levelNumber === i}
-              onClick={i < this.state.levelsUnlocked ? null : this.setLevelHandler}
+              onClick={i < this.state.levelsUnlocked ? this.setLevelHandler : null}
               readOnly
             />
             <label htmlFor={`radio-level-${i}`} className={this.state.levelNumber === i ? "selected unlocked unclickable" : i < this.state.levelsUnlocked ? "unlocked clickable" : "locked unclickable"}>

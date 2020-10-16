@@ -176,5 +176,10 @@ export default css.global`
   border-color: gold;
 }
 
+.wheel {
+  fill: none;
+  stroke: black;
+  stroke-width: 0.02;
+}
 
 `

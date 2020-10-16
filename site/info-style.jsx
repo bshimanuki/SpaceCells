@@ -56,6 +56,15 @@ export default css.global`
   filter: drop-shadow(4px 4px 4px black);
 }
 
+.information .wheel > svg {
+  height: 360px;
+  width: 360px;
+}
+.information .center {
+  margin: 0 auto;
+  width: min-content;
+}
+
 .level-info .row-line, .level-info .gridlines {
   margin: auto;
 }

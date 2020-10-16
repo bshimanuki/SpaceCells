@@ -528,3 +528,29 @@ export const SvgDefs = React.memo(() => {
     </svg>
   );
 });
+
+export const Wheel = React.memo(() => {
+  const R = 0.8;
+  const r = 0.4;
+  const rr = 0.2;
+  const h = 0.1;
+  const w = 0.02;
+  const s = 0.5;
+  return (
+    <Svg className="wheel">
+      <g style={{strokeWidth:w}}>
+        <circle cx={0} cy={0} r={R}/>
+        <circle cx={0} cy={r} r={rr} fill="blue"/>
+        <circle cx={-r/2*Math.sqrt(3)} cy={-r/2} r={rr} fill="green"/>
+        <circle cx={r/2*Math.sqrt(3)} cy={-r/2} r={rr} fill="green"/>
+        <line x1={0} y1={R} x2={0} y2={R-h}/>
+        <line x1={-R/2*Math.sqrt(3)} y1={-R/2} x2={-(R-h)/2*Math.sqrt(3)} y2={-(R-h)/2}/>
+        <line x1={R/2*Math.sqrt(3)} y1={-R/2} x2={(R-h)/2*Math.sqrt(3)} y2={-(R-h)/2}/>
+        <line x1={0} y1={0} x2={0} y2={h}/>
+        <line x1={0} y1={0} x2={-h/2*Math.sqrt(3)} y2={-h/2}/>
+        <line x1={0} y1={0} x2={h/2*Math.sqrt(3)} y2={-h/2}/>
+        <rect x={-s/2} y={r-s/2} width={s} height={s} style={{stroke:"red"}}/>
+      </g>
+    </Svg>
+  );
+});
