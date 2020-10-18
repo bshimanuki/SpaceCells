@@ -23,9 +23,6 @@ export default css.global`
 .clickable:hover {
   filter: brightness(90%) drop-shadow(0 0 0.5vmin cornflowerblue);
 }
-.level-selection .clickable:hover {
-  filter: none;
-}
 
 /* layout */
 body.local {
@@ -527,6 +524,9 @@ body.local {
   border: 2px solid #aaa;
   background-color: #ccc;
   color: #aaa;
+}
+.level-selection > label {
+  transition: filter 0s;
 }
 .level-selection > label.unlocked {
   border-color: #444;
