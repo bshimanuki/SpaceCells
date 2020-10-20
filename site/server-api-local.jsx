@@ -64,8 +64,8 @@ const levels = levels_yaml.levels.map((yaml, i) => {
 
 const example_solutions = levels_yaml.levels.filter(level => level.name !== "epilogue").map((level, i) => require(`./example_solutions/${level.name}.sol`).default);
 
-export function get_data(router, knownLevels) {
-  const levelsSolved = Number(localStorage.getItem("levels-solved")) || 0;
+function _get_data(router, knownLevels) {
+  const levelsSolved = Number(localStorage.getItem("spacecells-levels-solved")) || 0;
   let data = {
     levelsSolved: levelsSolved,
     levels: levels,
@@ -74,31 +74,41 @@ export function get_data(router, knownLevels) {
   const result = {
     data: data,
   };
+  return result;
+}
+export function get_data(router, knownLevels) {
+  const result = _get_data(router, knownLevels);
   return Promise.resolve(result);
 }
 
-export function get_submission(router, level, knownLevels) {
+export function get_solution(router, level, knownLevels) {
   const url = `./example_solutions/${levels[level].name}.sol`;
-  const data_promise = get_data(knownLevels);
-  return data_promise.then(result => {
-    result.data.submission = example_solutions[level];
-    return result;
-  });
+  const result = _get_data(router, knownLevels);
+  result.data.submission = example_solutions[level];
+  return result;
+}
+export function get_submission(router, level, knownLevels) {
+  const result = get_solution(router, level, knownLevels);
+  return Promise.resolve(result);
 }
 
-export function make_submission(router, level, submission, cycles, knownLevels) {
-  let levelsSolved = Number(localStorage.getItem("levels-solved")) || 0;
+
+export function make_submission(router, level, submission, cycles, knownLevels, isSolutions=false) {
+  let levelsSolved = Number(localStorage.getItem("spacecells-levels-solved")) || 0;
   let newState = {};
   if (!(levelsSolved & (1 << level))) {
     levelsSolved = levelsSolved | (1 << level);
-    localStorage.setItem("levels-solved", levelsSolved);
+    if (!isSolutions) localStorage.setItem("spacecells-levels-solved", levelsSolved);
   }
-  const data_promise = get_data(knownLevels);
+  const data_promise = get_data(router, knownLevels);
   return data_promise.then(result => {
-    result.data.level_stats = mockData;
-    // result.data.level_stats = stats.stats[level];
-    result.data.team_level_stats = mockTeamLevelStats;
-    // result.data.team_level_stats = null;
+    if (isSolutions) {
+      result.data.level_stats = stats.stats[level];
+      result.data.team_level_stats = null;
+    } else {
+      result.data.level_stats = mockData;
+      result.data.team_level_stats = mockTeamLevelStats;
+    }
     return result;
   });
 }

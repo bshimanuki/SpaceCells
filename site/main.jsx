@@ -14,10 +14,6 @@ import MainStyle from "./main-style.jsx"; // after svgs with its own css
 // import Embindings from "./embindings.js";
 import EmbindingsWASM from "./embindings.wasm";
 
-// switch between these api's to use local vs server
-// import {get_data, get_submission, make_submission, isLocalServer} from "./server-api.jsx";
-import {get_data, get_submission, make_submission, isLocalServer} from "./server-api-local.jsx";
-
 const MAX_HISTORY = 1000;
 const NUM_LEVELS_TO_INITIALIZE_INSTRUCTIONS = 2;
 const NUM_TUTORIAL_LEVELS = 4;
@@ -595,7 +591,13 @@ export class Game extends React.Component {
     let firstUnsolvedNumber = 0;
     while (this.state.levelsSolved & (1 << firstUnsolvedNumber)) ++firstUnsolvedNumber;
     const firstUnsolvedLevel = this.state.levels[firstUnsolvedNumber];
-    const levelsUnlocked = numUnlockedLevels(this.state.levels, this.state.levelsSolved);
+    let levelsUnlocked = numUnlockedLevels(this.state.levels, this.state.levelsSolved);
+    if (this.props.isSolutions) {
+      this.setState({
+        totalLevels: this.state.levels.length,
+      });
+      levelsUnlocked = this.state.levels.length;
+    }
     this.setState({
       doneLoading: true,
       // level data
@@ -675,7 +677,7 @@ export class Game extends React.Component {
 
   getMergeState(data, state, props) {
     let newState = {};
-    if (data.levelsSolved !== undefined) {
+    if (!this.props.isSolutions && data.levelsSolved !== undefined) {
       newState.levelsSolved = data.levelsSolved;
     }
     if (data.totalLevels !== undefined) {
@@ -685,7 +687,7 @@ export class Game extends React.Component {
       let levels = [...(state.levels || [])];
       data.levels.forEach(level => levels[level.levelNumber] = level);
       newState.levels = levels;
-      newState.levelsUnlocked = numUnlockedLevels(levels, newState.levelsSolved || state.levelsSolved);
+      if (!this.props.isSolutions) newState.levelsUnlocked = numUnlockedLevels(levels, newState.levelsSolved || state.levelsSolved);
     }
     if (data.level_stats !== undefined) newState.levelStats = data.level_stats;
     if (data.team_level_stats !== undefined) newState.ownBestStats = data.team_level_stats;
@@ -694,7 +696,7 @@ export class Game extends React.Component {
 
   componentDidMount() {
     loadModule(() => this.state.levels && this.finishInitialize());
-    const promise = get_data(this.props.router, 0);
+    const promise = this.props.api.get_data(this.props.router, 0);
     promise.then(
       response => {
         if (response.data) {
@@ -766,6 +768,8 @@ export class Game extends React.Component {
   renderLevelSidebar() {
     const mainHidden = this.state.levelName === "epilogue" ? "hidden" : "";
     const totalLevels = this.state.totalLevels || this.state.levelsUnlocked;
+    const isSolved = (this.state.levelsSolved & (1 << this.state.levelNumber));
+    const hasExampleSolution = this.props.api.isLocalServer && (this.props.isSolutions || isSolved);
     return <>
       <div className="left-sidebar" style={{display:"flex", flexDirection:"column"}}>
         <div className="level-selection">
@@ -777,7 +781,7 @@ export class Game extends React.Component {
               onClick={i < this.state.levelsUnlocked ? this.setLevelHandler : null}
               readOnly
             />
-            <label htmlFor={`radio-level-${i}`} className={this.state.levelNumber === i ? "selected unlocked unclickable" : i < this.state.levelsUnlocked ? "unlocked clickable" : "locked unclickable"}>
+            <label htmlFor={`radio-level-${i}`} className={this.state.levelNumber === i ? "selected unlocked unclickable" : this.props.isSolutions || i < this.state.levelsUnlocked ? "unlocked clickable" : "locked unclickable"}>
               <span className={`assignment-title ${this.state.levelsSolved & (1 << i) ? "solved" : "unsolved"}`}>{i === this.state.totalLevels - 1 ? "Epilogue" : `Assignment ${i+1}` + (i < this.state.levelsUnlocked ? `: ${this.state.levels[i].title}` : "")}</span>
             </label>
           </React.Fragment>
@@ -795,8 +799,8 @@ export class Game extends React.Component {
           </label>
           <div style={{paddingBottom: "30px"}}/>
           <input className="clickable level-button reset-button" type="button" value="Reset Grid" onClick={this.clearBoardHandler}/>
-          <input className={`clickable level-button load-solution ${isLocalServer || (this.state.levelsSolved & (1 << this.state.levelNumber)) ? "visible" : "hidden"}`} type="button" value={`Load ${isLocalServer ? "Example" : "Last"} Solution`} onClick={this.loadLastSolutionHandler}/>
-          {isLocalServer && <div className="post-hunt">Example solutions were not available during the hunt.</div>}
+          <input className={`clickable level-button load-solution ${hasExampleSolution || isSolved ? "visible" : "hidden"}`} type="button" value={`${this.props.isSolutions ? "Reload" : "Load"} ${this.props.api.isLocalServer ? "Example" : "Last"} Solution`} onClick={this.loadLastSolutionHandler}/>
+          {hasExampleSolution ? <div className="post-hunt">Example solutions were not available during the hunt.</div> : null}
         </div>
       </div>
     </>;
@@ -1369,7 +1373,7 @@ export class Game extends React.Component {
       }
       if (state.board) state.board.delete();
       newState.board = Module.LoadBoard(stateGet("levelData"), newState.submission);
-      localStorage.setItem(`board-state-${stateGet("levelName")}`, newState.submission);
+      if (!this.props.isSolutions) localStorage.setItem(`spacecells-board-state-${stateGet("levelName")}`, newState.submission);
       var trespassable = newState.board.get_trespassable();
       newState.trespassable = Array.from({length: newState.board.m}).map((row, y) => Array.from({length: newState.board.n}).map((cell, x) => {
         return trespassable.at(y, x);
@@ -1521,7 +1525,7 @@ export class Game extends React.Component {
       levelData: level.data,
       background: background,
     };
-    if (localStorage.getItem(`seen-modal-${level.name}`) === null) {
+    if (!this.props.isSolutions && localStorage.getItem(`spacecells-seen-modal-${level.name}`) === null) {
       newState.showModal = true;
       newState.modalLevelEnd = false;
       newState.modalPage = 0;
@@ -1533,7 +1537,11 @@ export class Game extends React.Component {
     var submission = null;
     var board = null;
     if (loadCookie) {
-      submission = localStorage.getItem(`board-state-${level.name}`);
+      if (this.props.isSolutions) {
+        submission = this.props.api.get_solution(this.props.router, level.levelNumber, this.knownLevels()).data.submission;
+      } else {
+        submission = localStorage.getItem(`spacecells-board-state-${level.name}`);
+      }
       if (submission) {
         board = Module.LoadBoard(level.data, submission);
         const status = board.check_status();
@@ -1615,7 +1623,7 @@ export class Game extends React.Component {
   }
 
   loadLastSolutionHandler = event => {
-    const promise = get_submission(this.props.router, this.state.levelNumber, this.knownLevels());
+    const promise = this.props.api.get_submission(this.props.router, this.state.levelNumber, this.knownLevels());
     promise.then(
       response => {
         if (response.data) {
@@ -1880,7 +1888,7 @@ export class Game extends React.Component {
     });
   }
   modalHandlerClose = (event, startNext=false) => {
-    localStorage.setItem(`seen-modal-${this.state.levels[this.state.levelNumber+startNext].name}`, "");
+    localStorage.setItem(`spacecells-seen-modal-${this.state.levels[this.state.levelNumber+startNext].name}`, "");
     this.setState({
         showModal: false,
         modalLevelEnd: false,
@@ -1901,7 +1909,7 @@ export class Game extends React.Component {
   onFinish = () => {
     // TODO: query server
     if (this.state.status === Module.Status.DONE) {
-      const promise = make_submission(this.props.router, this.state.levelNumber, this.state.submission, this.state.cycle, this.knownLevels());
+      const promise = this.props.api.make_submission(this.props.router, this.state.levelNumber, this.state.submission, this.state.cycle, this.knownLevels(), this.props.isSolutions);
       promise.then(
         response => {
           if (response.data) {
@@ -1918,7 +1926,7 @@ export class Game extends React.Component {
                   symbols: state.numSymbols,
                 },
               });
-              newState.levelsUnlocked = numUnlockedLevels(newState.levels || state.levels, newState.levelsSolved);
+              if (!this.props.isSolutions) newState.levelsUnlocked = numUnlockedLevels(newState.levels || state.levels, newState.levelsSolved);
               return newState;
             });
           } else {

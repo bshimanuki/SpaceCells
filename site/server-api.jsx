@@ -15,6 +15,10 @@ export const get_data = (router, knownLevels) => {
   return response;
 }
 
+export const get_solution = () => {
+  throw 'NotImplemented';
+}
+
 export const get_submission = (router, level, knownLevels) => {
   const data = {
     level,
@@ -29,7 +33,7 @@ export const get_submission = (router, level, knownLevels) => {
   return response;
 }
 
-export const make_submission = (router, level, submission, cycles, knownLevels) => {
+export const make_submission = (router, level, submission, cycles, knownLevels, _isSolutions_unused) => {
   const data = {
     level,
     submission,
