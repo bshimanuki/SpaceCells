@@ -40,7 +40,7 @@ module.exports = {
         ]
       },
       {
-        test: /\.(txt|lvl)$/,
+        test: /\.(txt|lvl|sol)$/,
         exclude: /node_modules/,
         loader: 'raw-loader',
       },

@@ -89,10 +89,10 @@ python: $(BINDINGS_PYTHON)
 all: default emscripten python
 
 test: default
-	@for file in example_solutions/*.sol ; do \
+	@for file in data/example_solutions/*.sol ; do \
 		base="$$(basename $$file)" ; \
-		echo $(BINDIR)/run "levels/$${base%%?([_0-9]*).sol}.lvl" "$$file" ; \
-		$(BINDIR)/run "levels/$${base%%?([_0-9]*).sol}.lvl" "$$file" ; \
+		echo $(BINDIR)/run "data/levels/$${base%%?([_0-9]*).sol}.lvl" "$$file" ; \
+		$(BINDIR)/run "data/levels/$${base%%?([_0-9]*).sol}.lvl" "$$file" ; \
 	done
 
 clean:

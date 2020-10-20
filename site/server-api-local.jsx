@@ -1,4 +1,5 @@
-import levels_yaml from "../levels/levels.yaml"
+import levels_yaml from "./levels/levels.yaml"
+import stats from "./levels/stats.json"
 
 const NUM_TUTORIAL_LEVELS = 4;
 
@@ -36,44 +37,32 @@ const mockTeamLevelStats = {
   symbols: 50,
 };
 
-function getFileFromServer(url) {
-  let promise = new Promise(resolve => {
-    var xhr = new XMLHttpRequest();
-    xhr.onreadystatechange = function() {
-      if (xhr.readyState === 4) {
-        resolve(xhr.status == 200 ? xhr.responseText : null);
-      }
-    }
-    xhr.open("GET", url, true);
-    xhr.send();
-  });
-  return promise;
-}
-
 const backgrounds = [
-  require("../backgrounds/1.txt").default,
-  require("../backgrounds/2.txt").default,
-  require("../backgrounds/3.txt").default,
-  require("../backgrounds/4.txt").default,
-  require("../backgrounds/5.txt").default,
-  require("../backgrounds/6.txt").default,
-  require("../backgrounds/7.txt").default,
-  require("../backgrounds/8.txt").default,
-  require("../backgrounds/9.txt").default,
-  require("../backgrounds/10.txt").default,
-  require("../backgrounds/11.txt").default,
-  require("../backgrounds/12.txt").default,
+  require("./backgrounds/1.txt").default,
+  require("./backgrounds/2.txt").default,
+  require("./backgrounds/3.txt").default,
+  require("./backgrounds/4.txt").default,
+  require("./backgrounds/5.txt").default,
+  require("./backgrounds/6.txt").default,
+  require("./backgrounds/7.txt").default,
+  require("./backgrounds/8.txt").default,
+  require("./backgrounds/9.txt").default,
+  require("./backgrounds/10.txt").default,
+  require("./backgrounds/11.txt").default,
+  require("./backgrounds/12.txt").default,
 ];
 
 const levels = levels_yaml.levels.map((yaml, i) => {
   let level = {...yaml};
   level.levelNumber = i;
   if (level.name !== "epilogue") {
-    level.data = require(`../levels/${level.name}.lvl`).default;
+    level.data = require(`./levels/${level.name}.lvl`).default;
     level.background = backgrounds[i];
   }
   return level;
 });
+
+const example_solutions = levels_yaml.levels.filter(level => level.name !== "epilogue").map((level, i) => require(`./example_solutions/${level.name}.sol`).default);
 
 export function get_data(router, knownLevels) {
   const levelsSolved = Number(localStorage.getItem("levels-solved")) || 0;
@@ -89,16 +78,12 @@ export function get_data(router, knownLevels) {
 }
 
 export function get_submission(router, level, knownLevels) {
-  const url = `../example_solutions/${levels[level].name}.sol`;
-  let data_promise = get_data(knownLevels);
-  let text_promise = getFileFromServer(url);
-  let promise = new Promise(resolve => {
-    Promise.all([data_promise, text_promise]).then(([result, submission]) => {
-      result.data.submission = submission;
-      resolve(result);
-    });
+  const url = `./example_solutions/${levels[level].name}.sol`;
+  const data_promise = get_data(knownLevels);
+  return data_promise.then(result => {
+    result.data.submission = example_solutions[level];
+    return result;
   });
-  return promise;
 }
 
 export function make_submission(router, level, submission, cycles, knownLevels) {
@@ -111,7 +96,9 @@ export function make_submission(router, level, submission, cycles, knownLevels) 
   const data_promise = get_data(knownLevels);
   return data_promise.then(result => {
     result.data.level_stats = mockData;
+    // result.data.level_stats = stats.stats[level];
     result.data.team_level_stats = mockTeamLevelStats;
+    // result.data.team_level_stats = null;
     return result;
   });
 }

@@ -687,8 +687,8 @@ export class Game extends React.Component {
       newState.levels = levels;
       newState.levelsUnlocked = numUnlockedLevels(levels, newState.levelsSolved || state.levelsSolved);
     }
-    if (data.level_stats) newState.levelStats = data.level_stats;
-    if (data.team_level_stats) newState.ownBestStats = data.team_level_stats;
+    if (data.level_stats !== undefined) newState.levelStats = data.level_stats;
+    if (data.team_level_stats !== undefined) newState.ownBestStats = data.team_level_stats;
     return newState;
   }
 
@@ -1824,7 +1824,7 @@ export class Game extends React.Component {
     const levelNumber1Index = this.state.levelNumber + 1;
     const data = {
       levelNumber: levelNumber1Index,
-      levelName: this.state.levelName,
+      // levelName: this.state.levelName,
       submission: this.state.submission,
     };
     const uri = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data));
@@ -1850,11 +1850,14 @@ export class Game extends React.Component {
           json = JSON.parse(result);
         } catch (error) {}
         if (typeof json === "object" && json !== null) {
-          const levelNumber = json.levelNumber;
-          const levelName = json.levelName;
+          const levelNumber = json.levelNumber - 1;
+          // const levelName = json.levelName;
           const submission = json.submission;
-          if (typeof levelNumber === "number" && typeof levelName === "string" && typeof submission === "string") {
-            if (levelName === this.state.levelName) {
+          if (typeof levelNumber === "number" &&
+            // typeof levelName === "string" &&
+            typeof submission === "string") {
+            // if (levelName === this.state.levelName) {
+            if (levelNumber === this.state.levelNumber) {
               this.loadSubmission(submission);
             } else {
               this.setState({error: "Error: Wrong assignment."});
