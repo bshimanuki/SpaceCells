@@ -45,4 +45,4 @@ export const make_submission = (router, level, submission, cycles, knownLevels) 
   return response;
 }
 
-export const LoadSubmissionText = "Load Last Solution";
+export const isLocalServer = false;

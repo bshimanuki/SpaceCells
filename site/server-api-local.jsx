@@ -103,4 +103,4 @@ export function make_submission(router, level, submission, cycles, knownLevels) 
   });
 }
 
-export const LoadSubmissionText = "Load Example Solution";
+export const isLocalServer = true;
