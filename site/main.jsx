@@ -796,6 +796,7 @@ export class Game extends React.Component {
           <div style={{paddingBottom: "30px"}}/>
           <input className="clickable level-button reset-button" type="button" value="Reset Grid" onClick={this.clearBoardHandler}/>
           <input className={`clickable level-button load-solution ${isLocalServer || (this.state.levelsSolved & (1 << this.state.levelNumber)) ? "visible" : "hidden"}`} type="button" value={`Load ${isLocalServer ? "Example" : "Last"} Solution`} onClick={this.loadLastSolutionHandler}/>
+          {isLocalServer && <div className="post-hunt">Example solutions were not available during the hunt.</div>}
         </div>
       </div>
     </>;

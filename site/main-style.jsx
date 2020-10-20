@@ -710,4 +710,10 @@ body.local {
   }
 }
 
+.post-hunt {
+  color: red;
+  font-size: x-small;
+  font-style: italic;
+}
+
 `
