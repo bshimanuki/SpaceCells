@@ -102,3 +102,5 @@ export function make_submission(router, level, submission, cycles, knownLevels) 
     return result;
   });
 }
+
+export const LoadSubmissionText = "Load Example Solution";

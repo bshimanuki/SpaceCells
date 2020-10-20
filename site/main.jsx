@@ -15,8 +15,8 @@ import MainStyle from "./main-style.jsx"; // after svgs with its own css
 import EmbindingsWASM from "./embindings.wasm";
 
 // switch between these api's to use local vs server
-// import {get_data, get_submission, make_submission} from "./server-api.jsx";
-import {get_data, get_submission, make_submission} from "./server-api-local.jsx";
+// import {get_data, get_submission, make_submission, LoadSubmissionText} from "./server-api.jsx";
+import {get_data, get_submission, make_submission, LoadSubmissionText} from "./server-api-local.jsx";
 
 const MAX_HISTORY = 1000;
 const NUM_LEVELS_TO_INITIALIZE_INSTRUCTIONS = 2;
@@ -795,7 +795,7 @@ export class Game extends React.Component {
           </label>
           <div style={{paddingBottom: "30px"}}/>
           <input className="clickable level-button reset-button" type="button" value="Reset Grid" onClick={this.clearBoardHandler}/>
-          <input className={`clickable level-button load-solution ${this.state.levelsSolved & (1 << this.state.levelNumber) ? "visible" : "hidden"}`} type="button" value="Load Last Solution" onClick={this.loadLastSolutionHandler}/>
+          <input className={`clickable level-button load-solution ${this.state.levelsSolved & (1 << this.state.levelNumber) ? "visible" : "hidden"}`} type="button" value={LoadSubmissionText} onClick={this.loadLastSolutionHandler}/>
         </div>
       </div>
     </>;
