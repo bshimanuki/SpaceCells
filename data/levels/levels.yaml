@@ -237,7 +237,7 @@ IntroDelay: &IntroDelay
       - tag: p
         content: "Cells innately have no memories, but bots never forget a thing."
       - tag: p
-        content: "You may find some or all of the GRAB/DROP, LOCK/FREE, and RESET instructions varieties useful."
+        content: "You may find some or all of the GRAB/DROP, RESET, and LOCK/FREE instructions varieties useful."
       - tag: div
         className: "row-line"
         children:
@@ -245,10 +245,10 @@ IntroDelay: &IntroDelay
             value: Swap
             className: bot0
           - tag: Svg
-            value: ToggleLatch
+            value: Relatch
             className: bot0
           - tag: Svg
-            value: Relatch
+            value: ToggleLatch
             className: bot0
 
 IntroSwitch: &IntroSwitch

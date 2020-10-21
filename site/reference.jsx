@@ -134,6 +134,13 @@ function Reference(props) {
     </div>
     <p>GRAB will cause a bot to pick up a cell and carry it until a DROP instruction. It is an error if a bot carries a cell into another cell. This only affects 1x1 cells.</p>
 
+    <h3>RESET Instruction</h3>
+    <div className="row-line">
+      <Svgs.Relatch className="bot0"/>
+      <Svgs.Relatch className="bot1"/>
+    </div>
+    <p>Reset the value of a locked cell to the value it would settle to if unlocked. You could think of this as freeing and relocking it in the same cycle. This only affects locked cells.</p>
+
     <h3>LOCK / FREE Instructions</h3>
     <div className="row-line">
       <Svgs.ToggleLatch className="bot0"/>
@@ -144,13 +151,6 @@ function Reference(props) {
       <Svgs.Unlatch className="bot1"/>
     </div>
     <p>Cause the cell to become locked (with the current value after settling) or unlocked. This only affects 1x1 cells.</p>
-
-    <h3>RESET Instruction</h3>
-    <div className="row-line">
-      <Svgs.Relatch className="bot0"/>
-      <Svgs.Relatch className="bot1"/>
-    </div>
-    <p>Reset the value of a locked cell to the value it would settle to if unlocked. You could think of this as unlocking and relocking it in the same cycle. This only affects locked cells.</p>
 
     <h3>FLIP Instruction</h3>
     <div className="row-line">

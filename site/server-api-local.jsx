@@ -52,7 +52,7 @@ const backgrounds = [
   require("./backgrounds/12.txt").default,
 ];
 
-const levels = levels_yaml.levels.map((yaml, i) => {
+export const levels = levels_yaml.levels.map((yaml, i) => {
   let level = {...yaml};
   level.levelNumber = i;
   if (level.name !== "epilogue") {
