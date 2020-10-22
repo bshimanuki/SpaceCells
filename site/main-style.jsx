@@ -597,8 +597,8 @@ body.local {
   outline: none;
   padding: 20px;
   /* custom */
-  height: 720px;
-  width: 1080px;
+  height: 75vh;
+  width: 75vw;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
@@ -614,8 +614,8 @@ body.local {
 .modal-body {
   flex: 1;
   overflow: auto;
-  margin: 20px 0;
-  padding: 0 50px;
+  margin: 2% 0;
+  padding: 0 8%;
   display: flex;
   flex-direction: column;
 }
