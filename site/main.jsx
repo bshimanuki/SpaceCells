@@ -1645,8 +1645,9 @@ export class Game extends React.Component {
 
   symbolClickHandler = symbolState => {
     const symbolType = symbolTypeByState(symbolState);
-    if (symbolType.availableFrom >= this.state.levelsUnlocked) return;
-    if (this.state.simState !== "stop") return;
+    const inTutorial = this.state.levelsUnlocked <= NUM_TUTORIAL_LEVELS;
+    const available = (!inTutorial || symbolType.availableFrom <= this.state.levelNumber) && this.state.simState === "stop";
+    if (!available) return;
     this.setSelected(symbolState);
   }
 
