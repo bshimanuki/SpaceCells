@@ -5,9 +5,9 @@ xxxx_+xx>xxx
 .\xxx+x__x_.
 ._^__+___x_.
 ._x__+W__x_.
-xx_x_+Mx>x\_
-.xxx_____^_.
-.__xxxxxxx_.
+xx___+Mx>x\_
+.x_______^_.
+.xxxxxxxxx_.
 
 .__________.
 .__________.
