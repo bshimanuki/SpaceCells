@@ -102,13 +102,8 @@ export function make_submission(router, level, submission, cycles, knownLevels, 
   }
   const data_promise = get_data(router, knownLevels);
   return data_promise.then(result => {
-    if (isSolutions) {
-      result.data.level_stats = stats.stats[level];
-      result.data.team_level_stats = null;
-    } else {
-      result.data.level_stats = mockData;
-      result.data.team_level_stats = mockTeamLevelStats;
-    }
+    result.data.level_stats = stats.stats[level];
+    result.data.team_level_stats = null;
     return result;
   });
 }
